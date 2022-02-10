@@ -3,9 +3,9 @@
 
 import socket
 import os
+import json
 from datetime import datetime
-
-
+import time
 
 def recvall(sock):
     BUFF_SIZE = 4096 # 4 KiB
@@ -41,7 +41,17 @@ def relational_learning_model(image):
     #>>>>>>> de3b4f34202d4cb271cae931834fa69dc450c759
     # returns the actions to be performed by the rover
     # See the unity source code for some specs
-    return "F"
+
+
+    jsonObj = {
+      "forwardThrust" : 2,
+      "horizontalThrust" : 0,
+      "verticalThrust" : 0,
+      "xRotation" : 0,
+      "yRotation" : 0
+    }
+
+    return json.dumps(jsonObj)
 
 # address and port is arbitrary
 def server(host='127.0.0.1', port=60260):

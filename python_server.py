@@ -65,9 +65,9 @@ def server(host='127.0.0.1', port=60260):
 
     with conn as c:
       # display the current time
-      time = datetime.now().ctime()
+      currentTime = datetime.now().ctime()
       total_data = []
-      print("[+] Connecting by {0}:{1} ({2})".format(addr[0], addr[1], time))
+      print("[+] Connecting by {0}:{1} ({2})".format(addr[0], addr[1], currentTime))
 
       while True:
         binary_image = recvall(conn)
@@ -84,6 +84,7 @@ def server(host='127.0.0.1', port=60260):
         actions = relational_learning_model(binary_image)
         # Encode the string via utf-8, and send the result as a byte array
         c.sendall(actions.encode('utf-8'))
+        #time.sleep(3.0)
         print("[+] Sending to {0}:{1}".format(addr[0], addr[1]))
 
 if __name__ == "__main__":

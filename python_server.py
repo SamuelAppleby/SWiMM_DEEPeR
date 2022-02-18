@@ -31,6 +31,7 @@ def relational_learning_model(image):
 
 
 def server(host='127.0.0.1', port=60260):
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind((host, port))
         print("[+] Listening on {0}:{1}".format(host, port))

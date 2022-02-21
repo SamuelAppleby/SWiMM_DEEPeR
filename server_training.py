@@ -56,7 +56,6 @@ def server(host='127.0.0.1', port=60260):
                       break
 
                   data += part  # append the data
-                  actions = ""
 
                   if not data:
                       print("[-] Not Received")

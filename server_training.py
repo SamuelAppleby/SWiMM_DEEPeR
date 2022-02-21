@@ -25,10 +25,27 @@ def relational_learning_model(image):
     return json.dumps({
         "forwardThrust": 1,
         "verticalThrust": 0,
-        "yRotation": 0,
-        "hover": False
+        "yRotation": 0
     })
 
+def get_cam_config():
+    return {
+        "fov" : 100
+    }
+
+def get_rover_config():
+    return {
+        "thrustPower" : 12
+    }
+
+def get_server_config():
+    jsonObj = {
+        "serverConfig" : {
+            "camConfig" : get_cam_config(),
+            "roverConfig" : get_rover_config()
+        }
+    }
+    return json.dumps(jsonObj)
 
 def server(host='127.0.0.1', port=60260):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -47,7 +64,11 @@ def server(host='127.0.0.1', port=60260):
 
                 data = b''       # binary data (not utf-8 nor ascii)
 
-                while True:
+                server_config = get_server_config()
+                conn.sendall(server_config.encode('utf-8'))
+                print("[+] Sent server config to {0}:{1}".format(addr[0], addr[1]))
+
+                while conn.fileno:
                   part = conn.recv(BUFF_SIZE)
 
                   if not part:
@@ -70,7 +91,7 @@ def server(host='127.0.0.1', port=60260):
 
                   conn.sendall(actions.encode('utf-8'))
                   #time.sleep(0.1)
-                  print("[+] Sending to {0}:{1}".format(addr[0], addr[1]))
+                  print("[+] Sent action to {0}:{1}".format(addr[0], addr[1]))
 
 
 if __name__ == "__main__":

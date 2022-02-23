@@ -1,14 +1,14 @@
 from gym_underwater.python_server import PythonServer
 from config import *
 
-server = PythonServer()
-server.server(HOST, PORT)
+import numpy as np
+from gym_underwater.gym_env import UnderwaterEnv
 
-# import numpy as np
-# from gym_underwater.gym_env import UnderwaterEnv
+#server = PythonServer()
+#server.server(HOST, PORT)
 
-# # construct environment and seed
-# env = UnderwaterEnv()
+# construct environment and seed
+env = UnderwaterEnv()
 # env.seed(0)
 # print("environment ready")
 

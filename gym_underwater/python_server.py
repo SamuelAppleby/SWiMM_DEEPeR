@@ -14,9 +14,13 @@ class PythonServer():
     Handles messages from a single TCP client.
     """
 
-    def __init__(self):
+    def __init__(self, address, handler):
 
         self.saveToFile = False
+
+        self.handler = handler
+
+        self.server(*address)
 
     def write_image_to_file_incrementally(self, image):
         """

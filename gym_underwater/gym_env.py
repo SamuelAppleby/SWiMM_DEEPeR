@@ -4,41 +4,25 @@ import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from gym_underwater.sim_handler import UnitySimHandler
+from gym_underwater.sim_comms import UnitySimCommunicator 
 
 logger = logging.getLogger(__name__)
 
 class UnderwaterEnv(gym.Env):
     """
-    OpenAI Gym Environment for controlling an underwater vehicle 'Rover'
+    OpenAI Gym Environment for controlling an underwater vehicle 
     """
-
-    metadata = {"render.modes": ["human", "rgb_array"]}
 
     def __init__(self):         
 
-        print("starting underwater environment")
+        print("Starting underwater environment ..")
 
         # set logging level
         logging.basicConfig(level=logging.INFO)  
-
         logger.debug("DEBUG ON")
 
-        ##########################################################################################
-        # HERE IS WHERE PREVIOUSLY LAUNCHED SIM BY CREATING AN INSTANCE OF THE UNITYPROCESS CLASS 
-        # AND CALLING THE START FUNCTION WHICH USED THE FUNCTUON Popen FROM THE PACKAGE subprocess 
-        # WITH ARGS SIM PATH, PORT AND HOST ADDRESS. THERE WAS A SLEEP AFTER IT.
-        ##########################################################################################
-
-        #########################################################################################
-        # HERE IS WHERE CREATED INSTANCE OF THE CLASS UNITYSIMCONTROLLER WHICH IN TURN CREATES
-        # INSTANCE OF THE CLASS UNITYSIMHANDLER AND INSTANCE OF THE CLASS SIMCLIENT. THOUGHTS FOR 
-        # NOW IS THAT A LOT OF THE FUNCTIONALITY PROVIDED BY THESE CLASSES IS MADE REDUNDANT BY
-        # SERVER.PY AND CAN MAYBE COMBINE REST INTO THIS ENV CLASS. SEE IF THIS SIMPLIFIED APPROACH
-        # WORKS BEFORE COPYING SAME STRUCTURE
-        #########################################################################################
-
-        self.handler = UnitySimHandler()
+        # create instance of class that deals with Unity comms
+        self.communicator = UnitySimCommunicator()
 
         # action space declaration 
         self.action_space = spaces.Box(
@@ -50,68 +34,48 @@ class UnderwaterEnv(gym.Env):
         # observation space declaration           
         self.observation_space = spaces.Box(low=0, high=255, shape=(256,256,3), dtype=np.uint8)
 
-        # simulation related variables.
-        self.seed()
+        # seed environment
+        #self.seed()
 
-        # Frame Skipping
-        self.frame_skip = 1  
+        # wait for sim to load
+        #self.communicator.wait_until_loaded()
 
-        ########################################################################################
-        # WOULD BE GOOD TO FINISH INIT WITH SOME SORT OF WAIT UNTIL SIMULATION FINISHED LOADING
-        # FOR EXAMPLE, A BOOL VAR LOADED, AND THEN JUST WHILE NOT LOADED: SLEEP, AND CHANGE THE
-        # BOOL TO TRUE ONCE RECEIVED MESSAGE FROM SIM OR SOMETHING ALONG THOSE LINES
-        ########################################################################################
+    #def close(self):
+        #self.communicator.quit()
 
-    def __del__(self):
-        self.close()
-
-    def close(self):
-        self.handler.quit()
-
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+    #def seed(self, seed=None):
+        #self.np_random, seed = seeding.np_random(seed)
+        #return [seed]
 
     def step(self, action):             
 
-        for i in range(self.frame_skip):
+        # send action decision to communicator to send off to sim
+        self.communicator.take_action(action)                                                  
 
-            # implement action in sim
-            self.handler.take_action(action)                                                  
-
-            # retrieve results of action implementation
-            observation, reward, done, info = self.handler.observe()                         
-
-            # determine if episode reached end
-            if self.step_count > 3000:
-                print("Episode timed out")
-                done = True
-            self.step_count+=1
+        # retrieve results of action implementation
+        observation, reward, done, info = self.communicator.observe()                         
 
         return observation, reward, done, info                                             
 
     def reset(self):
 
         # reset simulation to start state
-        self.handler.reset()
+        self.communicator.reset()
 
-        # reset step counter
-        self.step_count = 0
-
-        # fetch initial observation on which to base first action decision 
-        observation, _, _, _ = self.handler.observe()
+        # fetch initial observation  
+        observation, _, _, _ = self.communicator.observe()
         
         return observation
 
-    def render(self, mode="human", close=False):
-        if close:
-            self.handler.quit()
-        if mode == 'rgb_array':
-            return self.handler.image_array
-        return self.handler.render(mode)
+    def render(self):
+        return self.communicator.image_array
 
     def is_game_over(self):
-        return self.handler.is_game_over()
+        return self.communicator.is_game_over()
+
+
+
+
 
 
 

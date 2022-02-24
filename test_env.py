@@ -1,5 +1,5 @@
 import time
-from gym_underwater.server_training import PythonServer
+from gym_underwater.python_server import PythonServer
 from config import *
 
 import numpy as np

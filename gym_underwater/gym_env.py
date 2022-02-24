@@ -40,8 +40,11 @@ class UnderwaterEnv(gym.Env):
     #     # wait for sim to load
     #     #self.communicator.wait_until_loaded()
 
-    # #def close(self):
-    #     #self.communicator.quit()
+    # def __del__(self):
+    #     self.close()
+
+    def close(self):
+        self.communicator.quit()
 
     # #def seed(self, seed=None):
     #     #self.np_random, seed = seeding.np_random(seed)

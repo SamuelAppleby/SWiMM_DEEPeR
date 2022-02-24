@@ -34,8 +34,8 @@ class UnitySimCommunicator:
     # def observe(self):
     #     return self.handler.observe()
 
-    # #def quit(self):
-    #     #self.server.stop()
+    def quit(self):
+        self.server.stop()
 
     # def render(self):
     #     pass
@@ -56,31 +56,35 @@ class UnitySimHandler():
         self.image_array = np.zeros((256,256,3))
         self.last_obs = None
 
-        self.over = False
+        #self.over = False
 
     #     self.fns = {
     #         "telemetry": self.on_telemetry,
     #         #"sim_loaded": self.on_sim_loaded,
     #     }
 
-    # def on_connect(self, server):
-    #     logger.debug("socket connected")
-    #     self.server = server
+    def on_connect(self, server):
+        logger.debug("socket connected")
+        self.server = server
 
     # #def on_disconnect(self):
     #     #logger.debug("socket disconnected")
     #     #self.server = None
 
-    # def on_recv_message(self, message):
-    #     if "msg_type" not in message:
-    #         logger.warn("expected msg_type field")
-    #         return
-    #     msg_type = message["msg_type"]
-    #     logger.debug("got message :" + msg_type)
-    #     if msg_type in self.fns:
-    #         self.fns[msg_type](message)
-    #     else:
-    #         logger.warning(f"unknown message type {msg_type}")
+    def on_recv_message(self, message):
+        #if "msg_type" not in message:
+            #logger.warn("expected msg_type field")
+            #return
+        #msg_type = message["msg_type"]
+        #logger.debug("got message :" + msg_type)
+        #if msg_type in self.fns:
+            #self.fns[msg_type](message)
+        #else:
+            #logger.warning(f"unknown message type {msg_type}")
+
+        ##### when improve message format to be dict with msg_type as key and message as value, can use above code ######
+        ##### for now, force telemetry call ########
+        self.on_telemetry(message)
 
     # # ------------ Gym ------------ #
 
@@ -125,18 +129,18 @@ class UnitySimHandler():
 
     # # ------------ Socket ------------ #
 
-    # def on_telemetry(self, data):
+    def on_telemetry(self, data):
 
-    #     ###### for now just assuming that data is image and nothing else #######
+        ###### for now just assuming that data is image and nothing else #######
 
-    #     binary_image = data
-    #     image = Image.open(BytesIO(binary_image))
-    #     self.image_array = np.array(image)
+        binary_image = data
+        print("Received by handler")
+        #image = Image.open(BytesIO(binary_image))
+        #self.image_array = np.array(image)
+        #if self.over:
+            #return
 
-    #     if self.over:
-    #         return
-
-    #     self.determine_episode_over()
+        #self.determine_episode_over()
 
     # #def determine_episode_over(self):
 

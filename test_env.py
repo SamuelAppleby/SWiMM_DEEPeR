@@ -1,14 +1,19 @@
+import time
 from gym_underwater.python_server import PythonServer
 from config import *
 
 import numpy as np
 from gym_underwater.gym_env import UnderwaterEnv
 
-#server = PythonServer()
-#server.server(HOST, PORT)
-
 # construct environment and seed
 env = UnderwaterEnv()
+
+print("Doing things for 20 seconds ...")
+time.sleep(20)
+
+print("and stopping thread and closing socket")
+env.close()
+
 # env.seed(0)
 # print("environment ready")
 

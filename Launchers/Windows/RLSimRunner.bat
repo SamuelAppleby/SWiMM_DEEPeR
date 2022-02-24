@@ -1,4 +1,4 @@
 @ECHO OFF
-START python ..\..\python_server.py %* 
-START /d "..\..\..\UnityProjects\RLSimulation\Builds" ReinforcementLearningSimulation.exe
+START python ..\..\server_training.py %* 
+START /d ..\..\..\UnityProjects\RLSimulation\Builds\Windows\ ReinforcementLearningSimulation.exe
 PAUSE

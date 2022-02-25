@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-"""This implements the skeleton for the server for the machine learning task"""
 
 import socket
 import os
@@ -7,110 +6,123 @@ import json
 from datetime import datetime
 import time
 from threading import Thread
-import logging
-import select 
-
-logger = logging.getLogger(__name__)
 
 BUFF_SIZE = 4096  # 4 KiB
 
 class PythonServer():
     """
-    Handles messages from a single TCP client.
+    Handles message passing with a single TCP client.
+    Here, Python backend is the server and Unity frontend is the client.
     """
 
     def __init__(self, address, handler):
 
+        # hold onto the handler
         self.handler = handler
 
+        # some variable initialisations
         self.saveToFile = False
         self.msg = None
         self.th = None
-        self.aborted = False
 
+        # establishing connection
         self.connect(*address)
+        # let handler know when connection has been made
         self.handler.on_connect(self)
 
     def write_image_to_file_incrementally(self, image):
         """
-        Dumping the image to a continuously progressing file, just for debugging puroses
+        Dumping the image to a continuously progressing file, just for debugging purposes
         """
         i = 0
         while os.path.exists("sample%s.jpeg" % i):
             i += 1
         with open("sample%s.jpeg" % i, "wb") as f:
             f.write(image)
-
-    def relational_learning_model(self, image):
-        return json.dumps({
-            "forwardThrust": 1,
-            "verticalThrust": 0,
-            "yRotation": 0
-        })
-
-    def get_cam_config(self):
-        return {
-            "fov" : 100
-        }
-
-    def get_rover_config(self):
-        return {
-            "thrustPower" : 12
-        }
-
-    def get_server_config(self):
-        jsonObj = {
-            "serverConfig" : {
-                "camConfig" : self.get_cam_config(),
-                "roverConfig" : self.get_rover_config()
-            }
-        }
-        return json.dumps(jsonObj)
-
-    def on_msg_recv(self, jsonObj):
-        self.handler.on_recv_message(jsonObj)
     
     def connect(self, host='127.0.0.1', port=60260):
 
+        # create socket and associate the socket with local address
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         self.sock.bind((host, port))
         print("[+] Listening on {0}:{1}".format(host, port))
         self.sock.listen(5)
 
         try:
-            self.conn, self.addr = self.sock.accept()
+            # wait for connection request
+            conn, self.addr = self.sock.accept()
+            currentTime = datetime.now().ctime()
+            print("[+] Connecting by {0}:{1} ({2})".format(self.addr[0], self.addr[1], currentTime))
         except ConnectionRefusedError:
             raise (
                 Exception(
                     "Could not connect to server."
                 )
             )
-        currentTime = datetime.now().ctime()
-        print("[+] Connecting by {0}:{1} ({2})".format(self.addr[0], self.addr[1], currentTime))
 
+        # the remaining network related code, receiving data and sending data, is ran in a thread
         self.do_process_msgs = True
-        self.th = Thread(target=self.proc_msg, args=(self.conn,), daemon=True)
+        self.th = Thread(target=self.proc_msg, args=(conn,), daemon=True)
         self.th.start()
 
     def stop(self):
-        # signal proc_msg loop to stop, then wait for thread to finish
-        # close socket
+        """
+        Signal proc_msg loop to stop, wait for thread to finish, close socket, and tell handler
+        """
         self.do_process_msgs = False
         if self.th is not None:
             self.th.join()
         if self.sock is not None:
-            print("[-] Closing connection")
-            self.conn.close()
+            print("[-] Closing socket")
+            self.sock.close()
+            self.handler.on_disconnect()
 
     def proc_msg(self, conn):
 
-        data = b''       # binary data (not utf-8 nor ascii)
+        # binary data (not utf-8 nor ascii)
+        data = b''       
 
-        while self.do_process_msgs:
+        # conn.fileno being used to detect if socket has detached
+        while self.do_process_msgs and conn.fileno:
 
-            print("Running thread")
-            time.sleep(3)
+            # receive 
+            part = conn.recv(BUFF_SIZE)
+
+            # check
+            if not part:
+                print("[-] Not Binary Image")
+                self.stop()
+                break
+            
+            # append
+            data += part  
+
+            if not data:
+                print("[-] Not Received")
+                break
+
+            print("[+] Received", len(data))
+
+            # for testing purposes, set to False by default
+            if self.saveToFile:
+                self.write_image_to_file_incrementally(data)
+
+            # pass data to handler
+            self.handler.on_recv_message(data)
+
+            # wait for handler to point something to self.msg variable dedicated to outgoing messages
+            while self.msg is None:
+                time.sleep(1.0 / 120.0)
+            # send 'reply' to client
+            conn.sendall(self.msg.encode('utf-8'))
+            print("[+] Sent action to {0}:{1}".format(self.addr[0], self.addr[1]))
+
+                
+            
+
+
+
+
 
 
 

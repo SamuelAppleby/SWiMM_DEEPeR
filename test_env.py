@@ -7,18 +7,11 @@ from gym_underwater.gym_env import UnderwaterEnv
 
 # construct environment and seed
 env = UnderwaterEnv()
-
-print("Doing things for 20 seconds ...")
-time.sleep(20)
-
-print("and stopping thread and closing socket")
-env.close()
-
 # env.seed(0)
-# print("environment ready")
+print("Environment ready")
 
-# # how many steps want to test for
-# num_test_steps = 10
+# how many steps want to test for
+num_test_steps = 100
 
 # # list to store cumulative episodic reward for each episode played out
 # episode_rewards = [0.0]
@@ -31,15 +24,21 @@ env.close()
 
 # # collect initial observation 
 # obs = env.reset()
+#### dummy call to reset whilst reset is not implemented, by cutting straight to observe #####
+obs = env.communicator.observe()
 
-# # mock run where instead of querying model for action decision, randomly sample from action space
-# for _ in range(num_test_steps):
+# mock run where instead of querying model for action decision, can randomly sample from action space or just use hardcoded action
+for _ in range(num_test_steps):
 
-#     # sample action
-#     action = env.action_space.sample()
+    # sample action
+    #action = env.action_space.sample()
+    action = {"forwardThrust": 1,
+            "verticalThrust": 0,
+            "yRotation": 0}
 
-#     # step through environment i.e. send action off to be implemented, retrieve next obs, calculate reward, and check if done
-#     obs, reward, done, info = env.step(action)
+    # step through environment i.e. send action off to be implemented, retrieve next obs, calculate reward, and check if done
+    #obs, reward, done, info = env.step(action)
+    obs = env.step(action)
 
 #     # increment episode length counter
 #     ep_len += 1
@@ -62,7 +61,8 @@ env.close()
 #         episode_rewards.append(0.0)
 #         ep_len = 0
 
-# env.close()
+print("Closing environment")
+env.close()
 
 # print("Finished!")
 # mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)

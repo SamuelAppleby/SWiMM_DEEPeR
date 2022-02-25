@@ -24,24 +24,24 @@ class UnderwaterEnv(gym.Env):
         # create instance of class that deals with Unity comms
         self.communicator = UnitySimCommunicator()
 
-    #     # action space declaration 
-    #     self.action_space = spaces.Box(
-    #         low=np.array([-1, -1, -1]),
-    #         high=np.array([1, 1, 1]),
-    #         dtype=np.float32,
-    #     )
+        # action space declaration
+        print("Declaring action space") 
+        self.action_space = spaces.Box(
+            low=np.array([-1.0, -1.0, -1.0]),
+            high=np.array([1.0, 1.0, 1.0]),
+            dtype=np.float32,
+        )
 
-    #     # observation space declaration           
-    #     self.observation_space = spaces.Box(low=0, high=255, shape=(256,256,3), dtype=np.uint8)
+        # observation space declaration
+        print("Declaring observation space")         
+        self.observation_space = spaces.Box(low=0, high=255, shape=(256,256,3), dtype=np.uint8)
 
     #     # seed environment
     #     #self.seed()
 
-    #     # wait for sim to load
-    #     #self.communicator.wait_until_loaded()
-
-    # def __del__(self):
-    #     self.close()
+        # wait for sim if not already loaded and connected
+        print("Waiting to receive data from client before ")
+        self.communicator.wait_until_loaded()
 
     def close(self):
         self.communicator.quit()
@@ -50,15 +50,17 @@ class UnderwaterEnv(gym.Env):
     #     #self.np_random, seed = seeding.np_random(seed)
     #     #return [seed]
 
-    # def step(self, action):             
+    def step(self, action):             
 
-    #     # send action decision to communicator to send off to sim
-    #     self.communicator.take_action(action)                                                  
+        # send action decision to communicator to send off to sim
+        self.communicator.take_action(action)                                                  
 
-    #     # retrieve results of action implementation
-    #     observation, reward, done, info = self.communicator.observe()                         
+        # retrieve results of action implementation
+        #observation, reward, done, info = self.communicator.observe()  
+        observation = self.communicator.observe()                       
 
-    #     return observation, reward, done, info                                             
+        #return observation, reward, done, info
+        return observation                                             
 
     # def reset(self):
 

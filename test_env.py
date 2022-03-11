@@ -1,8 +1,7 @@
 import time
-from gym_underwater.python_server import PythonServer
+import numpy as np
 from config import *
 
-import numpy as np
 from gym_underwater.gym_env import UnderwaterEnv
 
 # construct environment and seed
@@ -16,7 +15,7 @@ num_test_steps = 100
 # # list to store cumulative episodic reward for each episode played out
 # episode_rewards = [0.0]
 
-# # counter variable for keeping track of episode length 
+# # counter variable for keeping track of episode length
 # ep_len = 0
 
 # # decide on max episode length 
@@ -32,9 +31,14 @@ for _ in range(num_test_steps):
 
     # sample action
     #action = env.action_space.sample()
-    action = {"forwardThrust": 1,
+    action = {
+        "msg_type": "actions",
+        "payload": {
+            "forwardThrust": 0.5,
             "verticalThrust": 0,
-            "yRotation": 0}
+            "yRotation": 0
+        }
+    }
 
     # step through environment i.e. send action off to be implemented, retrieve next obs, calculate reward, and check if done
     #obs, reward, done, info = env.step(action)

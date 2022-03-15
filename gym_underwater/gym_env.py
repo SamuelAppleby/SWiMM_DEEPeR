@@ -39,8 +39,7 @@ class UnderwaterEnv(gym.Env):
     #     # seed environment
     #     #self.seed()
 
-        # wait for sim if not already loaded and connected
-        print("Waiting to receive data from client before ")
+        # wait for sim comms to be established
         self.communicator.wait_until_loaded()
 
     def close(self):
@@ -56,7 +55,7 @@ class UnderwaterEnv(gym.Env):
         self.communicator.take_action(action)                                                  
 
         # retrieve results of action implementation
-        #observation, reward, done, info = self.communicator.observe()  
+        # observation, reward, done, info = self.communicator.observe()  
         observation = self.communicator.observe()                       
 
         #return observation, reward, done, info

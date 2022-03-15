@@ -1,9 +1,8 @@
 import logging
 import time
 import json
+import os
 import numpy as np 
-#from io import BytesIO
-#from PIL import Image
 
 from gym_underwater.python_server import PythonServer
 from config import *
@@ -53,31 +52,35 @@ class UnitySimHandler():
 
         self.server = None
 
-        #self.image_array = np.zeros((256,256,3))
-        self.image_array = None # just using None for now whilst not unpacking data
+        self.image_array = np.zeros((256,256,3))
         self.last_obs = None
+        self.hit = False
+        self.rover_pos = None
+        self.target_pos = None
+        # self.rover_fwd = None
+        # self.target_fwd = None
 
-        #self.over = False
+        # self.over = False
 
-    #     self.fns = {
-    #         "telemetry": self.on_telemetry,
-    #     }
+        self.fns = {
+            "process_camera_image": self.on_telemetry,
+        }
 
-    # # ------------ Gym ------------ #
+    #~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     # def reset(self):
 
     #     logger.debug("resetting")
 
-    #     self.image_array = np.zeros(self.conf['input_dim'])
-    #     self.last_obs = self.image_array
+    #     self.image_array = np.zeros((256,256,3))
+    #     self.last_obs = None
+    #     self.hit = False
+    #     self.rover_pos = None
+    #     self.target_pos = None
+    #     self.rover_fwd = None
+    #     self.target_fwd = None
 
     #     self.over = False
-
-    def take_action(self, action):
-        if self.server is None:
-            return
-        self.server.msg = json.dumps(action)
     
     def observe(self):
 
@@ -86,15 +89,13 @@ class UnitySimHandler():
 
         self.last_obs = self.image_array
         observation = self.image_array                                             
-        #done = self.is_game_over()
-        #reward = self.calc_reward(done)
+        # done = self.is_game_over()
+        # reward = self.calc_reward(done)
                                               
-        #info = {"dummy": "can add variables here"}                            
+        # info = {"dummy": "can add variables here"}                            
 
-        #return observation, reward, done, info
+        # return observation, reward, done, info
         return observation
-
-    # # ------------ RL ------------ #
 
     # def calc_reward(self, done):
 
@@ -104,15 +105,11 @@ class UnitySimHandler():
 
     #     return reward
 
-    # #def determine_episode_over(self):
+    # def determine_episode_over(self):
 
     #     ####### implement episode termination criteria here ###########
 
-    # # just an extra getter function
-    # def is_game_over(self):
-    #     return self.over
-
-    # # ------------ Socket ------------ #
+    #~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def on_connect(self, server):
         logger.debug("socket connected")
@@ -122,54 +119,74 @@ class UnitySimHandler():
         logger.debug("socket disconnected")
         self.server = None
 
+    #~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
+
     def on_recv_message(self, message):
-        #if "msg_type" not in message:
-            #logger.warn("expected msg_type field")
-            #return
-        #msg_type = message["msg_type"]
-        #logger.debug("got message :" + msg_type)
-        #if msg_type in self.fns:
-            #self.fns[msg_type](message)
-        #else:
-            #logger.warning(f"unknown message type {msg_type}")
 
-        ##### when improve message format to be dict with msg_type as key and message as value, can use above code ######
-        ##### for now, force telemetry call ########
-        self.on_telemetry(message)
+        if "msg_type" not in message:
+            logger.warn("expected msg_type field")
+            return
+        msg_type = message["msg_type"]
+        payload = message["payload"]
+        logger.debug("got message :" + msg_type)
+        if msg_type in self.fns:
+            self.fns[msg_type](payload)
+        else:
+            logger.warning(f"unknown message type {msg_type}")
 
-    def on_telemetry(self, data):
+    def on_telemetry(self, payload):
 
-        ###### for now just assuming that data is image and nothing else #######
-        ###### also, there will need to unpack data 
-        ##### but for now just setting self.image_array as raw data #####
+        image = payload["jpgImage"]
+        self.image_array = np.array(image)
 
-        #image = Image.open(BytesIO(data))
-        #self.image_array = np.array(image)
-        self.image_array = data     
+        if SAVE_IMAGES:
+            b = bytearray(image)
+            self.write_image_to_file_incrementally(b)
 
-        #if self.over:
-            #return
+        self.hit = payload["isColliding"]
+        self.rover_pos = payload["currentPosition"]
+        self.target_pos = payload["targetPositions"]
+        # self.rover_fwd = payload["rover_fwd"]
+        # self.target_fwd = payload["target_fwd"]   
 
-        #self.determine_episode_over()
+        # if self.over:
+            # return
 
-    def get_cam_config(self):
-        return {
-            "fov" : 100
-        }
+        # self.determine_episode_over()
 
-    def get_rover_config(self):
-        return {
-            "thrustPower" : 12
-        }
+    #~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-    def get_server_config(self):
-        jsonObj = {
-            "serverConfig" : {
-                "camConfig" : self.get_cam_config(),
-                "roverConfig" : self.get_rover_config()
+    def take_action(self, action):
+        if self.server is None:
+            return
+        action_msg = {
+            "msg_type": "actions",
+            "payload": {
+                "forwardThrust": action[0].__str__(),
+                "verticalThrust": action[1].__str__(),
+                "yRotation": action[2].__str__(),
             }
         }
-        return json.dumps(jsonObj)
+        self.server.msg = json.dumps(action_msg)
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+    def write_image_to_file_incrementally(self, image):
+        """
+        Dumping the image to a continuously progressing file, just for debugging purposes
+        """
+        os.makedirs(SAVE_IMAGES_TO, exist_ok=True)
+
+        i = 0
+        while os.path.exists(os.path.join(SAVE_IMAGES_TO, f"sample{i}.jpeg")):
+            i += 1
+        with open(os.path.join(SAVE_IMAGES_TO, f"sample{i}.jpeg"), "wb") as f:
+            f.write(image)
+
+    # def is_game_over(self):
+    #     return self.over
+
+
 
 
 

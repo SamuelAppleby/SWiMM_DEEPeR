@@ -1,18 +1,19 @@
 # -*- coding:utf-8 -*-
 
 import socket
-import os
 import json
 from datetime import datetime
 import time
 from threading import Thread
+
+from config import *
 
 BUFF_SIZE = 32768  # 32 KiB
 
 class PythonServer():
     """
     Handles message passing with a single TCP client.
-    Here, Python backend is the server and Unity frontend is the client.
+    Python backend is the server and Unity frontend is the client.
     """
 
     def __init__(self, address, handler):
@@ -22,7 +23,6 @@ class PythonServer():
 
         # some variable initialisations
         self.do_process_msgs = False
-        self.save_to_file = True
         self.msg = None
         self.th = None
 
@@ -30,16 +30,6 @@ class PythonServer():
         self.connect(*address)
         # let handler know when connection has been made
         self.handler.on_connect(self)
-
-    def write_image_to_file_incrementally(self, image):
-        """
-        Dumping the image to a continuously progressing file, just for debugging purposes
-        """
-        i = 0
-        while os.path.exists(f"sample{i}.jpeg"):
-            i += 1
-        with open(f"sample{i}.jpeg", "wb") as f:
-            f.write(image)
     
     def send_server_config(self, conn):
         """
@@ -50,10 +40,10 @@ class PythonServer():
             "msg_type": "server_config",
             "payload": {
                 "cam_config": {
-                    "fov": 50
+                    "fov": FOV
                 },
                 "env_config" : {
-                    "fogStart" : 20
+                    "fogStart" : FOGSTART
                 }
             }
         }
@@ -99,41 +89,28 @@ class PythonServer():
             self.sock.close()
             self.handler.on_disconnect()
 
-    def process_camera_image(self, payload):
-        """
-        Encode image, send for learning
-        """
-        image = payload["jpgImage"]
-        # b = bytearray(image)
-
-        #  # for testing purposes, set to False by default
-        # if self.save_to_file:
-        #     self.write_image_to_file_incrementally(b)
-
-        # pass data to handler
-        self.handler.on_recv_message(image)
-
     def proc_msg(self, conn):
         """
         Continue to process messages from each connected client
         """
         # conn.fileno being used to detect if socket has detached
         while self.do_process_msgs and conn.fileno:
-            # receive
+            
+            # receive packets
             part = conn.recv(1024 * 32)
             if not part:
                 print("[-] Not Binary Image")
                 self.stop()
-                break
-            
+                break   
             print("[+] Received", len(part))
+
+            # unpack and send json message onto handler
             my_json = part.decode('UTF-8')
             json_dict = json.loads(my_json)
-            getattr(self, json_dict["msg_type"])(json_dict["payload"])
+            self.handler.on_recv_message(json_dict)
 
             # wait for handler to point something to self.msg variable dedicated to outgoing messages
             while self.msg is None:
-                print("i am waiting")
                 time.sleep(1.0 / 120.0)
             # send 'reply' to client
             conn.sendall(self.msg.encode('utf-8'))

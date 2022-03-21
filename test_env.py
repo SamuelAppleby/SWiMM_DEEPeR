@@ -10,7 +10,7 @@ env = UnderwaterEnv()
 print("Environment ready")
 
 # how many steps want to test for
-num_test_steps = 100
+num_test_steps = 20
 
 # # list to store cumulative episodic reward for each episode played out
 # episode_rewards = [0.0]
@@ -23,47 +23,39 @@ num_test_steps = 100
 
 # # collect initial observation 
 # obs = env.reset()
-#### dummy call to reset whilst reset is not implemented, by cutting straight to observe #####
-obs = env.communicator.observe()
+obs = env.communicator.observe() #### dummy call whilst reset is not implemented ####
 
 # mock run where instead of querying model for action decision, can randomly sample from action space or just use hardcoded action
 for _ in range(num_test_steps):
 
-    # sample action
-    #action = env.action_space.sample()
-    action = {
-        "msg_type": "actions",
-        "payload": {
-            "forwardThrust": 0.5,
-            "verticalThrust": 0,
-            "yRotation": 0
-        }
-    }
+    # sample action or set hardcoded action
+    action = env.action_space.sample()
+    # action = [0.5, 0, 0]
 
     # step through environment i.e. send action off to be implemented, retrieve next obs, calculate reward, and check if done
-    #obs, reward, done, info = env.step(action)
-    obs = env.step(action)
+    # obs, reward, done, info = env.step(action)
+    obs = env.step(action) #### only obs returned whilst calc_reward and determine_episode_over not implemented ####
 
-#     # increment episode length counter
-#     ep_len += 1
+    # # increment episode length counter
+    # ep_len += 1
 
-#     # add reward for this step onto the cumulative sum for the current episode
-#     episode_rewards[-1] += reward
+    # # add reward for this step onto the cumulative sum for the current episode
+    # episode_rewards[-1] += reward
 
-#     # check episode length
-#     if ep_len >= max_ep_length:
-#         done = True
+    # # check episode length
+    # if ep_len >= max_ep_length:
+    #     done = True
 
-#     # periodically print to terminal so can watch episode progression
-#     if ep_len % 100 == 0:
-#         print("{} steps".format(ep_len))
+    # # periodically print to terminal so can watch episode progression
+    # if ep_len % 100 == 0:
+    #     print("{} steps".format(ep_len))
 
-#     # if episode termination criteria met, finish episode, reset env, and reset log variables
-#     if done:
-#         obs = env.reset()
-#         print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
-#         episode_rewards.append(0.0)
-#         ep_len = 0
+    # # if episode termination criteria met, finish episode, reset env, and reset log variables
+    # if done:
+    #     obs = env.reset()
+    #     print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
+    #     episode_rewards.append(0.0)
+    #     ep_len = 0
 
 print("Closing environment")
 env.close()

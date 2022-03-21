@@ -13,8 +13,17 @@ PORT = 60260
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~ Unity Sim ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-FOV = 50
-FOGSTART = 20
+SERVER_CONF = {
+    "msgType": "ProcessServerConfig",
+    "payload": {
+        "camConfig": {
+            "fov": 50
+        },
+        "envConfig": {
+            "fogStart": 20
+        }
+    }
+}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~ Gym Environment ~~~~~~~~~~~~~~~~~~~~~~~~~#
 

@@ -63,7 +63,7 @@ class UnitySimHandler():
         # self.over = False
 
         self.fns = {
-            "process_camera_image": self.on_telemetry,
+            "on_telemetry": self.on_telemetry,
         }
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -160,7 +160,7 @@ class UnitySimHandler():
         if self.server is None:
             return
         action_msg = {
-            "msg_type": "actions",
+            "msgType": "ReceiveJsonControls",
             "payload": {
                 "forwardThrust": action[0].__str__(),
                 "verticalThrust": action[1].__str__(),
@@ -168,6 +168,13 @@ class UnitySimHandler():
             }
         }
         self.server.msg = json.dumps(action_msg)
+
+    def generate_server_config(self):
+        """
+        Generate server config for client
+        """
+
+        self.server.msg = json.dumps(SERVER_CONF)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
 

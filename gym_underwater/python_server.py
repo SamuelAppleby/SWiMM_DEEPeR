@@ -8,7 +8,7 @@ from threading import Thread
 
 from config import *
 
-BUFF_SIZE = 32768  # 32 KiB
+BUFF_SIZE = 32  # Buffer size (KB)
 
 class PythonServer():
     """
@@ -28,28 +28,6 @@ class PythonServer():
 
         # establishing connection
         self.connect(*address)
-        # let handler know when connection has been made
-        self.handler.on_connect(self)
-    
-    def send_server_config(self, conn):
-        """
-        Send server config to client
-        """
-
-        server_conf = {
-            "msg_type": "server_config",
-            "payload": {
-                "cam_config": {
-                    "fov": FOV
-                },
-                "env_config" : {
-                    "fogStart" : FOGSTART
-                }
-            }
-        }
-
-        server_str = json.dumps(server_conf)
-        conn.sendall(bytes(server_str,encoding="utf-8"))
 
     def connect(self, host='127.0.0.1', port=60260):
         """
@@ -70,7 +48,10 @@ class PythonServer():
         except ConnectionRefusedError as refuse_error:
             raise (Exception("Could not connect to server.")) from refuse_error
         
-        self.send_server_config(conn)
+        # let handler know when connection has been made
+        self.handler.on_connect(self)
+        self.handler.generate_server_config()
+        conn.sendall(self.msg.encode('utf-8'))
 
         # the remaining network related code, receiving data and sending data, is ran in a thread
         self.do_process_msgs = True
@@ -97,7 +78,7 @@ class PythonServer():
         while self.do_process_msgs and conn.fileno:
             
             # receive packets
-            part = conn.recv(1024 * 32)
+            part = conn.recv(1024 * BUFF_SIZE)
             if not part:
                 print("[-] Not Binary Image")
                 self.stop()

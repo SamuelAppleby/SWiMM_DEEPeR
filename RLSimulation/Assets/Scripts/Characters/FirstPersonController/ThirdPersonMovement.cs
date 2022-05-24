@@ -3,6 +3,7 @@ using System;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
@@ -52,9 +53,9 @@ public class ThirdPersonMovement : MonoBehaviour
         screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = screenmodes[screenIndex];
 
-        if (SimulationManager.Instance.useServer)
+        if (SimulationManager._instance.useServer)
         {
-            server = new Server(SimulationManager.Instance.server.URL, SimulationManager.Instance.server.Port, SimulationManager.Instance.server.TickRate);
+            server = new Server(SimulationManager._instance.server);
             await server.Connect();
 
             if (server.IsTcpGood())
@@ -81,16 +82,21 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Update()
     {
-        if (SimulationManager.Instance.useServer)
+        if (SimulationManager._instance.useServer)
         {
             server.Update(Time.deltaTime);
         }
 
-        movementSettings.Update(SimulationManager.Instance.useServer);
+        movementSettings.Update(SimulationManager._instance.useServer);
 
         if (movementSettings.quitting)
         {
             TerminateApplication();
+        }
+
+        if(movementSettings.reload_scene)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         if (movementSettings.changeWindow)
@@ -108,7 +114,7 @@ public class ThirdPersonMovement : MonoBehaviour
             firstPersonCam.enabled = !firstPersonCam.enabled;
             thirdPersonCam.enabled = !thirdPersonCam.enabled;
 
-            if (!SimulationManager.Instance.useServer)
+            if (!SimulationManager._instance.useServer)
             {
                 activeCamera = thirdPersonCam.enabled ? thirdPersonCam : firstPersonCam;
             }
@@ -174,7 +180,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (SimulationManager.Instance.useServer)
+        if (SimulationManager._instance.useServer)
         {
             if (!server.IsTcpGood())
             {

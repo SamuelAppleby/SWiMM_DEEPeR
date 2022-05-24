@@ -3,9 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SimulationManager : MonoBehaviour
+public class SimulationManager : Singleton<SimulationManager>
 {
-    private static SimulationManager _instance;
     public struct ServerInfo
     {
         public string URL;
@@ -16,27 +15,14 @@ public class SimulationManager : MonoBehaviour
     public ServerInfo server;
     public bool useServer = false;
 
-    public static SimulationManager Instance
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                Debug.LogError("NO GAME MANAGER");
-            }
-
-            return _instance;
-        }
-    }
-
     void Start()
     {
-
+        Debug.Log("PARSING ARGUMENTS");
+        ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
     }
 
     void Update()
     {
-
     }
 
     private void ParseCommandLineArguments(string[] args)
@@ -61,11 +47,5 @@ public class SimulationManager : MonoBehaviour
                     break;
             }
         }
-    }
-
-    private void Awake()
-    {
-        _instance = this;
-        ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
     }
 }

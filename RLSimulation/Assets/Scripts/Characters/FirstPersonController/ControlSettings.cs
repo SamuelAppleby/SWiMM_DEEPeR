@@ -9,6 +9,7 @@ static class ControlMap
     public static KeyCode HoverKey = KeyCode.H;
     public static KeyCode QuitKey = KeyCode.Escape;
     public static KeyCode ChangeWindowKey = KeyCode.P;
+    public static KeyCode ReloadKey = KeyCode.RightBracket;
 }
 
 [Serializable]
@@ -29,6 +30,8 @@ public class ControlSettings
     [HideInInspector] public bool quitting = false;
     [HideInInspector] public bool changeWindow = false;
 
+    [HideInInspector] public bool reload_scene = false;
+
     public void ReceiveJsonControls(ThirdPersonMovement.JsonControls controls)
     {
         movementInputs.y = controls.verticalThrust;
@@ -41,6 +44,7 @@ public class ControlSettings
         /* Get manual input when not using tcp */
         if (!useTcp)
         {
+            reload_scene = Input.GetKey(ControlMap.ReloadKey);
             hovering = Input.GetKeyDown(ControlMap.HoverKey);
             movementInputs.y = Input.GetKey(ControlMap.RiseKey) ? 1 : Input.GetKey(ControlMap.FallKey) ? -1 : 0;
             movementInputs.z = Input.GetAxisRaw("Vertical");

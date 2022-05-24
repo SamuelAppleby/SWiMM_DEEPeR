@@ -2,6 +2,7 @@ using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using UnityEngine;
+using static SimulationManager;
 
 public class Server
 {
@@ -32,6 +33,13 @@ public class Server
         ip = ipadd;
         port = p;
         desiredServerTimeStep = (float)1 / tickRate;
+    }
+
+    public Server(ServerInfo info)
+    {
+        ip = info.URL;
+        port = info.Port;
+        desiredServerTimeStep = (float)1 / info.TickRate;
     }
 
     public bool IsTcpGood()

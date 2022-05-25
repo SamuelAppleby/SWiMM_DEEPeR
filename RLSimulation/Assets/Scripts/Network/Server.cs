@@ -6,9 +6,6 @@ using static SimulationManager;
 
 public class Server
 {
-    // Buffer from which read the packages. Ideally, this should be the
-    // maximum size of a TCP packet, which is 65535. Ideally, we need to
-    // receive less information than that!
     public static int dataBufferSize = 4096;
     public string ip = "127.0.0.1";
     public int port = 60260;
@@ -33,13 +30,6 @@ public class Server
         ip = ipadd;
         port = p;
         desiredServerTimeStep = (float)1 / tickRate;
-    }
-
-    public Server(ServerInfo info)
-    {
-        ip = info.URL;
-        port = info.Port;
-        desiredServerTimeStep = (float)1 / info.TickRate;
     }
 
     public bool IsTcpGood()

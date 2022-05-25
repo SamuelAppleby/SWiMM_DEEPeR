@@ -1,15 +1,14 @@
 using Cinemachine;
 using System;
-using System.Reflection;
 using System.Text;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static SimulationManager;
 
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
 {
     public Transform[] targetTransforms;
-    private Server server;
 
     private float originalDrag;
     private float originalAngularDrag;
@@ -19,7 +18,6 @@ public class ThirdPersonMovement : MonoBehaviour
     public float groundAngularDragConstant;
 
     public Material roverMaterial;
-    private int avgFrameRate;
 
     private Rigidbody m_RigidBody;
     private bool m_Hovering = false;
@@ -30,7 +28,7 @@ public class ThirdPersonMovement : MonoBehaviour
     private bool m_IsColliding = false;
     public bool m_IsUnderwater = false;
 
-    public ControlSettings movementSettings = new ControlSettings();
+    public ThirdPersonControlSettings movement_controls = new ThirdPersonControlSettings();
 
     public Camera firstPersonCam;
     public Camera thirdPersonCam;
@@ -40,93 +38,49 @@ public class ThirdPersonMovement : MonoBehaviour
     public int resWidth = 256;
     public int resHeight = 256;
 
-    private FullScreenMode[] screenmodes;
-    private int screenIndex = 0;
-
-    private async void Start()
+    private void Start()
     {
         m_RigidBody = GetComponent<Rigidbody>();
         originalDrag = m_RigidBody.drag;
         originalAngularDrag = m_RigidBody.angularDrag;
-        activeCamera = firstPersonCam;
-
-        screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
-        Screen.fullScreenMode = screenmodes[screenIndex];
-
-        if (SimulationManager._instance.useServer)
-        {
-            server = new Server(SimulationManager._instance.server);
-            await server.Connect();
-
-            if (server.IsTcpGood())
-            {
-                AwaitAnyServerData();
-            }
-        }
-    }
-
-    private void UpdateFPS()
-    {
-        float current = (int)(1f / Time.unscaledDeltaTime);
-        avgFrameRate = (int)current;
-    }
-
-    private void TerminateApplication()
-    {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
-#endif
+        activeCamera = thirdPersonCam;
     }
 
     void Update()
     {
-        if (SimulationManager._instance.useServer)
-        {
-            server.Update(Time.deltaTime);
-        }
-
-        movementSettings.Update(SimulationManager._instance.useServer);
-
-        if (movementSettings.quitting)
-        {
-            TerminateApplication();
-        }
-
-        if(movementSettings.reload_scene)
-        {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        }
-
-        if (movementSettings.changeWindow)
-        {
-            screenIndex = screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
-            Screen.fullScreenMode = screenmodes[screenIndex];
-        }
+        movement_controls.Update(SimulationManager._instance.useServer);
 
         ref float fov = ref cinecamera.m_Lens.FieldOfView;
-        fov -= movementSettings.mouseWheel * movementSettings.sensitivity;
-        fov = Mathf.Clamp(fov, movementSettings.minFov, movementSettings.maxFov);
+        fov -= movement_controls.mouseWheel * movement_controls.sensitivity;
+        fov = Mathf.Clamp(fov, movement_controls.minFov, movement_controls.maxFov);
 
-        if (movementSettings.cameraChange)
+        if (movement_controls.cameraChange)
         {
-            firstPersonCam.enabled = !firstPersonCam.enabled;
-            thirdPersonCam.enabled = !thirdPersonCam.enabled;
 
-            if (!SimulationManager._instance.useServer)
+            if(activeCamera == firstPersonCam)
             {
-                activeCamera = thirdPersonCam.enabled ? thirdPersonCam : firstPersonCam;
+                SwitchActiveCamera(ref firstPersonCam, ref thirdPersonCam);
+            }
+            else
+            {
+                SwitchActiveCamera(ref thirdPersonCam, ref firstPersonCam);
             }
         }
 
-        if (movementSettings.hovering)
+        if (movement_controls.hovering)
         {
             m_Hovering = !m_Hovering;
             roverMaterial.color = m_Hovering ? Color.green : Color.blue;
         }
+    }
 
-        UpdateFPS();
+    private void SwitchActiveCamera(ref Camera active, ref Camera inactive)
+    {
+        inactive.depth = 0;
+        inactive.rect = new Rect(0, 0, 1, 1);
+        active.depth = 1;
+        active.rect = new Rect(0.7f, 0, 0.3f, 0.3f);
+        activeCamera = inactive;
     }
 
     private void FixedUpdate()
@@ -145,33 +99,33 @@ public class ThirdPersonMovement : MonoBehaviour
         }
 
         /* Movement */
-        if (movementSettings.movementInputs.magnitude > float.Epsilon && (m_RigidBody.velocity.sqrMagnitude < Mathf.Pow(movementSettings.ThrustPower, 2)))
+        if (movement_controls.movementInputs.magnitude > float.Epsilon && (m_RigidBody.velocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower, 2)))
         {
             Vector3 desiredMove = new Vector3();
-            if (movementSettings.movementInputs.y != 0 && m_IsUnderwater)
+            if (movement_controls.movementInputs.y != 0 && m_IsUnderwater)
             {
-                desiredMove += firstPersonCam.transform.up * movementSettings.movementInputs.y;
+                desiredMove += firstPersonCam.transform.up * movement_controls.movementInputs.y;
             }
-            if (movementSettings.movementInputs.z != 0)
+            if (movement_controls.movementInputs.z != 0)
             {
-                desiredMove += firstPersonCam.transform.forward * movementSettings.movementInputs.z;
+                desiredMove += firstPersonCam.transform.forward * movement_controls.movementInputs.z;
             }
 
-            desiredMove *= movementSettings.ThrustPower / 2;
+            desiredMove *= movement_controls.ThrustPower / 2;
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Impulse);
         }
 
         /* Rotation */
-        if (movementSettings.rotationInputs.magnitude > float.Epsilon && m_RigidBody.angularVelocity.sqrMagnitude < Mathf.Pow(movementSettings.ThrustPower / 10, 2))
+        if (movement_controls.rotationInputs.magnitude > float.Epsilon && m_RigidBody.angularVelocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower / 10, 2))
         {
             Vector3 desiredRotation = new Vector3();
-            if (movementSettings.rotationInputs.y != 0)
+            if (movement_controls.rotationInputs.y != 0)
             {
-                desiredRotation.y += movementSettings.rotationInputs.y;
+                desiredRotation.y += movement_controls.rotationInputs.y;
             }
 
-            desiredRotation *= movementSettings.ThrustPower / 1000;
+            desiredRotation *= movement_controls.ThrustPower / 1000;
 
             m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Impulse);
         }
@@ -182,16 +136,16 @@ public class ThirdPersonMovement : MonoBehaviour
     {
         if (SimulationManager._instance.useServer)
         {
-            if (!server.IsTcpGood())
+            if (!SimulationManager._instance.server.IsTcpGood())
             {
                 return;
             }
-            else if (server.GoodToSend())
+            else if (SimulationManager._instance.server.GoodToSend())
             {
                 SendImageData();
                 return;
             }
-        }       
+        }
     }
 
     [Serializable]
@@ -204,104 +158,15 @@ public class ThirdPersonMovement : MonoBehaviour
     [Serializable]
     struct ImageData
     {
-        public byte[] jpgImage;
-        public Vector3 currentPosition;
-        public Vector3[] targetPositions;
-        public bool isColliding;
-    }
-
-
-    [Serializable]
-    struct MessageType
-    {
-        public string msgType;
-    }
-
-    [Serializable]
-    struct JsonMessage<T>
-    {
-        public T payload;
-    }
-
-    [Serializable]
-    public struct ConfigOptions
-    {
-        public CameraConfig camConfig;
-        public EnvironmentConfig envConfig;
-    }
-
-    [Serializable]
-    public struct CameraConfig
-    {
-        public int fov;
-    }
-
-    [Serializable]
-    public struct EnvironmentConfig
-    {
-        public float fogStart;
-    }
-
-    [Serializable]
-    public struct JsonControls
-    {
-        public float forwardThrust;
-        public float verticalThrust;
-        public float yRotation;
-    }
-
-    public void ProcessServerConfig(ConfigOptions config)
-    {
-        firstPersonCam.fieldOfView = config.camConfig.fov;
-        Fog.SetFogStart(config.envConfig.fogStart);
+        public byte[] jpg_image;
+        public Vector3 current_position;
+        public Vector3[] target_positions;
+        public bool is_colliding;
     }
 
     public void ReceiveJsonControls(JsonControls controls)
     {
-        movementSettings.ReceiveJsonControls(controls);
-    }
-
-    private async void AwaitAnyServerData()
-    {
-        string jsonStr = await server.AwaitAnyData();
-
-        try
-        {
-            if (jsonStr != null)
-            {
-                MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
-
-                try
-                {
-                    MethodInfo methodName = this.GetType().GetMethod(message.msgType);
-
-                    switch (methodName.Name)
-                    {
-                        case "ProcessServerConfig":
-                            JsonMessage<ConfigOptions> config = JsonUtility.FromJson<JsonMessage<ConfigOptions>>(jsonStr);
-                            methodName.Invoke(this, new object[] { config.payload });
-                            break;
-                        case "ReceiveJsonControls":
-                            JsonMessage<JsonControls> controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
-                            methodName.Invoke(this, new object[] { controls.payload });
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-        }   
-        
-        AwaitAnyServerData();
+        movement_controls.ReceiveJsonControls(controls);
     }
 
     private async void SendImageData()
@@ -328,17 +193,17 @@ public class ThirdPersonMovement : MonoBehaviour
             msg_type = "on_telemetry",
             payload = new ImageData
             {
-                jpgImage = screenShot.EncodeToJPG(),
-                currentPosition = transform.position,
-                targetPositions = targetPositions,
-                isColliding = m_IsColliding
+                jpg_image = screenShot.EncodeToJPG(),
+                current_position = transform.position,
+                target_positions = targetPositions,
+                is_colliding = m_IsColliding
             }
         };
 
         string result = JsonUtility.ToJson(data);
 
         /* N.B We want to only send 1 request/response at a time, but dont want to block */
-        await server.SendDataAsync(Encoding.UTF8.GetBytes(result));
+        await SimulationManager._instance.server.SendDataAsync(Encoding.UTF8.GetBytes(result));
     }
 
     void OnDrawGizmos()

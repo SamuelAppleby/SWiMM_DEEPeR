@@ -136,16 +136,16 @@ class UnitySimHandler():
 
     def on_telemetry(self, payload):
 
-        image = payload["jpgImage"]
+        image = payload["jpg_image"]
         self.image_array = np.array(image)
 
         if SAVE_IMAGES:
             b = bytearray(image)
             self.write_image_to_file_incrementally(b)
 
-        self.hit = payload["isColliding"]
-        self.rover_pos = payload["currentPosition"]
-        self.target_pos = payload["targetPositions"]
+        self.hit = payload["is_colliding"]
+        self.rover_pos = payload["current_position"]
+        self.target_pos = payload["target_positions"]
         # self.rover_fwd = payload["rover_fwd"]
         # self.target_fwd = payload["target_fwd"]   
 
@@ -160,7 +160,7 @@ class UnitySimHandler():
         if self.server is None:
             return
         action_msg = {
-            "msgType": "ReceiveJsonControls",
+            "msgType": "receive_json_controls",
             "payload": {
                 "forwardThrust": action[0].__str__(),
                 "verticalThrust": action[1].__str__(),

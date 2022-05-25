@@ -14,13 +14,13 @@ PORT = 60260
 #~~~~~~~~~~~~~~~~~~~~~~~~~ Unity Sim ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 SERVER_CONF = {
-    "msgType": "ProcessServerConfig",
+    "msgType": "process_server_config",
     "payload": {
         "camConfig": {
             "fov": 50
         },
         "envConfig": {
-            "fogStart": 20
+            "fogStart": 5
         }
     }
 }

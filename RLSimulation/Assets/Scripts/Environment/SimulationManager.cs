@@ -75,6 +75,7 @@ public class SimulationManager : Singleton<SimulationManager>
         if (_instance.globalControls.reload_scene)
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            _instance.globalControls.reload_scene = false;
         }
 
         if (_instance.globalControls.changeWindow)

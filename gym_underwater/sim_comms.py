@@ -3,6 +3,7 @@ import time
 import json
 import os
 import numpy as np 
+import math
 
 from gym_underwater.python_server import PythonServer
 from config import *
@@ -25,8 +26,8 @@ class UnitySimCommunicator:
             logger.warning("waiting for sim ..")
             time.sleep(1.0)          
 
-    # def reset(self):
-    #     self.handler.reset()
+    def reset(self):
+        self.handler.reset()
 
     def take_action(self, action):
         self.handler.take_action(action)
@@ -37,14 +38,14 @@ class UnitySimCommunicator:
     def quit(self):
         self.server.stop()
 
-    # def render(self):
-    #     pass
+    def render(self):
+        pass
 
-    # def is_game_over(self):
-    #     return self.handler.is_game_over()
+    def is_game_over(self):
+        return self.handler.is_game_over()
 
-    # def calc_reward(self, done):
-    #     return self.handler.calc_reward(done)
+    def calc_reward(self, done):
+        return self.handler.calc_reward(done)
 
 class UnitySimHandler():
 
@@ -53,14 +54,17 @@ class UnitySimHandler():
         self.server = None
 
         self.image_array = np.zeros((256,256,3))
-        self.last_obs = None
+        self.last_obs = self.image_array
         self.hit = False
-        self.rover_pos = None
-        self.target_pos = None
-        # self.rover_fwd = None
-        # self.target_fwd = None
+        self.rover_pos = np.zeros(3)
+        self.target_pos = np.zeros(3)
+        # self.rover_fwd = np.zeros(3)
+        # self.target_fwd = np.zeros(3)
 
-        # self.over = False
+        self.over = False
+
+        self.d = 0.0
+        # self.a = 0.0
 
         self.fns = {
             "on_telemetry": self.on_telemetry,
@@ -68,19 +72,23 @@ class UnitySimHandler():
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-    # def reset(self):
+    def reset(self):
 
-    #     logger.debug("resetting")
+        logger.debug("resetting")
+        print("RESET")
 
-    #     self.image_array = np.zeros((256,256,3))
-    #     self.last_obs = None
-    #     self.hit = False
-    #     self.rover_pos = None
-    #     self.target_pos = None
-    #     self.rover_fwd = None
-    #     self.target_fwd = None
+        self.send_reset()
+        time.sleep(1)
 
-    #     self.over = False
+        self.image_array = np.zeros((256,256,3))
+        self.last_obs = self.image_array
+        self.hit = False
+        self.rover_pos = np.zeros(3)
+        self.target_pos = np.zeros(3)
+        # self.rover_fwd = np.zeros(3)
+        # self.target_fwd = np.zeros(3)
+
+        self.over = False
     
     def observe(self):
 
@@ -89,25 +97,53 @@ class UnitySimHandler():
 
         self.last_obs = self.image_array
         observation = self.image_array                                             
-        # done = self.is_game_over()
-        # reward = self.calc_reward(done)
-                                              
-        # info = {"dummy": "can add variables here"}                            
+        done = self.is_game_over()
+        reward = self.calc_reward(done)                                   
+        info = {"dummy": "can add variables here"}                            
 
-        # return observation, reward, done, info
-        return observation
+        return observation, reward, done, info
 
-    # def calc_reward(self, done):
+    def calc_reward(self, done):
 
-    #     ####### can implement reward function once wrapper working #######
+        if done:
+            return 0
 
-    #     reward = 1
+        # heading vector from rover to target
+        heading = self.target_pos - self.rover_pos
 
-    #     return reward
+        # normalize
+        # norm_heading = heading/np.linalg.norm(heading)
 
-    # def determine_episode_over(self):
+        # if target is ahead of rover, heading[2] (i.e z-coord) should be positive and vice versa
+        # so that the optimal tracking position dictated by heading[2] - OPT_D is always *behind* the target
+        # regardless of travelling direction in world
+        # if np.dot(norm_heading, self.target_fwd) > 0:
+            # heading[2] = math.fabs(heading[2])
+        # else:
+            # heading[2] = -math.fabs(heading[2])
 
-    #     ####### implement episode termination criteria here ###########
+        # calculate distance i.e. magnitude of heading vector
+        # NOTE THAT THIS IS DISTANCE FROM ROVER TO OPTIMAL TRACKING POSITION, NOT ROVER TO TARGET
+        self.d = math.sqrt(math.pow(heading[0], 2) + math.pow((heading[2] - OPT_D), 2))
+
+        # calculate angle between rover's forward facing vector and heading vector
+        # self.a = math.degrees(math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
+
+        # scaling function taken from Luo et al. (2018), range [-1, 1], distance and angle equal contribution
+        reward = 1.0 - self.d / MAX_D
+        # reward = 1.0 - ((self.d / MAX_D) + (math.fabs(self.a) / 180))
+
+        return reward
+
+    def determine_episode_over(self):
+        #if self.d > MAX_D:
+            #logger.debug(f"game over: distance {self.d}")
+            #self.over = True
+            #print("Episode terminated as target out of range")
+        if self.hit:
+            logger.debug(f"game over: hit {self.hit}")
+            self.over = True
+            print("Episode terminated due to collision")
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -144,15 +180,20 @@ class UnitySimHandler():
             self.write_image_to_file_incrementally(b)
 
         self.hit = payload["is_colliding"]
-        self.rover_pos = payload["current_position"]
-        self.target_pos = payload["target_positions"]
+        self.rover_pos[0] = payload["current_position"]["x"]
+        self.rover_pos[1] = payload["current_position"]["y"]
+        self.rover_pos[2] = payload["current_position"]["z"]
+        # TODO: implement receiving data on multiple targets
+        self.target_pos[0] = payload["target_positions"][0] ["x"]
+        self.target_pos[1] = payload["target_positions"][0] ["y"]
+        self.target_pos[2] = payload["target_positions"][0] ["z"]
         # self.rover_fwd = payload["rover_fwd"]
         # self.target_fwd = payload["target_fwd"]   
 
-        # if self.over:
-            # return
+        if self.over:
+            return
 
-        # self.determine_episode_over()
+        self.determine_episode_over()
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -173,8 +214,12 @@ class UnitySimHandler():
         """
         Generate server config for client
         """
-
         self.server.msg = json.dumps(SERVER_CONF)
+
+    def send_reset(self):
+        msg = GLOBAL_MSG_TEMPLATE
+        GLOBAL_MSG_TEMPLATE["payload"]["reset_episode"] = True
+        self.server.msg = json.dumps(msg)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -190,8 +235,8 @@ class UnitySimHandler():
         with open(os.path.join(SAVE_IMAGES_TO, f"sample{i}.jpeg"), "wb") as f:
             f.write(image)
 
-    # def is_game_over(self):
-    #     return self.over
+    def is_game_over(self):
+        return self.over
 
 
 

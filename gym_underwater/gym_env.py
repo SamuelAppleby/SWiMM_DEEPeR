@@ -39,7 +39,7 @@ class UnderwaterEnv(gym.Env):
     #     # seed environment
     #     #self.seed()
 
-        # wait for sim comms to be established
+        # wait until connection established 
         self.communicator.wait_until_loaded()
 
     def close(self):
@@ -55,27 +55,25 @@ class UnderwaterEnv(gym.Env):
         self.communicator.take_action(action)                                                  
 
         # retrieve results of action implementation
-        # observation, reward, done, info = self.communicator.observe()  
-        observation = self.communicator.observe()                       
+        observation, reward, done, info = self.communicator.observe()                       
 
-        #return observation, reward, done, info
-        return observation                                             
+        return observation, reward, done, info                                            
 
-    # def reset(self):
+    def reset(self):
 
-    #     # reset simulation to start state
-    #     self.communicator.reset()
+        # reset simulation to start state
+        self.communicator.reset()
 
-    #     # fetch initial observation  
-    #     observation, _, _, _ = self.communicator.observe()
+        # fetch initial observation  
+        observation, _, _, _ = self.communicator.observe()
         
-    #     return observation
+        return observation
 
-    # def render(self):
-    #     return self.communicator.image_array
+    def render(self):
+        return self.communicator.image_array
 
-    # def is_game_over(self):
-    #     return self.communicator.is_game_over()
+    def is_game_over(self):
+        return self.communicator.is_game_over()
 
 
 

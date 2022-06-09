@@ -1,14 +1,13 @@
 using Cinemachine;
 using System;
-using System.Text;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using static SimulationManager;
+using static Server;
 
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
 {
-    public Transform[] targetTransforms;
+    public Transform[] target_transforms;
 
     private float originalDrag;
     private float originalAngularDrag;
@@ -25,30 +24,41 @@ public class ThirdPersonMovement : MonoBehaviour
     public LayerMask groundMask;
     public LayerMask waterMask;
     private bool m_IsGrounded = false;
-    private bool m_IsColliding = false;
-    public bool m_IsUnderwater = false;
+    private List<string> collision_objects = new List<string>();
+    [HideInInspector]
+    public bool m_IsUnderwater;
 
     public ThirdPersonControlSettings movement_controls = new ThirdPersonControlSettings();
 
     public Camera firstPersonCam;
     public Camera thirdPersonCam;
     public CinemachineFreeLook cinecamera;
-    [HideInInspector] public Camera activeCamera;
 
-    public int resWidth = 256;
-    public int resHeight = 256;
+    [HideInInspector] 
+    public Camera activeCamera;
+
+    public Tuple<int,int> resolution = new Tuple<int, int>(256, 256);
 
     private void Start()
     {
         m_RigidBody = GetComponent<Rigidbody>();
         originalDrag = m_RigidBody.drag;
         originalAngularDrag = m_RigidBody.angularDrag;
-        activeCamera = thirdPersonCam;
+        activeCamera = firstPersonCam;
+        SimulationManager._instance.rover = gameObject;
+
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
+        {
+            firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.camConfig.fov;
+            RenderSettings.fogStartDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogStart;
+            RenderSettings.fogEndDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogEnd;
+            RenderSettings.fog = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn;
+        }
     }
 
     void Update()
     {
-        movement_controls.Update(SimulationManager._instance.useServer);
+        movement_controls.Update(SimulationManager._instance.server != null &&  SimulationManager._instance.server.IsTcpGood());
 
         ref float fov = ref cinecamera.m_Lens.FieldOfView;
         fov -= movement_controls.mouseWheel * movement_controls.sensitivity;
@@ -56,7 +66,6 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (movement_controls.cameraChange)
         {
-
             if(activeCamera == firstPersonCam)
             {
                 SwitchActiveCamera(ref firstPersonCam, ref thirdPersonCam);
@@ -134,17 +143,10 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (SimulationManager._instance.useServer)
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood() && SimulationManager._instance.server.server_config.is_overridden && SimulationManager._instance.server.ready_to_send)
         {
-            if (!SimulationManager._instance.server.IsTcpGood())
-            {
-                return;
-            }
-            else if (SimulationManager._instance.server.GoodToSend())
-            {
-                SendImageData();
-                return;
-            }
+            SendImageData();
+            SimulationManager._instance.server.ready_to_send = false;
         }
     }
 
@@ -156,63 +158,68 @@ public class ThirdPersonMovement : MonoBehaviour
     }
 
     [Serializable]
-    struct ImageData
+    struct Telemetary_Data
     {
         public byte[] jpg_image;
-        public Vector3 current_position;
-        public Vector3[] target_positions;
-        public bool is_colliding;
+        public Vector3 position;
+        public string[] collision_objects;
+        public Vector3 fwd;
+        public TargetObject[] targets;
     }
 
-    public void ReceiveJsonControls(JsonControls controls)
+    [Serializable]
+    struct TargetObject
     {
-        movement_controls.ReceiveJsonControls(controls);
+        public Vector3 position;
+        public Vector3 fwd;
     }
 
-    private async void SendImageData()
+    private void SendImageData()
     {
-        RenderTexture rt = new RenderTexture(resWidth, resHeight, 24);
+        RenderTexture rt = new RenderTexture(resolution.Item1, resolution.Item2, 24);
         firstPersonCam.targetTexture = rt;
         firstPersonCam.Render();
         RenderTexture.active = rt;
-        Texture2D screenShot = new Texture2D(resWidth, resHeight, TextureFormat.RGB24, false);
-        screenShot.ReadPixels(new Rect(0, 0, resWidth, resHeight), 0, 0);
+        Texture2D screenShot = new Texture2D(resolution.Item1, resolution.Item2, TextureFormat.RGB24, false);
+        screenShot.ReadPixels(new Rect(0, 0, resolution.Item1, resolution.Item2), 0, 0);
         screenShot.Apply();
         firstPersonCam.targetTexture = null;
         RenderTexture.active = null;
         Destroy(rt);
 
-        Vector3[] targetPositions = new Vector3[targetTransforms.Length];
-        for (int i = 0; i < targetPositions.Length; ++i)
+        TargetObject[] targetPositions = new TargetObject[target_transforms.Length];
+        int pos = 0;
+
+        foreach(Transform trans in target_transforms)
         {
-            targetPositions[i] = targetTransforms[i].position;
+            targetPositions[pos] = new TargetObject
+            {
+                position = trans.position,
+                fwd = trans.forward
+            };
+            pos++;
         }
 
-        DataToSend<ImageData> data = new DataToSend<ImageData>
+        DataToSend<Telemetary_Data> data = new DataToSend<Telemetary_Data>
         {
             msg_type = "on_telemetry",
-            payload = new ImageData
+            payload = new Telemetary_Data
             {
                 jpg_image = screenShot.EncodeToJPG(),
-                current_position = transform.position,
-                target_positions = targetPositions,
-                is_colliding = m_IsColliding
+                position = transform.position,
+                collision_objects = collision_objects.ToArray(),
+                fwd = transform.forward,
+                targets = targetPositions,
             }
         };
 
         string result = JsonUtility.ToJson(data);
-
-        /* N.B We want to only send 1 request/response at a time, but dont want to block */
-        await SimulationManager._instance.server.SendDataAsync(Encoding.UTF8.GetBytes(result));
-    }
-
-    void OnDrawGizmos()
-    {
+        SimulationManager._instance.server.SendImageData(result);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        m_IsColliding = true;
+        collision_objects.Add(LayerMask.LayerToName(collision.gameObject.layer));
     }
 
     private void OnCollisionStay(Collision collision)
@@ -222,8 +229,8 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
+        collision_objects.Remove(collision.gameObject.tag);
         m_IsGrounded = false;
-        m_IsColliding = false;
     }
 
     private void OnTriggerEnter(Collider other)

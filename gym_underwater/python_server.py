@@ -25,6 +25,7 @@ class PythonServer():
         self.do_process_msgs = False
         self.msg = None
         self.th = None
+        self.conn = None
 
         # establishing connection
         self.connect(*address)
@@ -42,7 +43,7 @@ class PythonServer():
 
         try:
             # wait for connection request
-            conn, self.addr = self.sock.accept()
+            self.conn, self.addr = self.sock.accept()
             current_time = datetime.now().ctime()
             print(f"[+] Connecting by {self.addr[0]}:{self.addr[1]} ({current_time})")
         except ConnectionRefusedError as refuse_error:
@@ -51,11 +52,12 @@ class PythonServer():
         # let handler know when connection has been made
         self.handler.on_connect(self)
         self.handler.generate_server_config()
-        conn.sendall(self.msg.encode('utf-8'))
+        print(self.msg.encode('utf-8'))
+        self.conn.sendall(self.msg.encode('utf-8'))
 
         # the remaining network related code, receiving data and sending data, is ran in a thread
         self.do_process_msgs = True
-        self.th = Thread(target=self.proc_msg, args=(conn,), daemon=True)
+        self.th = Thread(target=self.proc_msg, args=(self.conn,), daemon=True)
         self.th.start()
 
     def stop(self):
@@ -63,6 +65,11 @@ class PythonServer():
         Signal proc_msg loop to stop, wait for thread to finish, close socket, and tell handler
         """
         self.do_process_msgs = False
+        new_msg = GLOBAL_MSG_TEMPLATE
+        new_msg["payload"]["end_simulation"] = True
+        new_msg["payload"]["reset_episode"] = False
+        self.msg = json.dumps(new_msg)
+
         if self.th is not None:
             self.th.join()
         if self.sock is not None:
@@ -82,17 +89,22 @@ class PythonServer():
             if not part:
                 print("[-] Not Binary Image")
                 self.stop()
-                break   
-            print("[+] Received", len(part))
+                break  
+            #print("[+] Received", len(part))
 
             # unpack and send json message onto handler
             my_json = part.decode('UTF-8')
+            #print("I HAVE RECEIVED: " + my_json)
             json_dict = json.loads(my_json)
             self.handler.on_recv_message(json_dict)
 
             # wait for handler to point something to self.msg variable dedicated to outgoing messages
-            while self.msg is None:
+            # Sam A. Talk to Kirsten about this, potentially dangerous
+            while self.msg is None and self.do_process_msgs:
                 time.sleep(1.0 / 120.0)
+                
             # send 'reply' to client
+            #print(self.msg.encode('utf-8'))
             conn.sendall(self.msg.encode('utf-8'))
-            print(f"[+] Sent action to {self.addr[0]}:{self.addr[1]}")
+            self.msg = None
+            #print(f"[+] Sent action to {self.addr[0]}:{self.addr[1]}")

@@ -70,8 +70,7 @@ class UnderwaterEnv(gym.Env):
         return observation
 
     def render(self):
-        return self.communicator.image_array
-
+        return self.communicator.handler.image_array
     def is_game_over(self):
         return self.communicator.is_game_over()
 

@@ -55,11 +55,11 @@ class UnitySimHandler():
 
         self.image_array = np.zeros((256,256,3))
         self.last_obs = self.image_array
-        self.hit = False
+        self.hit = []
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
-        # self.rover_fwd = np.zeros(3)
-        # self.target_fwd = np.zeros(3)
+        self.rover_fwd = np.zeros(3)
+        self.target_fwd = np.zeros(3)
 
         self.over = False
 
@@ -75,18 +75,18 @@ class UnitySimHandler():
     def reset(self):
 
         logger.debug("resetting")
-        print("RESET")
 
         self.send_reset()
-        time.sleep(1)
+        # Sam.A Talk to Kirsten about this
+        #time.sleep(1)
 
         self.image_array = np.zeros((256,256,3))
         self.last_obs = self.image_array
-        self.hit = False
+        self.hit = []
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
-        # self.rover_fwd = np.zeros(3)
-        # self.target_fwd = np.zeros(3)
+        self.rover_fwd = np.zeros(3)
+        self.target_fwd = np.zeros(3)
 
         self.over = False
     
@@ -140,9 +140,9 @@ class UnitySimHandler():
             #logger.debug(f"game over: distance {self.d}")
             #self.over = True
             #print("Episode terminated as target out of range")
-        if self.hit:
+        if "Fish" in self.hit:
             logger.debug(f"game over: hit {self.hit}")
-            self.over = True
+            #self.over = True
             print("Episode terminated due to collision")
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -179,16 +179,15 @@ class UnitySimHandler():
             b = bytearray(image)
             self.write_image_to_file_incrementally(b)
 
-        self.hit = payload["is_colliding"]
-        self.rover_pos[0] = payload["current_position"]["x"]
-        self.rover_pos[1] = payload["current_position"]["y"]
-        self.rover_pos[2] = payload["current_position"]["z"]
+        self.rover_pos = np.array([payload["position"]["x"], payload["position"]["y"], payload["position"]["z"]])
+        self.hit = payload["collision_objects"]
+        self.rover_fwd = np.array([payload["fwd"]["x"], payload["fwd"]["y"], payload["fwd"]["z"]])
+
         # TODO: implement receiving data on multiple targets
-        self.target_pos[0] = payload["target_positions"][0] ["x"]
-        self.target_pos[1] = payload["target_positions"][0] ["y"]
-        self.target_pos[2] = payload["target_positions"][0] ["z"]
-        # self.rover_fwd = payload["rover_fwd"]
-        # self.target_fwd = payload["target_fwd"]   
+        # Sam.A, targets are now an array, use the last element of it for targeting
+        for target in payload["targets"]:
+            self.target_pos = np.array([target["position"]["x"], target["position"]["y"], target["position"]["z"]])
+            self.target_fwd = np.array([target["fwd"]["x"], target["fwd"]["y"], target["fwd"]["z"]])
 
         if self.over:
             return
@@ -218,7 +217,7 @@ class UnitySimHandler():
 
     def send_reset(self):
         msg = GLOBAL_MSG_TEMPLATE
-        GLOBAL_MSG_TEMPLATE["payload"]["reset_episode"] = True
+        msg["payload"]["reset_episode"] = True
         self.server.msg = json.dumps(msg)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#

@@ -1,11 +1,18 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static Server;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
+    public bool manual_server = false;
+    public string ip_addr;
+    public int port;
+
+    [HideInInspector]
     public Server server;
 
+    [HideInInspector]
     public GameObject rover;
 
     private int avgFrameRate;
@@ -13,34 +20,21 @@ public class SimulationManager : Singleton<SimulationManager>
     private FullScreenMode[] screenmodes;
     private int screenIndex = 0;
 
-    public GlobalControlSettings globalControls = new GlobalControlSettings();
+    static public GlobalControlSettings globalControls = new GlobalControlSettings();
 
-    [Serializable]
-    struct JsonMessage<T>
+    public struct ServerInfo
     {
-        public T payload;
+        public string ip;
+        public int port;
+        public bool server_set;
     }
 
-    [Serializable]
-    public struct ConfigOptions
+    public struct CommandLineArguemnts
     {
-        public CameraConfig camConfig;
-        public EnvironmentConfig envConfig;
+        public ServerInfo server_info;
     }
 
-    [Serializable]
-    public struct CameraConfig
-    {
-        public int fov;
-    }
-
-    [Serializable]
-    public struct EnvironmentConfig
-    {
-        public float fogStart;
-    }
-
-    public bool useServer = false;
+    private CommandLineArguemnts command_args;
 
     async void Start()
     {
@@ -52,41 +46,40 @@ public class SimulationManager : Singleton<SimulationManager>
 
         ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
 
-        if (_instance.useServer)
+        if (manual_server)
         {
-            await _instance.server.Connect();
+            command_args.server_info.port = port;
+            command_args.server_info.ip = ip_addr;
+            command_args.server_info.server_set = true;
+        }
 
-            if (_instance.server.IsTcpGood())
-            {
-                AwaitAnyServerData();
-            }
+        if (command_args.server_info.server_set)
+        {
+            _instance.server = new Server(command_args.server_info);
+            await server.Connect();
+            server.ContinueRead();
         }
     }
 
     void Update()
     {
-        _instance.globalControls.Update(_instance.useServer);
+        globalControls.Update(server != null && server.IsTcpGood());
 
-        if (_instance.globalControls.quitting)
+        if (globalControls.quitting)
         {
             TerminateApplication();
         }
 
-        if (_instance.globalControls.reload_scene)
+        if (globalControls.reload_scene)
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            _instance.globalControls.reload_scene = false;
+            globalControls.reload_scene = false;
         }
 
-        if (_instance.globalControls.changeWindow)
+        if (globalControls.changeWindow)
         {
             _instance.screenIndex = _instance.screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
             Screen.fullScreenMode = _instance.screenmodes[screenIndex];
-        }
-
-        if (_instance.useServer)
-        {
-            _instance.server.Update(Time.deltaTime);
         }
 
         _instance.UpdateFPS();
@@ -101,83 +94,6 @@ public class SimulationManager : Singleton<SimulationManager>
 #endif
     }
 
-    public void ProcessServerConfig(ConfigOptions config)
-    {
-        _instance.rover.GetComponent<ThirdPersonMovement>().firstPersonCam.fieldOfView = config.camConfig.fov;
-        Fog.SetFogStart(config.envConfig.fogStart);
-    }
-
-    [Serializable]
-    struct MessageType
-    {
-        public string msgType;
-    }
-
-    [Serializable]
-    public struct JsonControls
-    {
-        public float forwardThrust;
-        public float verticalThrust;
-        public float yRotation;
-    }
-
-    [Serializable]
-    public struct GlobalCommand
-    {
-        public bool reset_episode;
-    }
-
-    public void ReceiveGlobalCommand(GlobalCommand command)
-    {
-        _instance.globalControls.OverrideGlobalControls(command);
-    }
-
-    private async void AwaitAnyServerData()
-    {
-        string jsonStr = await _instance.server.AwaitAnyData();
-
-        try
-        {
-            if (jsonStr != null)
-            {
-                MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
-                Debug.Log(message);
-                try
-                {
-                    switch (message.msgType)
-                    {
-                        case "process_server_config":
-                            JsonMessage<ConfigOptions> config = JsonUtility.FromJson<JsonMessage<ConfigOptions>>(jsonStr);
-                            _instance.ProcessServerConfig(config.payload);
-                            break;
-                        case "receive_json_controls":
-                            JsonMessage<JsonControls> controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
-                            _instance.rover.GetComponent<ThirdPersonMovement>().ReceiveJsonControls(controls.payload);
-                            break;
-                        case "global_message":
-                            JsonMessage<GlobalCommand> reset = JsonUtility.FromJson<JsonMessage<GlobalCommand>>(jsonStr);
-                            _instance.ReceiveGlobalCommand(reset.payload);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-        }
-
-        AwaitAnyServerData();
-    }
-
-
     private void ParseCommandLineArguments(string[] args)
     {
         for (int i = 0; i < args.Length; i++)
@@ -191,8 +107,9 @@ public class SimulationManager : Singleton<SimulationManager>
 
                         if (parts.Length == 2)
                         {
-                            _instance.server = new Server(parts[0], Int32.Parse(parts[1]), 1);
-                            _instance.useServer = true;
+                            command_args.server_info.ip = parts[0];
+                            command_args.server_info.port = Int32.Parse(parts[1]);
+                            command_args.server_info.server_set = true;
                         }
                     }
                     break;

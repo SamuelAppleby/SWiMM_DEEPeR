@@ -17,10 +17,14 @@ SERVER_CONF = {
     "msgType": "process_server_config",
     "payload": {
         "camConfig": {
-            "fov": 50
+            "fov": 100
         },
         "envConfig": {
-            "fogStart": 5
+            "fogConfig" : {
+                "fogStart": 5,
+                "fogEnd" : 300,
+                "fogOn" : True
+            }
         }
     }
 }

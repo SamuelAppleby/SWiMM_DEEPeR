@@ -1,56 +1,101 @@
 using System;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using static SimulationManager;
 
-public class Server
+public class Server 
 {
-    public static int dataBufferSize = 4096;
+    public bool first_observation_sent = false;
+    public bool ready_to_send = false;
+
+    AsyncCallback read_callback = null;
+    AsyncCallback write_callback = null;
+
+    Byte[] bytes = new Byte[256];
     public string ip = "127.0.0.1";
     public int port = 60260;
 
     public NetworkStream stream = null;
-    private byte[] receiveBuffer;
 
-    public bool useTCP = true;
-    public TcpClient socket;
+    public TcpClient client;
 
-    public int desiredServerTickRate = 1;
-    private int currentServerTickRate;
-    private float desiredServerTimeStep;
-    private float timeBetweenPackets = 0f;
-
-    private bool awaitingData = false;
-
-    // Start is called before the first frame update
-
-    public Server(string ipadd, int p, int tickRate)
+    [Serializable]
+    public struct JsonMessage<T>
     {
-        ip = ipadd;
-        port = p;
-        desiredServerTimeStep = (float)1 / tickRate;
+        public T payload;
+        public bool is_overridden;
+
+        public void Reset()
+        {
+            is_overridden = false;
+        }
+    }
+
+    [Serializable]
+    public struct ConfigOptions
+    {
+        public CameraConfig camConfig;
+        public EnvironmentConfig envConfig;
+    }
+
+    [Serializable]
+    public struct CameraConfig
+    {
+        public int fov;
+    }
+
+    [Serializable]
+    public struct EnvironmentConfig
+    {
+        public FogConfig fogConfig;
+    }
+
+    [Serializable]
+    public struct FogConfig
+    {
+        public float fogStart;
+        public float fogEnd;
+        public bool fogOn;
+    }
+
+    public JsonMessage<ConfigOptions> server_config;
+
+    public JsonMessage<JsonControls> rover_controls;
+
+    public JsonMessage<GlobalCommand> global_command;
+
+    public Server(ServerInfo info)
+    {
+        ip = info.ip;
+        port = info.port;
+    }
+
+    private void OnImageWrite(IAsyncResult result)
+    {
     }
 
     public bool IsTcpGood()
     {
-        return (socket != null) && (stream != null);
+        return (client != null) && (stream != null);
     }
 
     public async Task Connect()
     {
-        socket = new TcpClient
-        {
-            ReceiveBufferSize = dataBufferSize,
-            SendBufferSize = dataBufferSize
-        };
+        read_callback = ProcessData;
+        write_callback = OnImageWrite;
 
-        receiveBuffer = new byte[dataBufferSize];
+        client = new TcpClient
+        {
+            ReceiveBufferSize = bytes.Length,
+            SendBufferSize = bytes.Length
+        };
 
         try
         {
-            await socket.ConnectAsync(ip, port);
-            stream = socket.GetStream();
+            await client.ConnectAsync(ip, port);
+            stream = client.GetStream();
         }
         catch (Exception ex)
         {
@@ -58,85 +103,149 @@ public class Server
         }
     }
 
-    public async Task<string> AwaitAnyData()
+    public void ContinueRead()
     {
-        int _byteLength = await stream.ReadAsync(receiveBuffer, 0, dataBufferSize);
+        try
+        {
+            if (IsTcpGood())
+            {
+                stream.BeginRead(bytes, 0, bytes.Length, read_callback, null);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
 
-        awaitingData = false;
+    }
+
+    public void SendDataAsync(byte[] _packet, AsyncCallback callback)
+    {
+        try
+        {
+            if ((client != null) && (stream != null))
+            {
+                stream.BeginWrite(_packet, 0, _packet.Length, callback, null);
+            }
+        }
+        catch (Exception _ex)
+        {
+            Debug.Log($"Error sending data to server via TCP: {_ex}");
+        }
+    }
+
+    [Serializable]
+    struct MessageType
+    {
+        public string msgType;
+    }
+
+    [Serializable]
+    public struct JsonControls
+    {
+        public float forwardThrust;
+        public float verticalThrust;
+        public float yRotation;
+    }
+
+    [Serializable]
+    public struct GlobalCommand
+    {
+        public bool reset_episode;
+        public bool end_simulation;
+    }
+
+    private void ProcessData(IAsyncResult result)
+    {
+        int _byteLength = stream.EndRead(result);
 
         try
         {
             if (_byteLength <= 0)
             {
-                if (socket.Connected)
+                if (client.Connected)
                 {
-                    socket.Close();
-                    // TODO: disconnect
+                    client.Close();
+                    return;
                 }
-                return "";
             }
 
             byte[] _data = new byte[_byteLength];
-            Array.Copy(receiveBuffer, _data, _byteLength);
-            return System.Text.Encoding.Default.GetString(_data);
-        }
-        catch
-        {
-            if (socket.Connected)
+            Array.Copy(bytes, _data, _byteLength);
+
+            string jsonStr = System.Text.Encoding.Default.GetString(_data);
+
+            if (jsonStr != null)
             {
-                socket.Close();
-                // TODO: disconnect
+                Debug.Log("Received: " + jsonStr);
+
+                MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
+                try
+                {
+                    switch (message.msgType)
+                    {
+                        case "process_server_config":
+                            server_config = JsonUtility.FromJson<JsonMessage<ConfigOptions>>(jsonStr);
+                            server_config.is_overridden = true;
+                            break;
+                        case "receive_json_controls":
+                            rover_controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
+                            rover_controls.is_overridden = true;
+                            break;
+                        case "global_message":
+                            global_command = JsonUtility.FromJson<JsonMessage<GlobalCommand>>(jsonStr);
+                            global_command.is_overridden = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+
+
+                if (global_command.is_overridden && global_command.payload.end_simulation)
+                {
+                    client.Close();
+                    return;
+                }
+                else
+                {
+                    ready_to_send = true;
+                }
+
+                //byte[] msg = System.Text.Encoding.ASCII.GetBytes(data);
+
+                //// Send back a response.
+                //stream.Write(msg, 0, msg.Length);
+                //Console.WriteLine("Sent: {0}", data);
+            }   
+        }
+        catch (Exception e)
+        {
+            if(e != null)
+            {
+                Debug.LogError(e);
             }
-            return "";
-        }
-    }
 
-    public void Update(float dt)
-    {
-        if(stream != null)
-        {
-            timeBetweenPackets += dt;
-
-            if (awaitingData)
+            if (client.Connected)
             {
-                if (timeBetweenPackets >= desiredServerTimeStep && currentServerTickRate > 1)
-                {
-                    desiredServerTickRate--;
-                }
-
-                else if (timeBetweenPackets < desiredServerTimeStep && currentServerTickRate < desiredServerTickRate)
-                {
-                    desiredServerTickRate++;
-                }
-
+                client.Close();
                 return;
             }
-        }
-    }
 
-    public bool GoodToSend()
-    {
-        return !awaitingData && (timeBetweenPackets >= desiredServerTimeStep);
-    }
-
-    public async Task SendDataAsync(byte[] _packet)
-    {
-        awaitingData = true;
-        currentServerTickRate = (int)Mathf.Round(1f / timeBetweenPackets);
-        timeBetweenPackets = 0f;
-
-        try
-        {
-            if ((socket != null) && (stream != null))
-            {
-                await stream.WriteAsync(_packet, 0, _packet.Length);          
-            }
-        }
-        catch (Exception _ex)
-        {
-            awaitingData = false;
-            Debug.Log($"Error sending data to server via TCP: {_ex}");
             return;
         }
+
+        stream.BeginRead(bytes, 0, bytes.Length, read_callback, null);
+    }
+
+    public void SendImageData(string data)
+    {
+        Debug.Log("Sending: " + data);
+        SendDataAsync(Encoding.UTF8.GetBytes(data), write_callback);
     }
 }

@@ -8,6 +8,6 @@
 python3 ../../test_env.py "$@" &
 
 # haven't tested this line yet, need the right build format
-../../RLSimulation/Builds/Linux/ReinforcementLearningSimulation.x86_64 server 127.0.0.1:60260
+sudo ../../RLSimulation/Builds/Linux/ReinforcementLearningSimulation.x86_64 server 127.0.0.1:60260
 
 read

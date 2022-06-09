@@ -60,3 +60,11 @@ The following packages were updated:
   com.unity.timeline from version 1.4.8 to 1.6.4
 The following packages were removed:
   com.unity.quicksearch@2.0.2
+
+=== Tue Jun  7 11:49:10 2022
+
+Packages were changed.
+Update Mode: updateDependencies
+
+The following packages were updated:
+  com.unity.collab-proxy from version 1.15.16 to 1.15.17

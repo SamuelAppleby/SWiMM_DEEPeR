@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using static Server;
 using static SimulationManager;
 
 static class GlobalControlMap
@@ -16,19 +17,20 @@ public class GlobalControlSettings
     [HideInInspector] public bool changeWindow = false;
     [HideInInspector] public bool reload_scene = false;
 
-    public void OverrideGlobalControls(GlobalCommand command)
+    public void Update(bool use_server)
     {
-        reload_scene = command.reset_episode;
-    }
+        quitting = Input.GetKeyDown(GlobalControlMap.QuitKey);
+        changeWindow = Input.GetKeyDown(GlobalControlMap.ChangeWindowKey);
 
-    public void Update(bool useServer)
-    {
-        if (!useServer)
+        if (!use_server)
         {
             reload_scene = Input.GetKey(GlobalControlMap.ReloadKey);
         }
-
-        quitting = Input.GetKeyDown(GlobalControlMap.QuitKey);
-        changeWindow = Input.GetKeyDown(GlobalControlMap.ChangeWindowKey);
+        else if (SimulationManager._instance.server.global_command.is_overridden)
+        {
+            reload_scene = SimulationManager._instance.server.global_command.payload.reset_episode;
+            quitting = SimulationManager._instance.server.global_command.payload.end_simulation;
+            SimulationManager._instance.server.global_command.Reset();
+        }
     }
 }

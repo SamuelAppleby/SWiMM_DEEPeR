@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using static Server;
 
 static class MovementControlMap
 {
@@ -27,22 +28,24 @@ public class ThirdPersonControlSettings
     [HideInInspector] public float mouseWheel = 0.0f;
     [HideInInspector] public bool cameraChange = false;
 
-    public void ReceiveJsonControls(SimulationManager.JsonControls controls)
-    {
-        movementInputs.y = controls.verticalThrust;
-        movementInputs.z = controls.forwardThrust;
-        rotationInputs.y = controls.yRotation;
-    }
-
-    public void Update(bool useServer)
+    public void Update(bool use_server)
     {
         /* Get manual input when not using tcp */
-        if (!useServer)
+        if (!use_server)
         {
             movementInputs.y = Input.GetKey(MovementControlMap.RiseKey) ? 1 : Input.GetKey(MovementControlMap.FallKey) ? -1 : 0;
             movementInputs.z = Input.GetAxisRaw(MovementControlMap.ForwardKey);
             rotationInputs.y = Input.GetAxisRaw(MovementControlMap.SidewaysKey);
             hovering = Input.GetKeyDown(MovementControlMap.HoverKey);
+        }
+        else if (SimulationManager._instance.server.rover_controls.is_overridden)
+        {
+            movementInputs.y = SimulationManager._instance.server.rover_controls.payload.verticalThrust;
+            movementInputs.z = SimulationManager._instance.server.rover_controls.payload.forwardThrust;
+            rotationInputs.y = SimulationManager._instance.server.rover_controls.payload.yRotation;
+
+            // Sam.A Talk to Kirsten, do we want previous controls for good?
+            //SimulationManager._instance.server.rover_controls.Reset();
         }
 
         mouseWheel = Input.GetAxis("Mouse ScrollWheel");

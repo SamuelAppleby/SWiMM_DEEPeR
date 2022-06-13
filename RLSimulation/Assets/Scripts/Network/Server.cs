@@ -11,7 +11,7 @@ public class Server
 
     private string network_config_dir;
 
-    private string file_write_dir = "C:/Users/sambu/Documents/CodeBases/RLSimulation/network/logs/sent_packets/";
+    private string file_write_dir;
 
     public int sequence_num = 1;
 
@@ -131,8 +131,10 @@ public class Server
     {
 #if UNITY_EDITOR
         network_config_dir = "../network/data/network_config.json";
+        file_write_dir = "../network/logs/sent_packets/";
 #else
         network_config_dir = "../../../network/data/network_config.json";
+        file_write_dir = "../../../network/logs/sent_packets/";
 #endif
 
         ProcessNetworkConfig();

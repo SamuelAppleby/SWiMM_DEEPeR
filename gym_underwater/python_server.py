@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 from threading import Thread
 import os
+import shutil
 from config import *
 
 class PythonServer():
@@ -25,40 +26,43 @@ class PythonServer():
         self.msg = None
         self.th = None
         self.conn = None
+        self.debug_config = None
         self.network_config = None
-        self.network_config_schema = None
         self.server_config = None
-        self.server_config_schema = None
         self.receive_buffer_size = None
 
-        # process the network config
-        self.process_network_config()
-        self.address = (self.network_config["host"], self.network_config["port"])
+        # process the debug config
+        self.debug_config = self.process_and_validate_config('Configs/data/server_debug_config.json', 'Configs/schemas/server_debug_config_schema.json')
 
-        self.process_server_config()
+        # process the network config
+        self.network_config = self.process_and_validate_config('Configs/data/network_config.json', 'Configs/schemas/network_config_schema.json')
+        self.address = (self.network_config["host"], self.network_config["port"])
+        self.receive_buffer_size = self.network_config["buffers"]["server_receive_buffer_size_kb"]
+
+        # process the server config
+        self.server_config = self.process_and_validate_config('Configs/data/server_config.json', 'Configs/schemas/server_config_schema.json')
+        
+        # clean cache (old images, logs etc)
+        self.clean_cache()
+
         # establishing connection
         self.connect(*self.address)
 
-    def process_server_config(self):
-        f = open('network/data/server_config.json', "r")
-        self.server_config = json.load(f)
+    def clean_cache(self):
+        dirpath = self.debug_config["image_dir"]
+        if os.path.isdir(dirpath):
+            shutil.rmtree(dirpath)
 
-        f = open('network/schemas/server_config_schema.json', "r")
-        self.server_config_schema = json.load(f)
+    def process_and_validate_config(self, conf_dir, schema_dir):
+        f = open(conf_dir, "r")
+        conf_json = json.load(f)
 
-        validate(instance=self.server_config, schema=self.server_config_schema)
+        f = open(schema_dir, "r")
+        schema_json = json.load(f)
 
-    # We are going to be more rigorous with our network config, via schemas and validation
-    def process_network_config(self):
-        print(os.getcwd())
-        f = open('network/data/network_config.json', "r")
-        self.network_config = json.load(f)
+        validate(instance=conf_json, schema=schema_json)
 
-        f = open('network/schemas/network_config_schema.json', "r")
-        self.network_config_schema = json.load(f)
-
-        validate(instance=self.network_config, schema=self.network_config_schema)
-        self.receive_buffer_size = self.network_config["buffers"]["server_receive_buffer_size_kb"]
+        return conf_json
 
     def connect(self, host='127.0.0.1', port=60260):
         """

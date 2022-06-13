@@ -1,0 +1,23 @@
+{
+    "type": "object",
+    "properties": {
+        "save_images": {
+            "type": "boolean"
+        },
+        "image_dir": {
+            "type": "string"
+        },
+        "save_sent_packets": {
+            "type": "boolean"
+        },
+        "packet_sent_dir": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "save_images",
+        "image_dir",
+        "save_sent_packets",
+        "packet_sent_dir"
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "properties": {
+        "save_images": {
+            "type": "boolean"
+        },
+        "image_dir": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "save_images",
+        "image_dir"
+    ]
+}

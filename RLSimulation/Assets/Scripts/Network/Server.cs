@@ -4,14 +4,12 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static ThirdPersonMovement;
 
 public class Server 
 {
-    private bool save_packet_data;
-
     private string network_config_dir;
-
-    private string file_write_dir;
+    private string debug_config_dir;
 
     public int sequence_num = 1;
 
@@ -22,35 +20,28 @@ public class Server
     AsyncCallback write_callback = null;
 
     Byte[] receive_buffer;
-    public string ip = "127.0.0.1";
-    public int port = 60260;
 
     public NetworkStream stream = null;
 
     public TcpClient client;
 
-    private Network_Config network_config;
-
     [Serializable]
-    public struct Buffers
+    public struct ServerConfig
     {
-        public int server_send_buffer_size_kb;
-        public int client_receive_buffer_size_kb;
-        public int server_receive_buffer_size_kb;
-        public int client_send_buffer_size_kb;
+        public RoverConfig roverConfig;
+        public EnvironmentConfig envConfig;
     }
 
     [Serializable]
-    public struct Network_Config
+    struct MessageType
     {
-        public string host;
-        public int port;
-        public Buffers buffers;
+        public string msgType;
     }
 
     [Serializable]
     public struct JsonMessage<T>
     {
+        public string msgType;
         public T payload;
         public bool is_overridden;
 
@@ -58,13 +49,6 @@ public class Server
         {
             is_overridden = false;
         }
-    }
-
-    [Serializable]
-    public struct ServerConfig
-    {
-        public RoverConfig roverConfig;
-        public EnvironmentConfig envConfig;
     }
 
     [Serializable]
@@ -93,6 +77,38 @@ public class Server
         public bool fogOn;
     }
 
+    [Serializable]
+    public struct DebugConfig
+    {
+        public bool save_images;
+        public string image_dir;
+        public bool save_sent_packets;
+        public string packet_sent_dir;
+    }
+
+    [Serializable]
+    public struct Buffers
+    {
+        public int server_send_buffer_size_kb;
+        public int client_receive_buffer_size_kb;
+        public int server_receive_buffer_size_kb;
+        public int client_send_buffer_size_kb;
+    }
+
+    [Serializable]
+    public struct NetworkConfig
+    {
+        public string host;
+        public int port;
+        public Buffers buffers;
+    }
+
+    /* Local configs for reading */
+    private JsonMessage<DebugConfig> debug_config;
+
+    private JsonMessage<NetworkConfig> network_config;
+
+    /* Configs/Messages from server */
     public JsonMessage<ServerConfig> server_config;
 
     public JsonMessage<JsonControls> rover_controls;
@@ -115,57 +131,86 @@ public class Server
         return (client != null) && (stream != null);
     }
 
-    public void ProcessNetworkConfig()
+    public void ProcessConfig<T>(ref JsonMessage<T> config, string dir)
     {
-        using (StreamReader r = new StreamReader(network_config_dir))
+        using (StreamReader r = new StreamReader(dir))
         {
             string json = r.ReadToEnd();
-            network_config = JsonUtility.FromJson<Network_Config>(json);
+            config.payload = JsonUtility.FromJson<T>(json);
+            config.is_overridden = true;
         }
+    }
 
-        ip = network_config.host;
-        port = network_config.port;
+    public void Clear_Cache()
+    {
+        if (debug_config.is_overridden)
+        {
+            DirectoryInfo di = new DirectoryInfo(debug_config.payload.packet_sent_dir);
+
+            if (di.Exists)
+            {
+                FileInfo[] files = di.GetFiles();
+                foreach (FileInfo file in files)
+                {
+                    file.Delete();
+                }
+            }
+            else
+            {
+                System.IO.Directory.CreateDirectory(di.FullName);
+            }
+
+            di = new DirectoryInfo(debug_config.payload.image_dir);
+
+            if (di.Exists)
+            {
+                FileInfo[] files = di.GetFiles();
+                foreach (FileInfo file in files)
+                {
+                    file.Delete();
+                }
+            }
+            else
+            {
+                System.IO.Directory.CreateDirectory(di.FullName);
+            }
+        }
     }
 
     public async Task Connect()
     {
 #if UNITY_EDITOR
-        network_config_dir = "../network/data/network_config.json";
-        file_write_dir = "../network/logs/sent_packets/";
+        debug_config_dir = "../Configs/data/client_debug_config.json";
+        network_config_dir = "../Configs/data/network_config.json";
 #else
-        network_config_dir = "../../../network/data/network_config.json";
-        file_write_dir = "../../../network/logs/sent_packets/";
+        debug_config_dir = "../../../Configs/data/client_debug_config.json";
+        network_config_dir = "../../../Configs/data/network_config.json";
 #endif
 
-        ProcessNetworkConfig();
+        ProcessConfig<DebugConfig>(ref debug_config, debug_config_dir);
+        ProcessConfig<NetworkConfig>(ref network_config, network_config_dir);
 
-        if (/*save_packet_data*/true)
+        Clear_Cache();
+
+        if (network_config.is_overridden)
         {
-            DirectoryInfo di = new DirectoryInfo(file_write_dir);
-
-            FileInfo[] files = di.GetFiles();
-            foreach (FileInfo file in files)
+            client = new TcpClient
             {
-                file.Delete();
+                ReceiveBufferSize = network_config.payload.buffers.client_receive_buffer_size_kb * 1024,
+                SendBufferSize = network_config.payload.buffers.client_send_buffer_size_kb * 1024
+            };
+
+            receive_buffer = new Byte[client.ReceiveBufferSize];
+
+            try
+            {
+                await client.ConnectAsync(network_config.payload.host, network_config.payload.port);
+                stream = client.GetStream();
             }
-        }
-
-        client = new TcpClient
-        {
-            ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
-            SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024
-        };
-
-        receive_buffer = new Byte[client.ReceiveBufferSize];
-
-        try
-        {
-            await client.ConnectAsync(ip, port);
-            stream = client.GetStream();
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
     }
 
@@ -192,25 +237,24 @@ public class Server
             string json_str = JsonUtility.ToJson(data);
             Debug.Log("Sending: " + json_str);
 
-            if (/*save_packet_data*/true)
+            if (debug_config.is_overridden && debug_config.payload.save_sent_packets)
             {
-                await File.WriteAllTextAsync(file_write_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
+                await File.WriteAllTextAsync(debug_config.payload.packet_sent_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
+                DataToSend<Telemetary_Data>? obj = data as DataToSend<Telemetary_Data>?;
+
+                if (obj != null && debug_config.is_overridden & debug_config.payload.save_images)
+                {
+                    File.WriteAllBytes(debug_config.payload.image_dir + "sent_image" + sequence_num.ToString() + ".jpg", obj.Value.payload.jpg_image);
+                }
             }
 
             byte[] _packet = Encoding.UTF8.GetBytes(json_str);
-            Debug.Log("Packet length: " + _packet.Length);
             stream.BeginWrite(_packet, 0, _packet.Length, write_callback, null);
         }
         catch(Exception e)
         {
             Debug.Log($"Error sending data to server via TCP: {e}");
         }
-    }
-
-    [Serializable]
-    struct MessageType
-    {
-        public string msgType;
     }
 
     [Serializable]
@@ -253,6 +297,7 @@ public class Server
                 Debug.Log("Received: " + jsonStr);
 
                 MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
+
                 try
                 {
                     switch (message.msgType)

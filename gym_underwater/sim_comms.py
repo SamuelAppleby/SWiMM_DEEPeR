@@ -15,11 +15,10 @@ class UnitySimCommunicator:
 
         logger.setLevel(logging.INFO)
 
-        self.address = (HOST, PORT)
-
         self.handler = UnitySimHandler()
 
-        self.server = PythonServer(self.address, self.handler)
+        self.server = PythonServer(self.handler)
+
 
     def wait_until_loaded(self):
         while self.handler.server is None:
@@ -213,7 +212,7 @@ class UnitySimHandler():
         """
         Generate server config for client
         """
-        self.server.msg = json.dumps(SERVER_CONF)
+        self.server.msg = json.dumps(self.server.server_config)
 
     def send_reset(self):
         msg = GLOBAL_MSG_TEMPLATE

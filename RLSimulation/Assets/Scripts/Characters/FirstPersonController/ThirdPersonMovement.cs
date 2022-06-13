@@ -2,7 +2,8 @@ using Cinemachine;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using static Server;
+using UnityEngine.Rendering;
+
 
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
@@ -49,7 +50,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
         {
-            firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.camConfig.fov;
+            firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.fov;
             RenderSettings.fogStartDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogStart;
             RenderSettings.fogEndDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogEnd;
             RenderSettings.fog = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn;
@@ -160,6 +161,7 @@ public class ThirdPersonMovement : MonoBehaviour
     [Serializable]
     struct Telemetary_Data
     {
+        public int sequence_num;
         public byte[] jpg_image;
         public Vector3 position;
         public string[] collision_objects;
@@ -205,6 +207,7 @@ public class ThirdPersonMovement : MonoBehaviour
             msg_type = "on_telemetry",
             payload = new Telemetary_Data
             {
+                sequence_num = SimulationManager._instance.server.sequence_num,
                 jpg_image = screenShot.EncodeToJPG(),
                 position = transform.position,
                 collision_objects = collision_objects.ToArray(),
@@ -213,8 +216,7 @@ public class ThirdPersonMovement : MonoBehaviour
             }
         };
 
-        string result = JsonUtility.ToJson(data);
-        SimulationManager._instance.server.SendImageData(result);
+        SimulationManager._instance.server.SendDataAsync(data);
     }
 
     private void OnCollisionEnter(Collision collision)

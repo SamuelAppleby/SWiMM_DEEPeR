@@ -5,9 +5,12 @@
 
 # run script - the "$@"" represent all the arguments passed in the command line in as many strings
 # "$*"" will do the same thing but put all arguments in one space separated string
-python3 ../../test_env.py "$@" &
+cd ..
+cd ..
+python3 test_env.py "$@" &
 
 # haven't tested this line yet, need the right build format
-sudo ../../RLSimulation/Builds/Linux/ReinforcementLearningSimulation.x86_64 server 127.0.0.1:60260
+cd RLSimulation/Builds/Linux
+sudo ReinforcementLearningSimulation.x86_64 server 127.0.0.1:60260
 
 read

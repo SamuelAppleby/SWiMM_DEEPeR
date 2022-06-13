@@ -1,25 +1,52 @@
 using System;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using static SimulationManager;
 
 public class Server 
 {
+    private bool save_packet_data;
+
+    private string network_config_dir;
+
+    private string file_write_dir = "C:/Users/sambu/Documents/CodeBases/RLSimulation/network/logs/sent_packets/";
+
+    public int sequence_num = 1;
+
     public bool first_observation_sent = false;
     public bool ready_to_send = false;
 
     AsyncCallback read_callback = null;
     AsyncCallback write_callback = null;
 
-    Byte[] bytes = new Byte[256];
+    Byte[] receive_buffer;
     public string ip = "127.0.0.1";
     public int port = 60260;
 
     public NetworkStream stream = null;
 
     public TcpClient client;
+
+    private Network_Config network_config;
+
+    [Serializable]
+    public struct Buffers
+    {
+        public int server_send_buffer_size_kb;
+        public int client_receive_buffer_size_kb;
+        public int server_receive_buffer_size_kb;
+        public int client_send_buffer_size_kb;
+    }
+
+    [Serializable]
+    public struct Network_Config
+    {
+        public string host;
+        public int port;
+        public Buffers buffers;
+    }
 
     [Serializable]
     public struct JsonMessage<T>
@@ -34,10 +61,16 @@ public class Server
     }
 
     [Serializable]
-    public struct ConfigOptions
+    public struct ServerConfig
+    {
+        public RoverConfig roverConfig;
+        public EnvironmentConfig envConfig;
+    }
+
+    [Serializable]
+    public struct RoverConfig
     {
         public CameraConfig camConfig;
-        public EnvironmentConfig envConfig;
     }
 
     [Serializable]
@@ -60,20 +93,21 @@ public class Server
         public bool fogOn;
     }
 
-    public JsonMessage<ConfigOptions> server_config;
+    public JsonMessage<ServerConfig> server_config;
 
     public JsonMessage<JsonControls> rover_controls;
 
     public JsonMessage<GlobalCommand> global_command;
 
-    public Server(ServerInfo info)
+    public Server()
     {
-        ip = info.ip;
-        port = info.port;
+        read_callback = ProcessData;
+        write_callback = OnImageWrite;
     }
 
     private void OnImageWrite(IAsyncResult result)
     {
+        sequence_num++;
     }
 
     public bool IsTcpGood()
@@ -81,16 +115,46 @@ public class Server
         return (client != null) && (stream != null);
     }
 
+    public void ProcessNetworkConfig()
+    {
+        using (StreamReader r = new StreamReader(network_config_dir))
+        {
+            string json = r.ReadToEnd();
+            network_config = JsonUtility.FromJson<Network_Config>(json);
+        }
+
+        ip = network_config.host;
+        port = network_config.port;
+    }
+
     public async Task Connect()
     {
-        read_callback = ProcessData;
-        write_callback = OnImageWrite;
+#if UNITY_EDITOR
+        network_config_dir = "../network/data/network_config.json";
+#else
+        network_config_dir = "../../../network/data/network_config.json";
+#endif
+
+        ProcessNetworkConfig();
+
+        if (/*save_packet_data*/true)
+        {
+            DirectoryInfo di = new DirectoryInfo(file_write_dir);
+
+            FileInfo[] files = di.GetFiles();
+            foreach (FileInfo file in files)
+            {
+                file.Delete();
+            }
+        }
 
         client = new TcpClient
         {
-            ReceiveBufferSize = bytes.Length,
-            SendBufferSize = bytes.Length
+            ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
+            SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024
         };
+
+        receive_buffer = new Byte[client.ReceiveBufferSize];
 
         try
         {
@@ -109,7 +173,7 @@ public class Server
         {
             if (IsTcpGood())
             {
-                stream.BeginRead(bytes, 0, bytes.Length, read_callback, null);
+                stream.BeginRead(receive_buffer, 0, receive_buffer.Length, read_callback, null);
             }
         }
         catch (Exception ex)
@@ -119,18 +183,25 @@ public class Server
 
     }
 
-    public void SendDataAsync(byte[] _packet, AsyncCallback callback)
+    public async void SendDataAsync<T>(T data)
     {
         try
         {
-            if ((client != null) && (stream != null))
+            string json_str = JsonUtility.ToJson(data);
+            Debug.Log("Sending: " + json_str);
+
+            if (/*save_packet_data*/true)
             {
-                stream.BeginWrite(_packet, 0, _packet.Length, callback, null);
+                await File.WriteAllTextAsync(file_write_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
             }
+
+            byte[] _packet = Encoding.UTF8.GetBytes(json_str);
+            Debug.Log("Packet length: " + _packet.Length);
+            stream.BeginWrite(_packet, 0, _packet.Length, write_callback, null);
         }
-        catch (Exception _ex)
+        catch(Exception e)
         {
-            Debug.Log($"Error sending data to server via TCP: {_ex}");
+            Debug.Log($"Error sending data to server via TCP: {e}");
         }
     }
 
@@ -171,7 +242,7 @@ public class Server
             }
 
             byte[] _data = new byte[_byteLength];
-            Array.Copy(bytes, _data, _byteLength);
+            Array.Copy(receive_buffer, _data, _byteLength);
 
             string jsonStr = System.Text.Encoding.Default.GetString(_data);
 
@@ -185,7 +256,7 @@ public class Server
                     switch (message.msgType)
                     {
                         case "process_server_config":
-                            server_config = JsonUtility.FromJson<JsonMessage<ConfigOptions>>(jsonStr);
+                            server_config = JsonUtility.FromJson<JsonMessage<ServerConfig>>(jsonStr);
                             server_config.is_overridden = true;
                             break;
                         case "receive_json_controls":
@@ -240,12 +311,6 @@ public class Server
             return;
         }
 
-        stream.BeginRead(bytes, 0, bytes.Length, read_callback, null);
-    }
-
-    public void SendImageData(string data)
-    {
-        Debug.Log("Sending: " + data);
-        SendDataAsync(Encoding.UTF8.GetBytes(data), write_callback);
+        stream.BeginRead(receive_buffer, 0, receive_buffer.Length, read_callback, null);
     }
 }

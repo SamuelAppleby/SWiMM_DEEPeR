@@ -1,11 +1,12 @@
 using System;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static Server;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
-    public bool manual_server = false;
+    public bool save_packet_data;
     public string ip_addr;
     public int port;
 
@@ -26,6 +27,7 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         public string ip;
         public int port;
+        public bool save_packet_data;
         public bool server_set;
     }
 
@@ -44,21 +46,19 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
 
-        ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
+        _instance.server = new Server();
 
-        if (manual_server)
-        {
-            command_args.server_info.port = port;
-            command_args.server_info.ip = ip_addr;
-            command_args.server_info.server_set = true;
-        }
+        ////ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
 
-        if (command_args.server_info.server_set)
-        {
-            _instance.server = new Server(command_args.server_info);
-            await server.Connect();
-            server.ContinueRead();
-        }
+        //// If not set via command line (normal flow)
+        //if (command_args.server_info.server_set)
+        //{
+        //    _instance.server.ip = command_args.server_info.ip;
+        //    _instance.server.port = command_args.server_info.port;
+        //}
+
+        await server.Connect();
+        server.ContinueRead();
     }
 
     void Update()

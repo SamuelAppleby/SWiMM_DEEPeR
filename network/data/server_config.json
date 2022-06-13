@@ -1,0 +1,17 @@
+{
+    "msgType": "process_server_config",
+    "payload": {
+        "roverConfig" : {
+            "camConfig": {
+                "fov": 100
+            }
+        },
+        "envConfig": {
+            "fogConfig" : {
+                "fogStart": 5,
+                "fogEnd" : 200,
+                "fogOn" : true
+            }
+        }
+    }
+}

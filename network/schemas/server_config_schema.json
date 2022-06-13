@@ -1,0 +1,67 @@
+{
+    "type": "object",
+    "properties": {
+        "msgType": {
+            "type": "string"
+        },
+        "payload": {
+            "type": "object",
+            "properties": {
+                "envConfig": {
+                    "type": "object",
+                    "properties": {
+                        "fogConfig": {
+                            "type": "object",
+                            "properties": {
+                                "fogStart": {
+                                    "type": "number"
+                                },
+                                "fogEnd": {
+                                    "type": "number"
+                                },
+                                "fogOn": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "fogStart",
+                                "fogEnd",
+                                "fogOn"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "fogConfig"
+                    ]
+                },
+                "roverConfig": {
+                    "type": "object",
+                    "properties": {
+                        "camConfig": {
+                            "type": "object",
+                            "properties": {
+                                "fov": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "fov"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "camConfig"
+                    ]
+                }
+            },
+            "required": [
+                "envConfig",
+                "roverConfig"
+            ]
+        }
+    },
+    "required": [
+        "msgType",
+        "payload"
+    ]
+}

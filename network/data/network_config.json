@@ -1,0 +1,11 @@
+{
+    "host" : "127.0.0.1",
+    "port" : 60260,
+
+    "buffers": {
+        "server_send_buffer_size_kb" : 128,
+        "client_receive_buffer_size_kb" : 128,
+        "client_send_buffer_size_kb" : 128,
+        "server_receive_buffer_size_kb" : 128
+    }
+}

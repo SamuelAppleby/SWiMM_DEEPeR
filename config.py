@@ -6,28 +6,7 @@ This discludes RL algorithm hyperparameters, which are stored in a .yml file
 within the repo's 'hyperparams' folder. 
 """
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~ Networking ~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-HOST = '127.0.0.1'
-PORT = 60260
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~ Unity Sim ~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-SERVER_CONF = {
-    "msgType": "process_server_config",
-    "payload": {
-        "camConfig": {
-            "fov": 100
-        },
-        "envConfig": {
-            "fogConfig" : {
-                "fogStart": 5,
-                "fogEnd" : 300,
-                "fogOn" : True
-            }
-        }
-    }
-}
 
 GLOBAL_MSG_TEMPLATE = {
     "msgType": "global_message",

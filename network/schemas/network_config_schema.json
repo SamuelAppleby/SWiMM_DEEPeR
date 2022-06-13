@@ -1,0 +1,23 @@
+{
+    "type": "object",
+    "properties": {
+        "host" : {
+            "type" : "string"
+        },
+        "port" : {
+            "type" : "number"
+        },
+        "buffers": {
+            "type": "object",
+            "properties": {
+                "server_send_buffer_size_kb": {"type": "number"},
+                "client_receive_buffer_size_kb": {"type": "number"},
+                "client_send_buffer_size_kb": {"type": "number"},
+                "server_receive_buffer_size_kb": {"type": "number"}
+            },
+            "required": ["server_send_buffer_size_kb", "client_receive_buffer_size_kb", "client_send_buffer_size_kb", "server_receive_buffer_size_kb"]
+        }
+    },
+
+    "required": ["host", "port", "buffers"]
+}

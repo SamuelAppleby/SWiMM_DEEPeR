@@ -227,7 +227,7 @@ class UnitySimHandler():
         """
         os.makedirs(self.server.debug_config["image_dir"], exist_ok=True)
 
-        i = 0
+        i = 1
         while os.path.exists(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg")):
             i += 1
         with open(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg"), "wb") as f:

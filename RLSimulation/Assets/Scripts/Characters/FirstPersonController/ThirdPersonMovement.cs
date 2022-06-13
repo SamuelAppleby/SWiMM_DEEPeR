@@ -152,14 +152,14 @@ public class ThirdPersonMovement : MonoBehaviour
     }
 
     [Serializable]
-    struct DataToSend<T>
+    public struct DataToSend<T>
     {
         public string msg_type;
         public T payload;
     }
 
     [Serializable]
-    struct Telemetary_Data
+    public struct Telemetary_Data
     {
         public int sequence_num;
         public byte[] jpg_image;
@@ -170,7 +170,7 @@ public class ThirdPersonMovement : MonoBehaviour
     }
 
     [Serializable]
-    struct TargetObject
+    public struct TargetObject
     {
         public Vector3 position;
         public Vector3 fwd;

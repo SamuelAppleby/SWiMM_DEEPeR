@@ -19,8 +19,3 @@ GLOBAL_MSG_TEMPLATE = {
 
 OPT_D = 10
 MAX_D = 30
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~ Debugging ~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-SAVE_IMAGES = False
-SAVE_IMAGES_TO = "../../debug_images/"

@@ -174,7 +174,7 @@ class UnitySimHandler():
         image = payload["jpg_image"]
         self.image_array = np.array(image)
 
-        if SAVE_IMAGES:
+        if self.server.debug_config["save_images"]:
             b = bytearray(image)
             self.write_image_to_file_incrementally(b)
 
@@ -225,12 +225,12 @@ class UnitySimHandler():
         """
         Dumping the image to a continuously progressing file, just for debugging purposes
         """
-        os.makedirs(SAVE_IMAGES_TO, exist_ok=True)
+        os.makedirs(self.server.debug_config["image_dir"], exist_ok=True)
 
-        i = 0
-        while os.path.exists(os.path.join(SAVE_IMAGES_TO, f"sample{i}.jpeg")):
+        i = 1
+        while os.path.exists(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg")):
             i += 1
-        with open(os.path.join(SAVE_IMAGES_TO, f"sample{i}.jpeg"), "wb") as f:
+        with open(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg"), "wb") as f:
             f.write(image)
 
     def is_game_over(self):

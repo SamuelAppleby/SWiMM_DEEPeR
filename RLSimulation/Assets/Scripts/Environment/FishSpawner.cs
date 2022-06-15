@@ -2,49 +2,47 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using System.IO;
 
 [System.Serializable]
-public class AIObjects
+public class AIGroup
 {
-    public GameObject object_prefab { get { return m_object_prefb; } }
-    public int max_ai { get { return m_max_ai; } }
-    public int max_spawn_amount { get { return m_max_spawn_amount; } }
-    public bool randomize_stats { get { return m_randomize_stats; } }
-    public bool enable_spawner { get { return m_enable_spawner; } }
-    public bool random_movement { get { return m_random_movement; } }
-
     [Header("AI Group Stats")]
     [SerializeField]
-    private GameObject m_object_prefb;
+    public string prefabName;
     [SerializeField]
-    [Range(0f, 20f)]
-    private int m_max_ai;
+    [Range(0f, 10000f)]
+    public int maxAmount;
     [SerializeField]
-    [Range(0f, 10f)]
-    private int m_max_spawn_amount;
+    [Range(0f, 1000f)]
+    public int maxSpawn;
     [SerializeField]
-    private bool m_random_movement;
+    public bool enableSpawner;
+    [SerializeField]
+    public bool randomMovement;
+    [SerializeField]
+    public bool randomizeStats;
 
+    public GameObject objectPrefab { get; set; }
 
-    [Header("Main Settings")]
-    [SerializeField]
-    private bool m_randomize_stats;
-    [SerializeField]
-    private bool m_enable_spawner;
-
-    public AIObjects(GameObject prefab, int max_ai, int spawn_rate, int spawn_amount, bool random_movement, bool randomize_stats)
+    public AIGroup(string prefab_name, int max_ai, int spawn_amount, bool random_movement, bool randomize_stats)
     {
-        m_object_prefb = prefab;
-        m_max_ai = max_ai;
-        m_max_spawn_amount = spawn_amount;
-        m_random_movement = random_movement;
-        m_randomize_stats = randomize_stats;
+        prefabName = prefab_name;
+        maxAmount = max_ai;
+        maxSpawn = spawn_amount;
+        randomMovement = random_movement;
+        randomizeStats = randomize_stats;
     }
 
     public void Randomise()
     {
-        m_max_ai = Random.Range(1, 20);
-        m_max_spawn_amount = Random.Range(1, 10);
+        maxAmount = Random.Range(1, 10000);
+        maxSpawn = Random.Range(1, 1000);
+    }
+
+    public void LoadPrefabFromPath()
+    {
+        objectPrefab = (GameObject)Resources.Load(prefabName);
     }
 }
 
@@ -53,39 +51,70 @@ public class FishSpawner : MonoBehaviour
     public Transform[] waypoints;
 
     public float spawn_timer { get { return m_spawn_timer; } }
-    public Vector3 spawn_area { get { return m_spawn_area; } }
-    public int spawn_container_ratio { get { return m_spawn_container_ratio; } }
+    public float spawn_container_ratio { get { return m_spawn_container_ratio; } }
 
     [Header("Global Stats")]
     [Range(0f, 600f)]
     [SerializeField]
     private float m_spawn_timer;
     [SerializeField]
+    [Range(0f, 1f)]
+    private float m_spawn_container_ratio;
+    [SerializeField]
     private Color m_spawn_color = new Color(1f, 0f, 0f, 0.3f);
     [SerializeField]
     private Collider m_water_collider;
-    [SerializeField]
-    [Range(0f, 100f)]
-    private int m_spawn_container_ratio;
 
     [Header("AI Group Settings")]
-    public AIObjects[] ai_objects = new AIObjects[1];
+    public AIGroup[] ai_objects;
 
     private Vector3 m_spawn_area;
+
+    private bool config_processed = false;
 
     // Start is called before the first frame update
     void Start()
     {
-        CreateSpawnableArea();
-        GetWaypoints();
-        InitialiseGroups();
-        InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
+        //if (SimulationManager._instance.server.IsTcpGood())
+        //{
+        //    TakeServerOverrides();
+        //}
+
+        //CreateSpawnableArea();
+        //GetWaypoints();
+        //InitialiseGroups();
+        //InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
+
+        if (!SimulationManager._instance.server.IsTcpGood())
+        {
+            CreateSpawnableArea();
+            GetWaypoints();
+            InitialiseGroups();
+            InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
+        }
+
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
+        // TO DO:: When UI scene is integrated (and server config is guranteed) remove below and add above as config will be ready (remove dodgy bool)
 
+        if (SimulationManager._instance.server.IsTcpGood() && !config_processed && SimulationManager._instance.server.server_config.is_overridden)
+        {
+            TakeServerOverrides();
+            CreateSpawnableArea();
+            GetWaypoints();
+            InitialiseGroups();
+            InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
+            config_processed = true;
+        }
+    }
+
+    private void TakeServerOverrides()
+    {
+        m_spawn_timer = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnTimer;
+        m_spawn_container_ratio = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnContainerRatio;
+        ai_objects = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.aiGroups;
     }
 
     private void CreateSpawnableArea()
@@ -93,7 +122,7 @@ public class FishSpawner : MonoBehaviour
         BoxCollider col = m_water_collider as BoxCollider;
         if (col)
         {
-            m_spawn_area = new Vector3((m_spawn_container_ratio / 10) * col.size.x, (m_spawn_container_ratio / 100) * col.size.y, (m_spawn_container_ratio / 10) * col.size.z);
+            m_spawn_area = new Vector3((m_spawn_container_ratio * 10) * col.size.x, m_spawn_container_ratio * col.size.y, (m_spawn_container_ratio * 10) * col.size.z);
         }
     }
 
@@ -104,40 +133,41 @@ public class FishSpawner : MonoBehaviour
 
     private void InitialiseGroups()
     {
-        foreach (AIObjects obj in ai_objects)
+        foreach (AIGroup obj in ai_objects)
         {
-            if(obj.object_prefab != null)
+            obj.LoadPrefabFromPath();
+            if (obj.objectPrefab != null)
             {
-                if (obj.randomize_stats)
+                if (obj.randomizeStats)
                 {
                     obj.Randomise();
                 }
 
-                GameObject m_ai_group_spawn = new GameObject(obj.object_prefab.name);
-                m_ai_group_spawn.transform.parent = this.gameObject.transform;
+                GameObject m_ai_group_spawn = new GameObject(obj.prefabName);
+                m_ai_group_spawn.transform.parent = gameObject.transform;
             }
         }
     }
 
     private void SpawnNPC()
     {
-        foreach (AIObjects obj in ai_objects)
+        foreach (AIGroup obj in ai_objects)
         {
-            if (obj.object_prefab != null && obj.enable_spawner)
+            if (obj.objectPrefab != null && obj.enableSpawner)
             {
-                GameObject temp_group = GameObject.Find(obj.object_prefab.name);
-                if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < obj.max_ai)
+                GameObject temp_group = GameObject.Find(obj.prefabName);
+                if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < obj.maxAmount)
                 {
-                    for (int i = 0; i < Random.Range(0, obj.max_spawn_amount + 1); ++i)
+                    for (int i = 0; i < Random.Range(0, obj.maxSpawn + 1); ++i)
                     {
                         Quaternion random_rotation = Quaternion.Euler(Random.Range(-20, 20), Random.Range(0, 360), 0);
                         Vector3 random_position = GetRandomPosition();
                         if(IsValidLocation(random_position, 30))
                         {
-                            GameObject temp_spawn = Instantiate(obj.object_prefab, random_position, random_rotation);
+                            GameObject temp_spawn = Instantiate(obj.objectPrefab, random_position, random_rotation);
                             temp_spawn.transform.parent = temp_group.transform;
                             temp_spawn.AddComponent<FishMovement>();
-                            temp_spawn.GetComponent<FishMovement>().random_movement = obj.random_movement;
+                            temp_spawn.GetComponent<FishMovement>().random_movement = obj.randomMovement;
 
                             SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().target_transforms.Add(temp_spawn.transform);
                         }
@@ -149,9 +179,9 @@ public class FishSpawner : MonoBehaviour
 
     public Vector3 GetRandomPosition()
     {
-        Vector3 random_position = new Vector3(Random.Range(-spawn_area.x, spawn_area.x),
-            Random.Range(-spawn_area.y, spawn_area.y),
-            Random.Range(-spawn_area.z, spawn_area.z)) * .5f;
+        Vector3 random_position = new Vector3(Random.Range(-m_spawn_area.x, m_spawn_area.x),
+            Random.Range(-m_spawn_area.y, m_spawn_area.y),
+            Random.Range(-m_spawn_area.z, m_spawn_area.z)) * .5f;
 
         return random_position;
     }
@@ -169,6 +199,6 @@ public class FishSpawner : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = m_spawn_color;
-        Gizmos.DrawCube(transform.position, spawn_area);
+        Gizmos.DrawCube(transform.position, m_spawn_area);
     }
 }

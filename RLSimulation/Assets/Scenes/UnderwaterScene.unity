@@ -779,17 +779,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waypoints: []
   m_spawn_timer: 3
+  m_spawn_container_ratio: 0.8
   m_spawn_color: {r: 1, g: 0, b: 0, a: 0.3}
   m_water_collider: {fileID: 379434542}
-  m_spawn_container_ratio: 80
   ai_objects:
-  - m_object_prefb: {fileID: 5777669314606391123, guid: 398214bddfa0d45499747af9376a9af1, type: 3}
-    m_max_ai: 20
-    m_spawn_rate: 20
-    m_max_spawn_amount: 10
-    m_random_movement: 1
-    m_randomize_stats: 0
-    m_enable_spawner: 1
+  - prefabName: fish
+    maxAmount: 10000
+    maxSpawn: 100
+    enableSpawner: 1
+    randomMovement: 1
+    randomizeStats: 0
+  - prefabName: whale
+    maxAmount: 100
+    maxSpawn: 10
+    enableSpawner: 1
+    randomMovement: 1
+    randomizeStats: 0
 --- !u!1 &444681482
 GameObject:
   m_ObjectHideFlags: 0

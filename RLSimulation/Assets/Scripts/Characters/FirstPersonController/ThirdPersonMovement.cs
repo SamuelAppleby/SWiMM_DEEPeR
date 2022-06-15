@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
 {
-    public Transform[] target_transforms;
+    public List<Transform> target_transforms = new List<Transform>();
 
     private float originalDrag;
     private float originalAngularDrag;
@@ -24,7 +24,6 @@ public class ThirdPersonMovement : MonoBehaviour
 
     public LayerMask groundMask;
     public LayerMask waterMask;
-    private bool m_IsGrounded = false;
     private List<string> collision_objects = new List<string>();
     [HideInInspector]
     public bool m_IsUnderwater;
@@ -54,6 +53,12 @@ public class ThirdPersonMovement : MonoBehaviour
             RenderSettings.fogStartDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogStart;
             RenderSettings.fogEndDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogEnd;
             RenderSettings.fog = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn;
+        }
+        else
+        {
+            RenderSettings.fogStartDistance = 10;
+            RenderSettings.fogEndDistance = 200;
+            RenderSettings.fog = true;
         }
     }
 
@@ -95,8 +100,8 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        m_RigidBody.drag = originalDrag * (m_IsGrounded ? groundDragConstant : m_IsUnderwater ? waterDragConstant : 1);
-        m_RigidBody.angularDrag = originalAngularDrag * (m_IsGrounded ? groundAngularDragConstant : m_IsUnderwater ? waterAngularDragConstant : 1);
+        m_RigidBody.drag = originalDrag * (m_IsUnderwater ? waterDragConstant : 1);
+        m_RigidBody.angularDrag = originalAngularDrag * (m_IsUnderwater ? waterAngularDragConstant : 1);
 
         if (!m_IsUnderwater)
         {
@@ -189,7 +194,7 @@ public class ThirdPersonMovement : MonoBehaviour
         RenderTexture.active = null;
         Destroy(rt);
 
-        TargetObject[] targetPositions = new TargetObject[target_transforms.Length];
+        TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
         int pos = 0;
 
         foreach(Transform trans in target_transforms)
@@ -221,18 +226,16 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        collision_objects.Add(LayerMask.LayerToName(collision.gameObject.layer));
+        collision_objects.Add(collision.gameObject.tag);
     }
 
     private void OnCollisionStay(Collision collision)
     {
-        m_IsGrounded = ((1 << collision.gameObject.layer) & groundMask) != 0;
     }
 
     private void OnCollisionExit(Collision collision)
     {
         collision_objects.Remove(collision.gameObject.tag);
-        m_IsGrounded = false;
     }
 
     private void OnTriggerEnter(Collider other)

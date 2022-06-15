@@ -6,10 +6,6 @@ using static Server;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
-    public bool save_packet_data;
-    public string ip_addr;
-    public int port;
-
     [HideInInspector]
     public Server server;
 
@@ -58,7 +54,6 @@ public class SimulationManager : Singleton<SimulationManager>
         //}
 
         await server.Connect();
-        server.ContinueRead();
     }
 
     void Update()

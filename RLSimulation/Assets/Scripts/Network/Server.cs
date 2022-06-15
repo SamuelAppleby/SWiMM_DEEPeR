@@ -206,6 +206,7 @@ public class Server
             {
                 await client.ConnectAsync(network_config.payload.host, network_config.payload.port);
                 stream = client.GetStream();
+                ContinueRead();
             }
             catch (Exception ex)
             {

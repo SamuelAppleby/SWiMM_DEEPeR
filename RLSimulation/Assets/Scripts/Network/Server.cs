@@ -67,6 +67,7 @@ public class Server
     public struct EnvironmentConfig
     {
         public FogConfig fogConfig;
+        public FaunaConfig faunaConfig;
     }
 
     [Serializable]
@@ -75,6 +76,14 @@ public class Server
         public float fogStart;
         public float fogEnd;
         public bool fogOn;
+    }
+
+    [Serializable]
+    public struct FaunaConfig
+    {
+        public float spawnTimer;
+        public float spawnContainerRatio;
+        public AIGroup[] aiGroups;
     }
 
     [Serializable]
@@ -236,7 +245,7 @@ public class Server
         try
         {
             string json_str = JsonUtility.ToJson(data);
-            Debug.Log("Sending: " + json_str);
+            //Debug.Log("Sending: " + json_str);
 
             if (debug_config.is_overridden && debug_config.payload.save_sent_packets)
             {
@@ -295,7 +304,7 @@ public class Server
 
             if (jsonStr != null)
             {
-                Debug.Log("Received: " + jsonStr);
+                //Debug.Log("Received: " + jsonStr);
 
                 MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
 

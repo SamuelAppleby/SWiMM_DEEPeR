@@ -10,6 +10,7 @@ import os
 import shutil
 from config import *
 
+
 class PythonServer():
     """
     Handles message passing with a single TCP client.
@@ -32,16 +33,20 @@ class PythonServer():
         self.receive_buffer_size = None
 
         # process the debug config
-        self.debug_config = self.process_and_validate_config('Configs/data/server_debug_config.json', 'Configs/schemas/server_debug_config_schema.json')
+        self.debug_config = self.process_and_validate_config(
+            'Configs/data/server_debug_config.json', 'Configs/schemas/server_debug_config_schema.json')
 
         # process the network config
-        self.network_config = self.process_and_validate_config('Configs/data/network_config.json', 'Configs/schemas/network_config_schema.json')
-        self.address = (self.network_config["host"], self.network_config["port"])
+        self.network_config = self.process_and_validate_config(
+            'Configs/data/network_config.json', 'Configs/schemas/network_config_schema.json')
+        self.address = (
+            self.network_config["host"], self.network_config["port"])
         self.receive_buffer_size = self.network_config["buffers"]["server_receive_buffer_size_kb"]
 
         # process the server config
-        self.server_config = self.process_and_validate_config('Configs/data/server_config.json', 'Configs/schemas/server_config_schema.json')
-        
+        self.server_config = self.process_and_validate_config(
+            'Configs/data/server_config.json', 'Configs/schemas/server_config_schema.json')
+
         # clean cache (old images, logs etc)
         self.clean_cache()
 
@@ -87,7 +92,7 @@ class PythonServer():
         # let handler know when connection has been made
         self.handler.on_connect(self)
         self.handler.generate_server_config()
-        self.conn.sendall(self.msg.encode('utf-8'))
+        self.send_msg()
 
         # the remaining network related code, receiving data and sending data, is ran in a thread
         self.do_process_msgs = True
@@ -120,11 +125,11 @@ class PythonServer():
 
             # receive packets
             part = conn.recv(1024 * self.receive_buffer_size)
+            print("[+] Received", part)
             if not part:
                 print("[-] Not Binary Image")
                 self.stop()
                 break
-            #print("[+] Received", len(part))
 
             # unpack and send json message onto handler
             my_json = part.decode('UTF-8')
@@ -138,7 +143,10 @@ class PythonServer():
                 time.sleep(1.0 / 120.0)
 
             # send 'reply' to client
-            # print(self.msg.encode('utf-8'))
-            conn.sendall(self.msg.encode('utf-8'))
-            self.msg = None
-            #print(f"[+] Sent action to {self.addr[0]}:{self.addr[1]}")
+            self.send_msg()
+            print(f"[+] Sent action to {self.addr[0]}:{self.addr[1]}")
+
+    def send_msg(self):
+        print(self.msg.encode('utf-8'))
+        self.conn.sendall(self.msg.encode('utf-8'))
+        self.msg = None

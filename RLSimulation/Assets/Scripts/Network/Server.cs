@@ -4,12 +4,13 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static SimulationManager;
 using static ThirdPersonMovement;
 
-public class Server 
+public class Server
 {
-    private string network_config_dir;
-    private string debug_config_dir;
+    public bool server_crash = false;
+    public bool connected = false;
 
     public int sequence_num = 1;
 
@@ -87,15 +88,6 @@ public class Server
     }
 
     [Serializable]
-    public struct DebugConfig
-    {
-        public bool save_images;
-        public string image_dir;
-        public bool save_sent_packets;
-        public string packet_sent_dir;
-    }
-
-    [Serializable]
     public struct Buffers
     {
         public int server_send_buffer_size_kb;
@@ -103,19 +95,6 @@ public class Server
         public int server_receive_buffer_size_kb;
         public int client_send_buffer_size_kb;
     }
-
-    [Serializable]
-    public struct NetworkConfig
-    {
-        public string host;
-        public int port;
-        public Buffers buffers;
-    }
-
-    /* Local configs for reading */
-    private JsonMessage<DebugConfig> debug_config;
-
-    private JsonMessage<NetworkConfig> network_config;
 
     /* Configs/Messages from server */
     public JsonMessage<ServerConfig> server_config;
@@ -140,87 +119,38 @@ public class Server
         return (client != null) && (stream != null);
     }
 
-    public void ProcessConfig<T>(ref JsonMessage<T> config, string dir)
+    public void Disconnect()
     {
-        using (StreamReader r = new StreamReader(dir))
-        {
-            string json = r.ReadToEnd();
-            config.payload = JsonUtility.FromJson<T>(json);
-            config.is_overridden = true;
-        }
+
+        client.Close();
+        stream = null;
+        connected = false;
+        server_crash = true;
+        return;
     }
 
-    public void Clear_Cache()
+    public async Task<Exception> Connect(NetworkConfig network_config)
     {
-        if (debug_config.is_overridden)
+        client = new TcpClient
         {
-            DirectoryInfo di = new DirectoryInfo(debug_config.payload.packet_sent_dir);
+            ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
+            SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024
+        };
 
-            if (di.Exists)
-            {
-                FileInfo[] files = di.GetFiles();
-                foreach (FileInfo file in files)
-                {
-                    file.Delete();
-                }
-            }
-            else
-            {
-                System.IO.Directory.CreateDirectory(di.FullName);
-            }
+        receive_buffer = new Byte[client.ReceiveBufferSize];
 
-            di = new DirectoryInfo(debug_config.payload.image_dir);
-
-            if (di.Exists)
-            {
-                FileInfo[] files = di.GetFiles();
-                foreach (FileInfo file in files)
-                {
-                    file.Delete();
-                }
-            }
-            else
-            {
-                System.IO.Directory.CreateDirectory(di.FullName);
-            }
+        try
+        {
+            await client.ConnectAsync(network_config.host, network_config.port);
+            stream = client.GetStream();
+            connected = true;
+            ContinueRead();
+            return null;
         }
-    }
-
-    public async Task Connect()
-    {
-#if UNITY_EDITOR
-        debug_config_dir = "../Configs/data/client_debug_config.json";
-        network_config_dir = "../Configs/data/network_config.json";
-#else
-        debug_config_dir = "../../../Configs/data/client_debug_config.json";
-        network_config_dir = "../../../Configs/data/network_config.json";
-#endif
-
-        ProcessConfig<DebugConfig>(ref debug_config, debug_config_dir);
-        ProcessConfig<NetworkConfig>(ref network_config, network_config_dir);
-
-        Clear_Cache();
-
-        if (network_config.is_overridden)
+        catch (Exception ex)
         {
-            client = new TcpClient
-            {
-                ReceiveBufferSize = network_config.payload.buffers.client_receive_buffer_size_kb * 1024,
-                SendBufferSize = network_config.payload.buffers.client_send_buffer_size_kb * 1024
-            };
-
-            receive_buffer = new Byte[client.ReceiveBufferSize];
-
-            try
-            {
-                await client.ConnectAsync(network_config.payload.host, network_config.payload.port);
-                stream = client.GetStream();
-                ContinueRead();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
+            Debug.LogException(ex);
+            return ex;
         }
     }
 
@@ -236,8 +166,8 @@ public class Server
         catch (Exception ex)
         {
             Debug.LogException(ex);
+            Disconnect();
         }
-
     }
 
     public async void SendDataAsync<T>(T data)
@@ -247,23 +177,24 @@ public class Server
             string json_str = JsonUtility.ToJson(data);
             //Debug.Log("Sending: " + json_str);
 
-            if (debug_config.is_overridden && debug_config.payload.save_sent_packets)
+            if (SimulationManager._instance.debug_config.is_overridden && SimulationManager._instance.debug_config.payload.save_sent_packets)
             {
-                await File.WriteAllTextAsync(debug_config.payload.packet_sent_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
+                await File.WriteAllTextAsync(SimulationManager._instance.debug_config.payload.packet_sent_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
                 DataToSend<Telemetary_Data>? obj = data as DataToSend<Telemetary_Data>?;
 
-                if (obj != null && debug_config.is_overridden & debug_config.payload.save_images)
+                if (obj != null && SimulationManager._instance.debug_config.payload.save_images)
                 {
-                    File.WriteAllBytes(debug_config.payload.image_dir + "sent_image" + sequence_num.ToString() + ".jpg", obj.Value.payload.jpg_image);
+                    File.WriteAllBytes(SimulationManager._instance.debug_config.payload.image_dir + "sent_image" + sequence_num.ToString() + ".jpg", obj.Value.payload.jpg_image);
                 }
             }
 
             byte[] _packet = Encoding.UTF8.GetBytes(json_str);
             stream.BeginWrite(_packet, 0, _packet.Length, write_callback, null);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            Debug.Log($"Error sending data to server via TCP: {e}");
+            Debug.LogException(e);
+            Disconnect();
         }
     }
 
@@ -284,10 +215,10 @@ public class Server
 
     private void ProcessData(IAsyncResult result)
     {
-        int _byteLength = stream.EndRead(result);
-
         try
         {
+            int _byteLength = stream.EndRead(result);
+
             if (_byteLength <= 0)
             {
                 if (client.Connected)
@@ -337,7 +268,7 @@ public class Server
 
                 if (global_command.is_overridden && global_command.payload.end_simulation)
                 {
-                    client.Close();
+                    Disconnect();
                     return;
                 }
                 else
@@ -350,21 +281,12 @@ public class Server
                 //// Send back a response.
                 //stream.Write(msg, 0, msg.Length);
                 //Console.WriteLine("Sent: {0}", data);
-            }   
+            }
         }
         catch (Exception e)
         {
-            if(e != null)
-            {
-                Debug.LogError(e);
-            }
-
-            if (client.Connected)
-            {
-                client.Close();
-                return;
-            }
-
+            Debug.LogError(e);
+            Disconnect();
             return;
         }
 

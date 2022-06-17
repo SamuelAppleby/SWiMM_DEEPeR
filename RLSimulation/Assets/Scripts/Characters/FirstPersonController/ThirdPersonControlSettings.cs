@@ -28,10 +28,10 @@ public class ThirdPersonControlSettings
     [HideInInspector] public float mouseWheel = 0.0f;
     [HideInInspector] public bool cameraChange = false;
 
-    public void Update(bool use_server)
+    public void Update(bool in_manual_mode)
     {
         /* Get manual input when not using tcp */
-        if (!use_server)
+        if (in_manual_mode)
         {
             movementInputs.y = Input.GetKey(MovementControlMap.RiseKey) ? 1 : Input.GetKey(MovementControlMap.FallKey) ? -1 : 0;
             movementInputs.z = Input.GetAxisRaw(MovementControlMap.ForwardKey);

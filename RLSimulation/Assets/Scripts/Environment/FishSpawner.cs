@@ -70,44 +70,18 @@ public class FishSpawner : MonoBehaviour
 
     private Vector3 m_spawn_area;
 
-    private bool config_processed = false;
-
     // Start is called before the first frame update
     void Start()
     {
-        //if (SimulationManager._instance.server.IsTcpGood())
-        //{
-        //    TakeServerOverrides();
-        //}
-
-        //CreateSpawnableArea();
-        //GetWaypoints();
-        //InitialiseGroups();
-        //InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
-
-        if (!SimulationManager._instance.server.IsTcpGood())
-        {
-            CreateSpawnableArea();
-            GetWaypoints();
-            InitialiseGroups();
-            InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
-        }
-
-    }
-
-    private void Update()
-    {
-        // TO DO:: When UI scene is integrated (and server config is guranteed) remove below and add above as config will be ready (remove dodgy bool)
-
-        if (SimulationManager._instance.server.IsTcpGood() && !config_processed && SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server.connected && SimulationManager._instance.server.server_config.is_overridden)
         {
             TakeServerOverrides();
-            CreateSpawnableArea();
-            GetWaypoints();
-            InitialiseGroups();
-            InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
-            config_processed = true;
         }
+
+        CreateSpawnableArea();
+        GetWaypoints();
+        InitialiseGroups();
+        InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
     }
 
     private void TakeServerOverrides()

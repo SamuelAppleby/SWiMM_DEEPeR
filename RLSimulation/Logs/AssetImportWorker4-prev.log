@@ -1,0 +1,404 @@
+Using pre-set license
+Built from '2021.3/staging' branch; Version is '2021.3.4f1 (cb45f9cae8b7) revision 13321721'; Using compiler version '192829333'; Build Type 'Release'
+OS: 'Windows 11  (10.0.22000) 64bit Core' Language: 'en' Physical Memory: 16244 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1, IsPro: 1
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Unity.exe
+-adb2
+-batchMode
+-noUpm
+-name
+AssetImportWorker4
+-projectPath
+C:/Users/sambu/Documents/CodeBases/RLSimulation/RLSimulation
+-logFile
+Logs/AssetImportWorker4.log
+-srvPort
+53774
+Successfully changed project path to: C:/Users/sambu/Documents/CodeBases/RLSimulation/RLSimulation
+C:/Users/sambu/Documents/CodeBases/RLSimulation/RLSimulation
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Refreshing native plugins compatible for Editor in 77.58 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 2021.3.4f1 (cb45f9cae8b7)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/2021.3.4f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/sambu/Documents/CodeBases/RLSimulation/RLSimulation/Assets
+GfxDevice: creating device client; threaded=0; jobified=0
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 2080 Super with Max-Q Design (ID=0x1e93)
+    Vendor:   NVIDIA
+    VRAM:     8010 MB
+    Driver:   30.0.15.1295
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/2021.3.4f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/2021.3.4f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/2021.3.4f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56512
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/Hub/Editor/2021.3.4f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Register platform support module: C:/Program Files/Unity/Hub/Editor/2021.3.4f1/Editor/Data/PlaybackEngines/LinuxStandaloneSupport/UnityEditor.LinuxStandalone.Extensions.dll
+Registered in 0.003802 seconds.
+Native extension for LinuxStandalone target not found
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 64.32 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Mono: successfully reloaded assembly
+- Completed reload, in  0.609 seconds
+Domain Reload Profiling:
+	ReloadAssembly (609ms)
+		BeginReloadAssembly (59ms)
+			ExecutionOrderSort (0ms)
+			DisableScriptedObjects (0ms)
+			BackupInstance (0ms)
+			ReleaseScriptingObjects (0ms)
+			CreateAndSetChildDomain (1ms)
+		EndReloadAssembly (455ms)
+			LoadAssemblies (57ms)
+			RebuildTransferFunctionScriptingTraits (0ms)
+			SetupTypeCache (113ms)
+			ReleaseScriptCaches (0ms)
+			RebuildScriptCaches (29ms)
+			SetupLoadedEditorAssemblies (264ms)
+				LogAssemblyErrors (0ms)
+				InitializePlatformSupportModulesInManaged (10ms)
+				SetLoadedEditorAssemblies (0ms)
+				RefreshPlugins (64ms)
+				BeforeProcessingInitializeOnLoad (1ms)
+				ProcessInitializeOnLoadAttributes (143ms)
+				ProcessInitializeOnLoadMethodAttributes (46ms)
+				AfterProcessingInitializeOnLoad (0ms)
+				EditorAssembliesLoaded (0ms)
+			ExecutionOrderSort2 (0ms)
+			AwakeInstancesAfterBackupRestoration (0ms)
+Platform modules already initialized, skipping
+Registering precompiled user dll's ...
+Registered in 0.002883 seconds.
+Begin MonoManager ReloadAssembly
+Native extension for LinuxStandalone target not found
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 0.71 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+[ScriptCompilation] NOT recompiling all scripts because this is an import worker process. Reason to compile was: Define symbols changed
+Mono: successfully reloaded assembly
+- Completed reload, in  0.899 seconds
+Domain Reload Profiling:
+	ReloadAssembly (900ms)
+		BeginReloadAssembly (90ms)
+			ExecutionOrderSort (0ms)
+			DisableScriptedObjects (6ms)
+			BackupInstance (0ms)
+			ReleaseScriptingObjects (0ms)
+			CreateAndSetChildDomain (16ms)
+		EndReloadAssembly (711ms)
+			LoadAssemblies (57ms)
+			RebuildTransferFunctionScriptingTraits (0ms)
+			SetupTypeCache (170ms)
+			ReleaseScriptCaches (1ms)
+			RebuildScriptCaches (50ms)
+			SetupLoadedEditorAssemblies (393ms)
+				LogAssemblyErrors (0ms)
+				InitializePlatformSupportModulesInManaged (7ms)
+				SetLoadedEditorAssemblies (0ms)
+				RefreshPlugins (1ms)
+				BeforeProcessingInitializeOnLoad (101ms)
+				ProcessInitializeOnLoadAttributes (254ms)
+				ProcessInitializeOnLoadMethodAttributes (24ms)
+				AfterProcessingInitializeOnLoad (5ms)
+				EditorAssembliesLoaded (0ms)
+			ExecutionOrderSort2 (0ms)
+			AwakeInstancesAfterBackupRestoration (4ms)
+Platform modules already initialized, skipping
+========================================================================
+Worker process is ready to serve import requests
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.07 seconds
+Refreshing native plugins compatible for Editor in 0.85 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Unloading 4264 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 184 unused Assets / (20.0 MB). Loaded Objects now: 4601.
+Memory consumption went from 226.2 MB to 206.2 MB.
+Total: 8.220100 ms (FindLiveObjects: 0.330900 ms CreateObjectMapping: 0.273500 ms MarkObjects: 2.321700 ms  DeleteObjects: 5.293100 ms)
+
+AssetImportParameters requested are different than current active one (requested -> active):
+  custom:video-decoder-ogg-theora: a1e56fd34408186e4bbccfd4996cb3dc -> 
+  custom:container-muxer-webm: aa71ff27fc2769a1b78a27578f13a17b -> 
+  custom:container-demuxer-webm: 4f35f7cbe854078d1ac9338744f61a02 -> 
+  custom:video-encoder-webm-vp8: eb34c28f22e8b96e1ab97ce403110664 -> 
+  custom:audio-encoder-webm-vorbis: bf7c407c2cedff20999df2af8eb42d56 -> 
+  custom:framework-win-MediaFoundation: 216162199b28c13a410421893ffa2e32 -> 
+  custom:container-demuxer-ogg: 62fdf1f143b41e24485cea50d1cbac27 -> 
+  custom:video-decoder-webm-vp8: 9c59270c3fd7afecdb556c50c9e8de78 -> 
+  custom:audio-decoder-ogg-vorbis: bf7c407c2cedff20999df2af8eb42d56 -> 
+========================================================================
+Received Import Request.
+  Time since last request: 1666.791094 seconds.
+  path: Assets/StreamingAssets
+  artifactKey: Guid(ac6ca627ce7fcbd4fbbfec3ba0fb3d61) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/StreamingAssets using Guid(ac6ca627ce7fcbd4fbbfec3ba0fb3d61) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'c2813e7a949c6a765555b2148e9940f4') in 0.013224 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 25.576528 seconds.
+  path: Assets/Scenes/UnderwaterScene.unity
+  artifactKey: Guid(9fc0d4010bbf28b4594072e72b8655ab) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Scenes/UnderwaterScene.unity using Guid(9fc0d4010bbf28b4594072e72b8655ab) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'f553c3ea3ea2b676e69e8cbc2e899e0d') in 0.065094 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 379.458333 seconds.
+  path: Assets/Dolphin
+  artifactKey: Guid(4b35b971327e89743bc7613ee73b34ba) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Dolphin using Guid(4b35b971327e89743bc7613ee73b34ba) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '8733805ca96aabb390353cfcb51e62e9') in 0.011761 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 3.428724 seconds.
+  path: Assets/Dolphin
+  artifactKey: Guid(4b35b971327e89743bc7613ee73b34ba) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Dolphin using Guid(4b35b971327e89743bc7613ee73b34ba) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '514a45d7161d49783c1adb8de3b9767b') in 0.005641 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 21.316543 seconds.
+  path: Assets/Prefabs/Dolphin
+  artifactKey: Guid(4b35b971327e89743bc7613ee73b34ba) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Prefabs/Dolphin using Guid(4b35b971327e89743bc7613ee73b34ba) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'a96b1c2399b9ffb032d7549033d3fb13') in 0.009494 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 16.157378 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Materials/RefractBase.mat
+  artifactKey: Guid(f9e4700a214eca549b9ecd74344950af) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Materials/RefractBase.mat using Guid(f9e4700a214eca549b9ecd74344950af) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'ab6130146ee1ea311b0d8a67716da752') in 0.033685 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000019 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures
+  artifactKey: Guid(9f00233f241c8c948ba53d7e5fb85372) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures using Guid(9f00233f241c8c948ba53d7e5fb85372) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'a2e7c0cd087a123c5e03979926885174') in 0.013144 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000033 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_AO.png
+  artifactKey: Guid(f5dcb8cda19486246863f882838126f0) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_AO.png using Guid(f5dcb8cda19486246863f882838126f0) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'c1c69b37ef022bc3fa5382509ef03fb0') in 0.026994 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000032 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_Normal.png
+  artifactKey: Guid(1e8a9d9ef5af2d440983f275af182f77) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_Normal.png using Guid(1e8a9d9ef5af2d440983f275af182f77) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '975c048df644676748041a03cc19abd2') in 0.058853 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000023 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_Metallic-Mat-Base.tga
+  artifactKey: Guid(0699049f5caa61e479292b53c7b28689) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_Metallic-Mat-Base.tga using Guid(0699049f5caa61e479292b53c7b28689) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '4ed67a75936dad35ed6b66917b62d7d6') in 0.014989 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000022 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_AO.png
+  artifactKey: Guid(368c8f2972ffb254eb6af8c8fd6cc86a) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_AO.png using Guid(368c8f2972ffb254eb6af8c8fd6cc86a) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'cba34a1f1431d350e5ca2de8a36c5066') in 0.009645 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000027 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_BaseColor-Mat-RefractBase.tga
+  artifactKey: Guid(c8236fe36363d4748b298541d806b0f0) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_BaseColor-Mat-RefractBase.tga using Guid(c8236fe36363d4748b298541d806b0f0) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '47af89e726c238ecb7fd9103c9116a97') in 0.011291 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000028 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Materials/Base.mat
+  artifactKey: Guid(1f2296d9e2fe64843b1eb43a70afd58d) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Materials/Base.mat using Guid(1f2296d9e2fe64843b1eb43a70afd58d) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'b0ece982d9964cd28584c14db55a6f8f') in 0.008535 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000024 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_BaseColor.png
+  artifactKey: Guid(4c0a1b9cfcb0e694794366d3a08fc623) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/Base_BaseColor.png using Guid(4c0a1b9cfcb0e694794366d3a08fc623) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '9b3c67a15be491850122d9bea118d9ed') in 0.014268 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000024 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Materials
+  artifactKey: Guid(d195477687fac714aa0893ea5369fd4f) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Materials using Guid(d195477687fac714aa0893ea5369fd4f) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '628e0fd50e3086962318f4850e8bb3ad') in 0.008544 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000042 seconds.
+  path: Assets/TurboSquid_Models
+  artifactKey: Guid(129625ad73183c44c9cb682527363ecb) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models using Guid(129625ad73183c44c9cb682527363ecb) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '092878db8f0ab50dc22244677617275c') in 0.011512 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000026 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_Normal.png
+  artifactKey: Guid(cb97c18f0e9444e4f991ca42337cdd0f) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_Normal.png using Guid(cb97c18f0e9444e4f991ca42337cdd0f) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'fb7647fbf7ace24d1554d442dbf7ae1f') in 0.037593 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 16.008091 seconds.
+  path: Assets/TurboSquid_Models
+  artifactKey: Guid(129625ad73183c44c9cb682527363ecb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TurboSquid_Models using Guid(129625ad73183c44c9cb682527363ecb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'b0d2fa673c8b975a61cd22fa484982da') in 0.008129 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 1.593675 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell
+  artifactKey: Guid(22d061833b00910488e06b5ec785f25c) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell using Guid(22d061833b00910488e06b5ec785f25c) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '593ae25cd2bff89f87f704e1fb6c17b1') in 0.006856 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.071488 seconds.
+  path: Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Underwater_Robot_BlueROV2_StemCell.fbx
+  artifactKey: Guid(15b7f0edc13d8f743abc7d4492ca14f1) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TurboSquid_Models/Underwater_Robot_BlueROV2_StemCell/Underwater_Robot_BlueROV2_StemCell.fbx using Guid(15b7f0edc13d8f743abc7d4492ca14f1) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'c1cc85e912b963d71ca2b22939c2e468') in 1.021044 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 7.864778 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell
+  artifactKey: Guid(22d061833b00910488e06b5ec785f25c) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell using Guid(22d061833b00910488e06b5ec785f25c) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'b6fe921101fa4a99e1b56a40888294d5') in 0.013574 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000023 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Underwater_Robot_BlueROV2_StemCell.fbx
+  artifactKey: Guid(15b7f0edc13d8f743abc7d4492ca14f1) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Underwater_Robot_BlueROV2_StemCell.fbx using Guid(15b7f0edc13d8f743abc7d4492ca14f1) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'eb05d439e47d35f203f26c5429630be6') in 0.127756 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000032 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_Metallic-Mat-RefractBase.tga
+  artifactKey: Guid(c9f4ffcc55568e74380004d936694b98) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_Metallic-Mat-RefractBase.tga using Guid(c9f4ffcc55568e74380004d936694b98) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'ab20864d45e3a56ec2bd457227d67bd3') in 0.013716 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 3.170404 seconds.
+  path: Assets/Resources
+  artifactKey: Guid(a8a189c9ba0064f4eae850f4f427b2ed) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Resources using Guid(a8a189c9ba0064f4eae850f4f427b2ed) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'd1cbef62f7bffd8c4543eef0599e528a') in 0.006562 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 17.717030 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures
+  artifactKey: Guid(9f00233f241c8c948ba53d7e5fb85372) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures using Guid(9f00233f241c8c948ba53d7e5fb85372) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'b8fc01dc483a656321996b9e949f0850') in 0.002240 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.078140 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/Base_AO.png
+  artifactKey: Guid(f5dcb8cda19486246863f882838126f0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/Base_AO.png using Guid(f5dcb8cda19486246863f882838126f0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '8493831280fc36f1e2f07586da1f0165') in 0.030159 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000024 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_BaseColor-Mat-RefractBase.tga
+  artifactKey: Guid(c8236fe36363d4748b298541d806b0f0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_BaseColor-Mat-RefractBase.tga using Guid(c8236fe36363d4748b298541d806b0f0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '06f6635c478c3f7b1622d6237bc8ac87') in 0.017774 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000047 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_AO.png
+  artifactKey: Guid(368c8f2972ffb254eb6af8c8fd6cc86a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Textures/RefractBase_AO.png using Guid(368c8f2972ffb254eb6af8c8fd6cc86a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'c8f47538e7a0569d25f7977a68d308c3') in 0.017106 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 4.966963 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Materials/RefractBase.mat
+  artifactKey: Guid(f9e4700a214eca549b9ecd74344950af) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Materials/RefractBase.mat using Guid(f9e4700a214eca549b9ecd74344950af) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: 'd3dbf8153da40551b069a981b9ff8755') in 0.014450 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 1.184655 seconds.
+  path: Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Underwater_Robot_BlueROV2_StemCell.fbx
+  artifactKey: Guid(15b7f0edc13d8f743abc7d4492ca14f1) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Prefabs/Underwater_Robot_BlueROV2_StemCell/Underwater_Robot_BlueROV2_StemCell.fbx using Guid(15b7f0edc13d8f743abc7d4492ca14f1) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'd4e01a07454ff30e7407100ca96340f1') in 0.404516 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 56.983207 seconds.
+  path: Assets/Scenes/UnderwaterScene.unity
+  artifactKey: Guid(9fc0d4010bbf28b4594072e72b8655ab) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Scenes/UnderwaterScene.unity using Guid(9fc0d4010bbf28b4594072e72b8655ab) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '65273f07e01083c9c76b17f3cbd81fe1') in 0.008716 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 58.809582 seconds.
+  path: Assets/Dolphin
+  artifactKey: Guid(17df9a413b03ece46878732356b2ab36) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5)
+Start importing Assets/Dolphin using Guid(17df9a413b03ece46878732356b2ab36) Importer(2089858483,934ff659095e30574adcf32a4c2f97b5) Generated GUIDs only implemented for interfaces!
+ -> (artifact id: '7a7b17b287b7ad7c076374a291c70697') in 0.006913 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 36.179241 seconds.
+  path: Packages/com.unity.render-pipelines.high-definition/Runtime/Material/AxF/AxF.cs.hlsl
+  artifactKey: Guid(b97692565f3028b4fb1d3143c72e398e) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Packages/com.unity.render-pipelines.high-definition/Runtime/Material/AxF/AxF.cs.hlsl using Guid(b97692565f3028b4fb1d3143c72e398e) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '8cdac41c0926837fc8ad44b474322e5f') in 0.058336 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000019 seconds.
+  path: Packages/com.unity.render-pipelines.high-definition/Runtime/Material/AxF/AxFData.hlsl
+  artifactKey: Guid(e4a7b0206c6b8af4eb2111e766733afe) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Packages/com.unity.render-pipelines.high-definition/Runtime/Material/AxF/AxFData.hlsl using Guid(e4a7b0206c6b8af4eb2111e766733afe) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '267cf535ca925025c8ae7eff23eb79c9') in 0.007300 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000027 seconds.
+  path: Packages/com.unity.render-pipelines.high-definition/Runtime/Material/AxF/AxFProperties.hlsl
+  artifactKey: Guid(e7c80bbaec1322f4ca35bc48ad310ee4) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Packages/com.unity.render-pipelines.high-definition/Runtime/Material/AxF/AxFProperties.hlsl using Guid(e7c80bbaec1322f4ca35bc48ad310ee4) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '264f58cd62b195f2d138465c9e4e6917') in 0.005988 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 1.948020 seconds.
+  path: Packages/com.unity.render-pipelines.high-definition/package.json
+  artifactKey: Guid(6f54db4299717fc4ca37866c6afa0905) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Packages/com.unity.render-pipelines.high-definition/package.json using Guid(6f54db4299717fc4ca37866c6afa0905) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '9d2f6d7f39602005c1459ce7b6dfcb59') in 0.007772 seconds 
+========================================================================
+Received Import Request.
+  Time since last request: 2.761838 seconds.
+  path: Assets/Materials/Yellow.mat
+  artifactKey: Guid(386bc5e99040acb4fbcbd113f2bae087) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Materials/Yellow.mat using Guid(386bc5e99040acb4fbcbd113f2bae087) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '7e7d1cf3b1bfd5a0b0245381afbb6b62') in 0.047473 seconds 

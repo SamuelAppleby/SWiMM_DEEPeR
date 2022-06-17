@@ -10,7 +10,7 @@ env = UnderwaterEnv()
 print("Environment ready")
 
 # how many steps want to test for
-num_test_steps = 500
+num_test_steps = 5000
 
 # list to store cumulative episodic reward for each episode played out
 episode_rewards = [0.0]
@@ -19,7 +19,7 @@ episode_rewards = [0.0]
 ep_len = 0
 
 # decide on max episode length 
-max_ep_length = 100
+max_ep_length = 1000
 
 # collect initial observation 
 obs = env.reset()

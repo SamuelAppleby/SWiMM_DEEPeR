@@ -7,6 +7,25 @@
         "payload": {
             "type": "object",
             "properties": {
+                "roverConfig": {
+                    "type": "object",
+                    "properties": {
+                        "camConfig": {
+                            "type": "object",
+                            "properties": {
+                                "fov": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "fov"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "camConfig"
+                    ]
+                },
                 "envConfig": {
                     "type": "object",
                     "properties": {
@@ -28,35 +47,67 @@
                                 "fogEnd",
                                 "fogOn"
                             ]
-                        }
-                    },
-                    "required": [
-                        "fogConfig"
-                    ]
-                },
-                "roverConfig": {
-                    "type": "object",
-                    "properties": {
-                        "camConfig": {
+                        },
+                        "faunaConfig": {
                             "type": "object",
                             "properties": {
-                                "fov": {
+                                "spawnTimer": {
+                                    "type": "integer"
+                                },
+                                "spawnContainerRatio": {
                                     "type": "number"
+                                },
+                                "aiGroups": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "prefabName": {
+                                                "type": "string"
+                                            },
+                                            "maxAmount": {
+                                                "type": "integer"
+                                            },
+                                            "maxSpawn": {
+                                                "type": "integer"
+                                            },
+                                            "randomizeStats": {
+                                                "type": "boolean"
+                                            },
+                                            "enableSpawner": {
+                                                "type": "boolean"
+                                            },
+                                            "randomMovement": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "prefabName",
+                                            "maxAmount",
+                                            "maxSpawn",
+                                            "randomizeStats",
+                                            "enableSpawner",
+                                            "randomMovement"
+                                        ]
+                                    }
                                 }
                             },
                             "required": [
-                                "fov"
+                                "spawnTimer",
+                                "spawnContainerRatio",
+                                "aiGroups"
                             ]
                         }
                     },
                     "required": [
-                        "camConfig"
+                        "fogConfig",
+                        "faunaConfig"
                     ]
                 }
             },
             "required": [
-                "envConfig",
-                "roverConfig"
+                "roverConfig",
+                "envConfig"
             ]
         }
     },

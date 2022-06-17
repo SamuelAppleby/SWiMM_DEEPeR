@@ -1,16 +1,46 @@
 {
     "msgType": "process_server_config",
     "payload": {
-        "roverConfig" : {
+        "roverConfig": {
             "camConfig": {
                 "fov": 100
             }
         },
         "envConfig": {
-            "fogConfig" : {
+            "fogConfig": {
                 "fogStart": 5,
-                "fogEnd" : 200,
-                "fogOn" : true
+                "fogEnd": 200,
+                "fogOn": true
+            },
+            "faunaConfig": {
+                "spawnTimer": 5,
+                "spawnContainerRatio": 0.8,
+                "aiGroups": [
+                    {
+                        "prefabName": "dolphin",
+                        "maxAmount": 1,
+                        "maxSpawn": 1,
+                        "enableSpawner": true,
+                        "randomMovement": true,
+                        "randomizeStats": false
+                    },
+                    {
+                        "prefabName": "whale",
+                        "maxAmount": 10,
+                        "maxSpawn": 5,
+                        "enableSpawner": true,
+                        "randomMovement": true,
+                        "randomizeStats": false
+                    },
+                    {
+                        "prefabName": "fish",
+                        "maxAmount": 10000,
+                        "maxSpawn": 1000,
+                        "enableSpawner": true,
+                        "randomMovement": true,
+                        "randomizeStats": false
+                    }
+                ]
             }
         }
     }

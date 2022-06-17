@@ -1,13 +1,17 @@
 [[source]]
-name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+jsonschema = "*"
+pyyaml = "==5.3.1"
+tensorflow = "==1.14.0"
+stable-baselines = "==2.10.1"
+gym = "==0.17.3"
 
 [dev-packages]
 
-[packages]
-gym = "*"
-jsonschema = "*"
-
 [requires]
-python_version = "3.7"
+python_version = "3.6"

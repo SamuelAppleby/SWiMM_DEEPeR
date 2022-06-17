@@ -1,10 +1,13 @@
 import logging
+import warnings
 import gym
 import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
 from gym_underwater.sim_comms import UnitySimCommunicator 
+
+warnings.filterwarnings("ignore", category=UserWarning, module='gym')
 
 logger = logging.getLogger(__name__)
 

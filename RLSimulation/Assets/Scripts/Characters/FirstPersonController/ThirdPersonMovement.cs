@@ -41,6 +41,8 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void Start()
     {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
         originalDrag = m_RigidBody.drag;
         originalAngularDrag = m_RigidBody.angularDrag;
@@ -64,7 +66,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Update()
     {
-        movement_controls.Update(SimulationManager._instance.server != null &&  SimulationManager._instance.server.IsTcpGood());
+        movement_controls.Update(SimulationManager._instance.in_manual_mode);
 
         ref float fov = ref cinecamera.m_Lens.FieldOfView;
         fov -= movement_controls.mouseWheel * movement_controls.sensitivity;
@@ -149,10 +151,10 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood() && SimulationManager._instance.server.server_config.is_overridden && SimulationManager._instance.server.ready_to_send)
+        if (!SimulationManager._instance.in_manual_mode && SimulationManager._instance.server.ready_to_send)
         {
-            SendImageData();
             SimulationManager._instance.server.ready_to_send = false;
+            SendImageData();
         }
     }
 

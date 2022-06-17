@@ -17,14 +17,14 @@ public class GlobalControlSettings
     [HideInInspector] public bool changeWindow = false;
     [HideInInspector] public bool reload_scene = false;
 
-    public void Update(bool use_server)
+    public void Update(bool manual_controls)
     {
         quitting = Input.GetKeyDown(GlobalControlMap.QuitKey);
         changeWindow = Input.GetKeyDown(GlobalControlMap.ChangeWindowKey);
 
-        if (!use_server)
+        if (manual_controls)
         {
-            reload_scene = Input.GetKey(GlobalControlMap.ReloadKey);
+            reload_scene = Input.GetKeyDown(GlobalControlMap.ReloadKey);
         }
         else if (SimulationManager._instance.server.global_command.is_overridden)
         {

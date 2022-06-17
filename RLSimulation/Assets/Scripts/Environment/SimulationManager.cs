@@ -1,11 +1,18 @@
 using System;
+using System.Collections;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static Server;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
+    public bool in_manual_mode = false;
+
+    private string network_config_dir;
+    private string debug_config_dir;
+
     [HideInInspector]
     public Server server;
 
@@ -34,10 +41,51 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private CommandLineArguemnts command_args;
 
-    async void Start()
+    [Serializable]
+    public struct DebugConfig
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        public bool save_images;
+        public string image_dir;
+        public bool save_sent_packets;
+        public string packet_sent_dir;
+    }
+
+    /* Local configs for reading */
+    [HideInInspector]
+    public JsonMessage<DebugConfig> debug_config;
+
+
+    [Serializable]
+    public struct NetworkConfig
+    {
+        public string host;
+        public int port;
+        public Buffers buffers;
+    }
+
+    [HideInInspector]
+    public JsonMessage<NetworkConfig> network_config;
+
+    [SerializeField]
+    private string main_menu_name;
+
+    public bool IsInitialized { get; private set; }
+
+    [SerializeField]
+    private MainMenu main_menu;
+
+    private void Start()
+    {
+#if UNITY_EDITOR
+        debug_config_dir = "../Configs/data/client_debug_config.json";
+        network_config_dir = "../Configs/data/network_config.json";
+#else
+        debug_config_dir = "../../../Configs/data/client_debug_config.json";
+        network_config_dir = "../../../Configs/data/network_config.json";
+#endif
+
+        ProcessConfig(ref debug_config, debug_config_dir);
+        ProcessConfig(ref network_config, network_config_dir);
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
@@ -53,16 +101,30 @@ public class SimulationManager : Singleton<SimulationManager>
         //    _instance.server.port = command_args.server_info.port;
         //}
 
-        await server.Connect();
+        IsInitialized = true;
+    }
+
+    public async Task<Exception> ConnectToServer(string ip, int port)
+    {
+        network_config.payload.host = ip;
+        network_config.payload.port = port;
+        return await server.Connect(network_config.payload);
+    }
+
+    public void OnServerDisconnected()
+    {
+        Debug.Log("No server response");
+        SceneManager.LoadScene(main_menu_name);
     }
 
     void Update()
     {
-        globalControls.Update(server != null && server.IsTcpGood());
+        globalControls.Update(in_manual_mode);
 
-        if (globalControls.quitting)
+        if (_instance.server.server_crash || globalControls.quitting)
         {
-            TerminateApplication();
+            SceneManager.LoadScene(main_menu_name);
+            _instance.server.server_crash = false;
         }
 
         if (globalControls.reload_scene)
@@ -80,13 +142,51 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.UpdateFPS();
     }
 
-    private void TerminateApplication()
+
+    public void Clear_Cache()
     {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
-#endif
+        if (debug_config.is_overridden)
+        {
+            DirectoryInfo di = new DirectoryInfo(debug_config.payload.packet_sent_dir);
+
+            if (di.Exists)
+            {
+                FileInfo[] files = di.GetFiles();
+                foreach (FileInfo file in files)
+                {
+                    file.Delete();
+                }
+            }
+            else
+            {
+                System.IO.Directory.CreateDirectory(di.FullName);
+            }
+
+            di = new DirectoryInfo(debug_config.payload.image_dir);
+
+            if (di.Exists)
+            {
+                FileInfo[] files = di.GetFiles();
+                foreach (FileInfo file in files)
+                {
+                    file.Delete();
+                }
+            }
+            else
+            {
+                System.IO.Directory.CreateDirectory(di.FullName);
+            }
+        }
+    }
+
+    public void ProcessConfig<T>(ref JsonMessage<T> config, string dir)
+    {
+        using (StreamReader r = new StreamReader(dir))
+        {
+            string json = r.ReadToEnd();
+            config.payload = JsonUtility.FromJson<T>(json);
+            config.is_overridden = true;
+        }
     }
 
     private void ParseCommandLineArguments(string[] args)

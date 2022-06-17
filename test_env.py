@@ -42,7 +42,6 @@ for _ in range(num_test_steps):
 
     # check episode length
     if ep_len >= max_ep_length:
-        print("Finished")
         done = True
 
 
@@ -53,17 +52,17 @@ for _ in range(num_test_steps):
     # if episode termination criteria met, finish episode, reset env, and reset log variables
     if done:
         obs = env.reset()
-        print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
+        print("Episode finished. Reward: {:.2f} Steps: {}".format(episode_rewards[-1], ep_len))
         episode_rewards.append(0.0)
         ep_len = 0
 
-print("Closing environment")
-env.close()
-
-print("Finished!")
+print("Run finished!")
 mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
 num_episodes = len(episode_rewards)
 print("Number of episodes: {}".format(num_episodes))
 print("Average reward: {}".format(mean_reward))
+
+print("Closing environment")
+env.close()
 
 

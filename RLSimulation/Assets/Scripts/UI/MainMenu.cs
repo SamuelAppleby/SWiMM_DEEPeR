@@ -48,6 +48,9 @@ public class MainMenu : MonoBehaviour
     [SerializeField]
     private Sprite unhealthy_network;
 
+    [SerializeField]
+    private TextMeshProUGUI working_directory_text;
+
     private IEnumerator Start()
     {
         yield return new WaitUntil(() => SimulationManager._instance.IsInitialized);
@@ -60,6 +63,7 @@ public class MainMenu : MonoBehaviour
         connect_text = connect_button.GetComponentInChildren<TextMeshProUGUI>();
         training_button_text = training_button.GetComponentInChildren<TextMeshProUGUI>();
         nn_button_text = nn_button.GetComponentInChildren<TextMeshProUGUI>();
+        working_directory_text.text = System.IO.Directory.GetCurrentDirectory();
         ChangeUIServerActive(SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood());
     }
 

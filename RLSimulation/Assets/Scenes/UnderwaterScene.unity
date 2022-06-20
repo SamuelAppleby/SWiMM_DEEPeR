@@ -768,19 +768,23 @@ MonoBehaviour:
   m_spawn_container_ratio: 0.8
   m_spawn_color: {r: 1, g: 0, b: 0, a: 0.3}
   m_water_collider: {fileID: 379434542}
-  ai_objects:
+  ai_groups:
   - prefabName: whale
-    maxAmount: 100
-    maxSpawn: 10
+    maxAmount: 10
+    maxSpawn: 2
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
+    roationOffset: 
+    rotationOffsetVector: {x: 0, y: 180, z: 0}
   - prefabName: fish
     maxAmount: 10000
-    maxSpawn: 100
-    enableSpawner: 0
+    maxSpawn: 1000
+    enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
+    roationOffset: 
+    rotationOffsetVector: {x: 0, y: 90, z: 0}
 --- !u!1 &451164446
 GameObject:
   m_ObjectHideFlags: 3
@@ -1031,7 +1035,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.38268346, y: -0.00000001589608, z: 0.0000000065832846, w: 0.92387956}
+  m_LocalRotation: {x: 0.38268346, y: 0.000000015896083, z: -0.000000006583285, w: 0.92387956}
   m_LocalPosition: {x: 0, y: 12, z: -12}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1232,7 +1236,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 569179580}
-  m_LocalRotation: {x: 0.38268343, y: -0.000000015896621, z: 0.000000006584597, w: 0.92387956}
+  m_LocalRotation: {x: 0.38268343, y: 0.000000015896624, z: -0.0000000065845964, w: 0.92387956}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1501,7 +1505,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.36679628, y: 0.00000001600712, z: -0.000000006311236, w: 0.9303013}
+  m_LocalRotation: {x: 0.36679628, y: -0.000000016007117, z: 0.0000000063112355, w: 0.9303013}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1836,7 +1840,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290624799}
-  m_LocalRotation: {x: 0.35083902, y: -2.2269647e-22, z: 2.0704893e-23, w: 0.9364358}
+  m_LocalRotation: {x: 0.35083902, y: -0, z: -0, w: 0.9364358}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

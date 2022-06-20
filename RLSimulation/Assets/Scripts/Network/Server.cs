@@ -174,17 +174,35 @@ public class Server
     {
         try
         {
+
             string json_str = JsonUtility.ToJson(data);
-            //Debug.Log("Sending: " + json_str);
+            Debug.Log("Sending: " + json_str);
 
-            if (SimulationManager._instance.debug_config.is_overridden && SimulationManager._instance.debug_config.payload.save_sent_packets)
+            if (SimulationManager._instance.debug_config.is_overridden)
             {
-                await File.WriteAllTextAsync(SimulationManager._instance.debug_config.payload.packet_sent_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
-                DataToSend<Telemetary_Data>? obj = data as DataToSend<Telemetary_Data>?;
-
-                if (obj != null && SimulationManager._instance.debug_config.payload.save_images)
+                if (SimulationManager._instance.debug_config.payload.save_sent_packets)
                 {
-                    File.WriteAllBytes(SimulationManager._instance.debug_config.payload.image_dir + "sent_image" + sequence_num.ToString() + ".jpg", obj.Value.payload.jpg_image);
+                    if (!Directory.Exists(SimulationManager._instance.debug_config.payload.packet_sent_dir))
+                    {
+                        Directory.CreateDirectory(SimulationManager._instance.debug_config.payload.packet_sent_dir);
+                    }
+
+                    await File.WriteAllTextAsync(SimulationManager._instance.debug_config.payload.packet_sent_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
+                }
+
+
+                if (SimulationManager._instance.debug_config.payload.save_images)
+                {
+                    DataToSend<Telemetary_Data>? obj = data as DataToSend<Telemetary_Data>?;
+
+                    if(obj != null)
+                    {
+                        if (!Directory.Exists(SimulationManager._instance.debug_config.payload.image_dir))
+                        {
+                            Directory.CreateDirectory(SimulationManager._instance.debug_config.payload.image_dir);
+                        }
+                        File.WriteAllBytes(SimulationManager._instance.debug_config.payload.image_dir + "sent_image" + sequence_num.ToString() + ".jpg", obj.Value.payload.jpg_image);
+                    }
                 }
             }
 
@@ -235,7 +253,7 @@ public class Server
 
             if (jsonStr != null)
             {
-                //Debug.Log("Received: " + jsonStr);
+                Debug.Log("Received: " + jsonStr);
 
                 MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
 

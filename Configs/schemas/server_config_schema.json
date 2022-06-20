@@ -52,7 +52,7 @@
                             "type": "object",
                             "properties": {
                                 "spawnTimer": {
-                                    "type": "integer"
+                                    "type": "number"
                                 },
                                 "spawnContainerRatio": {
                                     "type": "number"
@@ -66,10 +66,10 @@
                                                 "type": "string"
                                             },
                                             "maxAmount": {
-                                                "type": "integer"
+                                                "type": "number"
                                             },
                                             "maxSpawn": {
-                                                "type": "integer"
+                                                "type": "number"
                                             },
                                             "randomizeStats": {
                                                 "type": "boolean"
@@ -79,7 +79,18 @@
                                             },
                                             "randomMovement": {
                                                 "type": "boolean"
-                                            }
+                                            },
+                                            "rotationOffset": {
+                                                "type" : "array",
+                                                "items": {
+                                                    "type": "number"
+                                                },
+                                                "minItems": 3,
+                                                "maxItems": 3
+                                            },
+                                            "scale" : {
+                                                "type" : "number"
+                                            }                             
                                         },
                                         "required": [
                                             "prefabName",
@@ -87,7 +98,9 @@
                                             "maxSpawn",
                                             "randomizeStats",
                                             "enableSpawner",
-                                            "randomMovement"
+                                            "randomMovement",
+                                            "rotationOffset",
+                                            "scale"
                                         ]
                                     }
                                 }

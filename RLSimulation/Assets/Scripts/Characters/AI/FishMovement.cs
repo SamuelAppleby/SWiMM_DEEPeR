@@ -15,12 +15,24 @@ public class FishMovement : MonoBehaviour
 
     private Collider m_collider;
 
+    // For axis fixing import from fbx, 3dsmax etc
+    public Vector3 rotation_offset;
+
     // Start is called before the first frame update
     void Start()
     {
         m_ai_manager = transform.parent.GetComponentInParent<FishSpawner>();
         m_animation = GetComponent<Animation>();
-        SetUpNPC();
+
+        if (transform.GetComponent<Collider>() != null && transform.GetComponentInChildren<Collider>().enabled)
+        {
+            m_collider = transform.GetComponent<Collider>();
+        }
+        else if (transform.GetComponentInChildren<Collider>() != null && transform.GetComponentInChildren<Collider>().enabled)
+        {
+            m_collider = transform.GetComponentInChildren<Collider>();
+        }
+
         FindNewTarget();
     }
 
@@ -37,10 +49,12 @@ public class FishMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        float turn_speed = m_speed * UnityEngine.Random.Range(1f, 3f);
+        float turn_speed = m_speed * UnityEngine.Random.Range(0.3f, 1f);
 
-        Vector3 look_at = (transform.position - m_waypoint);
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look_at), Time.deltaTime * turn_speed);
+        Quaternion look_at = Quaternion.LookRotation(m_waypoint - transform.position);
+        Quaternion correction = Quaternion.Euler(rotation_offset);
+
+        transform.rotation = Quaternion.Slerp(transform.rotation, look_at * correction, Time.deltaTime * turn_speed);
         transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.deltaTime);
     }
 
@@ -56,25 +70,10 @@ public class FishMovement : MonoBehaviour
         m_speed = UnityEngine.Random.Range(m_mix_max_speed.Item1, m_mix_max_speed.Item2);
     }
 
-    private void SetUpNPC()
-    {
-        float m_scale = UnityEngine.Random.Range(0f, 4f);
-        transform.localScale *= m_scale;
-
-        if (transform.GetComponent<Collider>() != null && transform.GetComponentInChildren<Collider>().enabled)
-        {
-            m_collider = transform.GetComponent<Collider>();
-        }
-        else if (transform.GetComponentInChildren<Collider>() != null && transform.GetComponentInChildren<Collider>().enabled)
-        {
-            m_collider = transform.GetComponentInChildren<Collider>();
-        }
-    }
-
     private void ResolveCollisions()
     {
         RaycastHit hit;
-        if (Physics.Raycast(transform.position, transform.forward, out hit, 10.0f))
+        if (Physics.Raycast(transform.position, (Quaternion.Inverse(Quaternion.Euler(rotation_offset)) * transform.forward).normalized, out hit, 10.0f))
         {
             if (hit.collider == m_collider)
             {
@@ -91,6 +90,7 @@ public class FishMovement : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Vector3 forward = transform.TransformDirection(Vector3.forward) * 10;
-        Debug.DrawRay(transform.position, forward, Color.green);
+
+        Debug.DrawRay(transform.position, (Quaternion.Inverse(Quaternion.Euler(rotation_offset)) * transform.forward).normalized * 10, Color.green);
     }
 }

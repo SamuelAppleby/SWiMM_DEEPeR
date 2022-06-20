@@ -22,23 +22,29 @@
                         "maxSpawn": 1,
                         "enableSpawner": true,
                         "randomMovement": true,
-                        "randomizeStats": false
+                        "randomizeStats": false,
+                        "rotationOffset": [0,0,0],
+                        "scale" : 1
                     },
                     {
                         "prefabName": "whale",
-                        "maxAmount": 10,
-                        "maxSpawn": 5,
+                        "maxAmount": 20,
+                        "maxSpawn": 3,
                         "enableSpawner": true,
                         "randomMovement": true,
-                        "randomizeStats": false
+                        "randomizeStats": false,
+                        "rotationOffset": [0,180,0],
+                        "scale" : 15
                     },
                     {
                         "prefabName": "fish",
-                        "maxAmount": 10000,
-                        "maxSpawn": 1000,
+                        "maxAmount": 100000,
+                        "maxSpawn": 10000,
                         "enableSpawner": true,
                         "randomMovement": true,
-                        "randomizeStats": false
+                        "randomizeStats": false,
+                        "rotationOffset": [0,90,0],
+                        "scale" : 4
                     }
                 ]
             }

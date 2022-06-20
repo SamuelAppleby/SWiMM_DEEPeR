@@ -17,10 +17,8 @@ public class ThirdPersonMovement : MonoBehaviour
     public float groundDragConstant;
     public float groundAngularDragConstant;
 
-    public Material roverMaterial;
-
     private Rigidbody m_RigidBody;
-    private bool m_Hovering = false;
+    private bool m_Hovering = true;
 
     public LayerMask groundMask;
     public LayerMask waterMask;
@@ -49,19 +47,19 @@ public class ThirdPersonMovement : MonoBehaviour
         activeCamera = firstPersonCam;
         SimulationManager._instance.rover = gameObject;
 
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
-        {
-            firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.fov;
-            RenderSettings.fogStartDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogStart;
-            RenderSettings.fogEndDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogEnd;
-            RenderSettings.fog = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn;
-        }
-        else
-        {
-            RenderSettings.fogStartDistance = 10;
-            RenderSettings.fogEndDistance = 200;
-            RenderSettings.fog = true;
-        }
+        //if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
+        //{
+        //    firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.fov;
+        //    RenderSettings.fogStartDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogStart;
+        //    RenderSettings.fogEndDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogEnd;
+        //    RenderSettings.fog = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn;
+        //}
+        //else
+        //{
+        //    RenderSettings.fogStartDistance = 10;
+        //    RenderSettings.fogEndDistance = 200;
+        //    RenderSettings.fog = true;
+        //}
     }
 
     void Update()
@@ -87,7 +85,6 @@ public class ThirdPersonMovement : MonoBehaviour
         if (movement_controls.hovering)
         {
             m_Hovering = !m_Hovering;
-            roverMaterial.color = m_Hovering ? Color.green : Color.blue;
         }
     }
 

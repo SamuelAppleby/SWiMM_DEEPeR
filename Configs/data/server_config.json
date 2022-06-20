@@ -18,8 +18,8 @@
                 "aiGroups": [
                     {
                         "prefabName": "dolphin",
-                        "maxAmount": 1,
-                        "maxSpawn": 1,
+                        "maxAmount": 30,
+                        "maxSpawn": 5,
                         "enableSpawner": true,
                         "randomMovement": true,
                         "randomizeStats": false,
@@ -27,19 +27,9 @@
                         "scale" : 5
                     },
                     {
-                        "prefabName": "whale",
-                        "maxAmount": 20,
-                        "maxSpawn": 3,
-                        "enableSpawner": true,
-                        "randomMovement": true,
-                        "randomizeStats": false,
-                        "rotationOffset": [0,180,0],
-                        "scale" : 15
-                    },
-                    {
                         "prefabName": "fish",
-                        "maxAmount": 100000,
-                        "maxSpawn": 10000,
+                        "maxAmount": 10000,
+                        "maxSpawn": 100,
                         "enableSpawner": true,
                         "randomMovement": true,
                         "randomizeStats": false,

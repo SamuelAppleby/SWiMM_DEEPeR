@@ -10,10 +10,10 @@ public class FishMovement : MonoBehaviour
     private Vector3 m_waypoint;
     private Vector3 m_last_waypoint = new Vector3(0f, 0f, 0f);
     private Animation m_animation;
+    private AudioSource call;
+    private float call_timer = 10f;
     private float m_speed;
     private Tuple<float, float> m_mix_max_speed = new Tuple<float, float>(1, 7);
-
-    private Collider m_collider;
 
     // For axis fixing import from fbx, 3dsmax etc
     public Vector3 rotation_offset;
@@ -22,17 +22,8 @@ public class FishMovement : MonoBehaviour
     void Start()
     {
         m_ai_manager = transform.parent.GetComponentInParent<FishSpawner>();
-        m_animation = GetComponent<Animation>();
-
-        if (transform.GetComponent<Collider>() != null && transform.GetComponentInChildren<Collider>().enabled)
-        {
-            m_collider = transform.GetComponent<Collider>();
-        }
-        else if (transform.GetComponentInChildren<Collider>() != null && transform.GetComponentInChildren<Collider>().enabled)
-        {
-            m_collider = transform.GetComponentInChildren<Collider>();
-        }
-
+        m_animation = GetComponentInChildren<Animation>();
+        call = GetComponentInChildren<AudioSource>();
         FindNewTarget();
     }
 
@@ -44,6 +35,21 @@ public class FishMovement : MonoBehaviour
         if((m_waypoint - transform.position).magnitude < 10)
         {
             FindNewTarget();
+        }
+
+        if(call != null)
+        {
+            call_timer -= Time.deltaTime;
+
+            if (call_timer <= 0)
+            {
+                if (UnityEngine.Random.Range(0f, 1f) <= 0.2f)
+                {
+                    call.Play();
+                }
+
+                call_timer = 10f;
+            }
         }
     }
 
@@ -75,11 +81,7 @@ public class FishMovement : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(transform.position, (Quaternion.Inverse(Quaternion.Euler(rotation_offset)) * transform.forward).normalized, out hit, 10.0f))
         {
-            if (hit.collider == m_collider)
-            {
-                return;
-            }
-            else if (hit.collider.tag == "Waypoint" || hit.collider.tag == "Terrain" || UnityEngine.Random.Range(1, 100) < 40)
+            if (hit.collider.tag == "Waypoint" || hit.collider.tag == "Terrain" || UnityEngine.Random.Range(1, 100) < 40)
             {
                 FindNewTarget();
             }

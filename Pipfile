@@ -12,6 +12,7 @@ stable-baselines = "==2.10.1"
 gym = "==0.17.3"
 
 [dev-packages]
+pylint = "*"
 
 [requires]
 python_version = "3.6"

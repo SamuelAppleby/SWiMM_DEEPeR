@@ -24,7 +24,7 @@
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [0,0,0],
-                        "scale" : 1
+                        "scale" : 5
                     },
                     {
                         "prefabName": "whale",
@@ -44,7 +44,7 @@
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [0,90,0],
-                        "scale" : 4
+                        "scale" : 5
                     }
                 ]
             }

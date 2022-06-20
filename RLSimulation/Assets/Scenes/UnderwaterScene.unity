@@ -769,22 +769,33 @@ MonoBehaviour:
   m_spawn_color: {r: 1, g: 0, b: 0, a: 0.3}
   m_water_collider: {fileID: 379434542}
   ai_groups:
-  - prefabName: whale
-    maxAmount: 10
-    maxSpawn: 2
-    enableSpawner: 1
-    randomMovement: 1
-    randomizeStats: 0
-    roationOffset: 
-    rotationOffsetVector: {x: 0, y: 180, z: 0}
   - prefabName: fish
     maxAmount: 10000
     maxSpawn: 1000
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
-    roationOffset: 
+    rotationOffset: 
     rotationOffsetVector: {x: 0, y: 90, z: 0}
+    scale: 5
+  - prefabName: whale
+    maxAmount: 10
+    maxSpawn: 2
+    enableSpawner: 1
+    randomMovement: 1
+    randomizeStats: 0
+    rotationOffset: 
+    rotationOffsetVector: {x: 0, y: 180, z: 0}
+    scale: 15
+  - prefabName: dolphin
+    maxAmount: 100
+    maxSpawn: 10
+    enableSpawner: 1
+    randomMovement: 1
+    randomizeStats: 0
+    rotationOffset: 
+    rotationOffsetVector: {x: 0, y: 0, z: 0}
+    scale: 5
 --- !u!1 &451164446
 GameObject:
   m_ObjectHideFlags: 3

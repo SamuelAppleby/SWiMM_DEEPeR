@@ -19,7 +19,7 @@ public class GlobalControlSettings
 
     public void Update(bool manual_controls)
     {
-        quitting = Input.GetKeyDown(GlobalControlMap.QuitKey);
+        quitting = Input.GetKeyUp(GlobalControlMap.QuitKey);
         changeWindow = Input.GetKeyDown(GlobalControlMap.ChangeWindowKey);
 
         if (manual_controls)

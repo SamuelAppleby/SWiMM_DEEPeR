@@ -119,12 +119,20 @@ public class SimulationManager : Singleton<SimulationManager>
 
     void Update()
     {
-        globalControls.Update(in_manual_mode);
+        globalControls.Update(_instance.in_manual_mode);
 
-        if (_instance.server.server_crash || globalControls.quitting)
+        if (_instance.server.server_crash)
         {
-            SceneManager.LoadScene(main_menu_name);
+            SceneManager.LoadScene(_instance.main_menu_name);
             _instance.server.server_crash = false;
+        }
+
+        if (globalControls.quitting)
+        {
+            if(SceneManager.GetActiveScene().name != _instance.main_menu_name)
+            {
+                SceneManager.LoadScene(_instance.main_menu_name);
+            }
         }
 
         if (globalControls.reload_scene)

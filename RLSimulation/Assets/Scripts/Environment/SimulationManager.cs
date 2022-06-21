@@ -8,7 +8,8 @@ using static Server;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
-    public bool in_manual_mode = false;
+    [HideInInspector]
+    public bool in_manual_mode;
 
     private string network_config_dir;
     private string debug_config_dir;
@@ -22,7 +23,7 @@ public class SimulationManager : Singleton<SimulationManager>
     private int avgFrameRate;
 
     private FullScreenMode[] screenmodes;
-    private int screenIndex = 0;
+    private int screenIndex;
 
     static public GlobalControlSettings globalControls = new GlobalControlSettings();
 
@@ -67,41 +68,32 @@ public class SimulationManager : Singleton<SimulationManager>
     public JsonMessage<NetworkConfig> network_config;
 
     [SerializeField]
-    private string main_menu_name;
+    private string main_menu_name = "MainMenu";
 
     public bool IsInitialized { get; private set; }
-
-    [SerializeField]
-    private MainMenu main_menu;
 
     private void Start()
     {
 #if UNITY_EDITOR
-        debug_config_dir = "../Configs/data/client_debug_config.json";
-        network_config_dir = "../Configs/data/network_config.json";
+        _instance.debug_config_dir = "../Configs/data/client_debug_config.json";
+        _instance.network_config_dir = "../Configs/data/network_config.json";
 #else
-        debug_config_dir = "../../../Configs/data/client_debug_config.json";
-        network_config_dir = "../../../Configs/data/network_config.json";
+        _instance.debug_config_dir = "../../../Configs/data/client_debug_config.json";
+        _instance.network_config_dir = "../../../Configs/data/network_config.json";
 #endif
 
-        ProcessConfig(ref debug_config, debug_config_dir);
-        ProcessConfig(ref network_config, network_config_dir);
+        _instance.ProcessConfig(ref debug_config, debug_config_dir);
+        _instance.ProcessConfig(ref network_config, network_config_dir);
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
 
         _instance.server = new Server();
+        _instance.in_manual_mode = true;
 
-        ////ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
+        ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
 
-        //// If not set via command line (normal flow)
-        //if (command_args.server_info.server_set)
-        //{
-        //    _instance.server.ip = command_args.server_info.ip;
-        //    _instance.server.port = command_args.server_info.port;
-        //}
-
-        IsInitialized = true;
+        _instance.IsInitialized = true;
     }
 
     public async Task<Exception> ConnectToServer(string ip, int port)

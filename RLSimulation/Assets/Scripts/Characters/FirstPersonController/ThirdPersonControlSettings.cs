@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using static Server;
 
-static class MovementControlMap
+public static class MovementControlMap
 {
     public static KeyCode CameraChange = KeyCode.C;
     public static string ForwardKey = "Vertical";
@@ -13,8 +13,15 @@ static class MovementControlMap
 }
 
 [Serializable]
+public struct Controls_Audio
+{
+    public AudioSource audio_motor;
+}
+
+[Serializable]
 public class ThirdPersonControlSettings
 {
+    public Controls_Audio audios;
     public float ThrustPower = 8.0f;
     public AnimationCurve SlopeCurveModifier = new AnimationCurve(new Keyframe(-90.0f, 1.0f), new Keyframe(0.0f, 1.0f), new Keyframe(90.0f, 0.0f));
 
@@ -46,6 +53,19 @@ public class ThirdPersonControlSettings
 
             // Sam.A Talk to Kirsten, do we want previous controls for good?
             //SimulationManager._instance.server.rover_controls.Reset();
+        }
+
+        /* Audio */
+        if (movementInputs.magnitude > 0 || rotationInputs.magnitude > 0)
+        {
+            if (!audios.audio_motor.isPlaying)
+            {
+                audios.audio_motor.Play();
+            }
+        }
+        else
+        {
+            audios.audio_motor.Stop();
         }
 
         mouseWheel = Input.GetAxis("Mouse ScrollWheel");

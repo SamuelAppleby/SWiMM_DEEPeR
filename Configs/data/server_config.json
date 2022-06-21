@@ -4,6 +4,9 @@
         "roverConfig": {
             "camConfig": {
                 "fov": 100
+            },
+            "structureConfig" : {
+                "ballastMass": 1.2
             }
         },
         "envConfig": {

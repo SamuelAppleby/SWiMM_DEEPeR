@@ -20,10 +20,22 @@
                             "required": [
                                 "fov"
                             ]
+                        },
+                        "structureConfig": {
+                            "type": "object",
+                            "properties": {
+                                "ballastMass": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "ballastMass"
+                            ]
                         }
                     },
                     "required": [
-                        "camConfig"
+                        "camConfig",
+                        "structureConfig"
                     ]
                 },
                 "envConfig": {

@@ -56,12 +56,20 @@ public class Server
     public struct RoverConfig
     {
         public CameraConfig camConfig;
+        public StructureConfig structureConfig;
     }
 
     [Serializable]
     public struct CameraConfig
     {
         public int fov;
+    }
+
+    [Serializable]
+    public struct StructureConfig
+    {
+        [Range(0f, 1.2f)]
+        public float ballastMass;   // rover spec, 6x200g masses
     }
 
     [Serializable]

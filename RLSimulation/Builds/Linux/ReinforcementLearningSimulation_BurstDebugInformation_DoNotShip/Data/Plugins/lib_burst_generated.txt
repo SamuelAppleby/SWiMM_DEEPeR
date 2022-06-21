@@ -122,6 +122,11 @@ Library: lib_burst_generated
 --compilation-defines=REFLECTION_PROBE_UPDATE_CACHED_DATA_AVAILABLE
 --compilation-defines=ENABLE_MATHEMATICS_1_2_1
 --compilation-defines=ENABLE_BURST_1_5_0_OR_NEWER
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_VR
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_XR
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS2D
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_UI
 --compilation-defines=PACKAGE_INPUT_SYSTEM_EXISTS
 --compilation-defines=MODULE_AI_EXISTS
 --compilation-defines=MODULE_ANIMATION_EXISTS
@@ -145,17 +150,13 @@ Library: lib_burst_generated
 --compilation-defines=VFX_HAS_PHYSICS
 --compilation-defines=VFX_HAS_AUDIO
 --compilation-defines=VFX_HAS_INPUT_SYSTEM_PACKAGE
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_VR
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_XR
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS2D
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_UI
 --generate-link-xml=Temp\burst.link.xml
 --output=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Plugins\lib_burst_generated
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\UnityEngine.UI.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.Core.Runtime.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.HighDefinition.Runtime.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.Services.Core.Telemetry.dll
+--root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.InputSystem.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.VisualScripting.State.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.VisualScripting.Flow.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Assembly-CSharp.dll
@@ -182,7 +183,6 @@ Library: lib_burst_generated
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.Core.ShaderLibrary.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.HighDefinition.Config.Runtime.dll
---root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.InputSystem.dll
 --assembly-folder=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\
 --pdb-search-paths=Temp/ManagedSymbols/
 --method=Unity.Burst.BurstCompiler+BurstCompilerHelper, Unity.Burst, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::IsBurstEnabled()--8c2be93e18276203cbd918daa2748a10
@@ -314,6 +314,11 @@ Library: lib_burst_generated
 --compilation-defines=REFLECTION_PROBE_UPDATE_CACHED_DATA_AVAILABLE
 --compilation-defines=ENABLE_MATHEMATICS_1_2_1
 --compilation-defines=ENABLE_BURST_1_5_0_OR_NEWER
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_VR
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_XR
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS2D
+--compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_UI
 --compilation-defines=PACKAGE_INPUT_SYSTEM_EXISTS
 --compilation-defines=MODULE_AI_EXISTS
 --compilation-defines=MODULE_ANIMATION_EXISTS
@@ -337,17 +342,13 @@ Library: lib_burst_generated
 --compilation-defines=VFX_HAS_PHYSICS
 --compilation-defines=VFX_HAS_AUDIO
 --compilation-defines=VFX_HAS_INPUT_SYSTEM_PACKAGE
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_VR
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_XR
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_PHYSICS2D
---compilation-defines=UNITY_INPUT_SYSTEM_ENABLE_UI
 --generate-link-xml=Temp\burst.link.xml
 --output=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Plugins\lib_burst_generated
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\UnityEngine.UI.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.Core.Runtime.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.HighDefinition.Runtime.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.Services.Core.Telemetry.dll
+--root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.InputSystem.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.VisualScripting.State.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.VisualScripting.Flow.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Assembly-CSharp.dll
@@ -374,7 +375,6 @@ Library: lib_burst_generated
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.Core.ShaderLibrary.dll
 --root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.HighDefinition.Config.Runtime.dll
---root-assembly=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\Unity.InputSystem.dll
 --assembly-folder=C:\Users\sambu\Documents\CodeBases\RLSimulation\RLSimulation\Temp\StagingArea\Data\Managed\
 --pdb-search-paths=Temp/ManagedSymbols/
 --method=Unity.Burst.BurstCompiler+BurstCompilerHelper, Unity.Burst, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::IsBurstEnabled()--8c2be93e18276203cbd918daa2748a10

@@ -7,7 +7,7 @@
 # "$*"" will do the same thing but put all arguments in one space separated string
 cd ..
 cd ..
-python3 test_env.py "$@" &
+python3 train.py "$@" &
 
 # haven't tested this line yet, need the right build format
 cd RLSimulation/Builds/Linux

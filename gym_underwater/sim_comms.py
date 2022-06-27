@@ -4,6 +4,9 @@ import json
 import os
 import numpy as np 
 import math
+from io import BytesIO
+from PIL import Image
+import base64
 
 from gym_underwater.python_server import PythonServer
 from config import *
@@ -170,13 +173,11 @@ class UnitySimHandler():
             logger.warning(f"unknown message type {msg_type}")
 
     def on_telemetry(self, payload):
-
-        image = payload["jpg_image"]
-        self.image_array = np.array(image)
+        image = bytearray(payload["jpg_image"])
+        self.image_array = np.array(Image.open(BytesIO(image)))
 
         if self.server.debug_config["save_images"]:
-            b = bytearray(image)
-            self.write_image_to_file_incrementally(b)
+            self.write_image_to_file_incrementally(image)
 
         self.rover_pos = np.array([payload["position"]["x"], payload["position"]["y"], payload["position"]["z"]])
         self.hit = payload["collision_objects"]

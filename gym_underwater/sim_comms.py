@@ -6,7 +6,6 @@ import numpy as np
 import math
 from io import BytesIO
 from PIL import Image
-import base64
 
 from gym_underwater.python_server import PythonServer
 from config import *

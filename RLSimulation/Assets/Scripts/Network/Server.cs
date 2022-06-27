@@ -62,6 +62,7 @@ public class Server
     [Serializable]
     public struct CameraConfig
     {
+        public int[] resolution;
         public int fov;
     }
 
@@ -190,14 +191,8 @@ public class Server
             {
                 if (SimulationManager._instance.debug_config.payload.save_sent_packets)
                 {
-                    if (!Directory.Exists(SimulationManager._instance.debug_config.payload.packet_sent_dir))
-                    {
-                        Directory.CreateDirectory(SimulationManager._instance.debug_config.payload.packet_sent_dir);
-                    }
-
                     await File.WriteAllTextAsync(SimulationManager._instance.debug_config.payload.packet_sent_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
                 }
-
 
                 if (SimulationManager._instance.debug_config.payload.save_images)
                 {
@@ -205,10 +200,6 @@ public class Server
 
                     if(obj != null)
                     {
-                        if (!Directory.Exists(SimulationManager._instance.debug_config.payload.image_dir))
-                        {
-                            Directory.CreateDirectory(SimulationManager._instance.debug_config.payload.image_dir);
-                        }
                         File.WriteAllBytes(SimulationManager._instance.debug_config.payload.image_dir + "sent_image" + sequence_num.ToString() + ".jpg", obj.Value.payload.jpg_image);
                     }
                 }

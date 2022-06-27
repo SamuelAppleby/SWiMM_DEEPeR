@@ -13,11 +13,20 @@
                         "camConfig": {
                             "type": "object",
                             "properties": {
+                                "resolution": {
+                                    "type" : "array",
+                                    "items": {
+                                        "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                },
                                 "fov": {
                                     "type": "number"
                                 }
                             },
                             "required": [
+                                "resolution",
                                 "fov"
                             ]
                         },

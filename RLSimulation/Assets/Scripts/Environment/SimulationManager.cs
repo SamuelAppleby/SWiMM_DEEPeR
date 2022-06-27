@@ -20,7 +20,8 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public GameObject rover;
 
-    private int avgFrameRate;
+    [HideInInspector]
+    public int avgFrameRate;
 
     private FullScreenMode[] screenmodes;
     private int screenIndex;
@@ -74,6 +75,8 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private void Start()
     {
+        _instance.InvokeRepeating("UpdateFPS", 1, 1);
+
 #if UNITY_EDITOR
         _instance.debug_config_dir = "../Configs/data/client_debug_config.json";
         _instance.network_config_dir = "../Configs/data/network_config.json";
@@ -84,6 +87,8 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.ProcessConfig(ref debug_config, debug_config_dir);
         _instance.ProcessConfig(ref network_config, network_config_dir);
+        PurgeAndCreateDirectory(_instance.debug_config.payload.packet_sent_dir);
+        PurgeAndCreateDirectory(_instance.debug_config.payload.image_dir);
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
@@ -94,6 +99,16 @@ public class SimulationManager : Singleton<SimulationManager>
         ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
 
         _instance.IsInitialized = true;
+    }
+
+    private void PurgeAndCreateDirectory(string dir_path)
+    {
+        if (Directory.Exists(dir_path))
+        {
+            Directory.Delete(dir_path, true);
+        }
+
+        Directory.CreateDirectory(dir_path);
     }
 
     public async Task<Exception> ConnectToServer(string ip, int port)
@@ -138,8 +153,6 @@ public class SimulationManager : Singleton<SimulationManager>
             _instance.screenIndex = _instance.screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
             Screen.fullScreenMode = _instance.screenmodes[screenIndex];
         }
-
-        _instance.UpdateFPS();
     }
 
 

@@ -35,7 +35,7 @@ public class ThirdPersonMovement : MonoBehaviour
     [HideInInspector] 
     public Camera active_cam, inactive_cam;
 
-    public Tuple<int,int> resolution = new Tuple<int, int>(256, 256);
+    public Tuple<int, int> resolution;
 
     private AudioSource m_audio_motor;
 
@@ -47,13 +47,15 @@ public class ThirdPersonMovement : MonoBehaviour
         m_RigidBody = GetComponent<Rigidbody>();
         originalDrag = m_RigidBody.drag;
         originalAngularDrag = m_RigidBody.angularDrag;
-        active_cam = firstPersonCam;
-        inactive_cam = thirdPersonCam;
+        active_cam = thirdPersonCam;
+        inactive_cam = firstPersonCam;
         SimulationManager._instance.rover = gameObject;
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
         {
             firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.fov;
+            resolution = new Tuple<int, int>(SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.resolution[0],
+                SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.resolution[1]);
             m_RigidBody.mass += SimulationManager._instance.server.server_config.payload.roverConfig.structureConfig.ballastMass;
         }
     }

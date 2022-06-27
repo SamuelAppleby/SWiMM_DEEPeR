@@ -3,6 +3,7 @@
     "payload": {
         "roverConfig": {
             "camConfig": {
+                "resolution": [256,256],
                 "fov": 100
             },
             "structureConfig" : {

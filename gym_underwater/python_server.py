@@ -125,7 +125,7 @@ class PythonServer():
 
             # receive packets
             part = conn.recv(1024 * self.receive_buffer_size)
-            print("[+] Received", part)
+            #print("[+] Received", part)
             if not part:
                 print("[-] Not Binary Image")
                 self.stop()
@@ -144,7 +144,7 @@ class PythonServer():
 
             # send 'reply' to client
             self.send_msg()
-            print(f"[+] Sent action to {self.addr[0]}:{self.addr[1]}")
+            #print(f"[+] Sent action to {self.addr[0]}:{self.addr[1]}")
 
     def send_msg(self):
         print(self.msg.encode('utf-8'))

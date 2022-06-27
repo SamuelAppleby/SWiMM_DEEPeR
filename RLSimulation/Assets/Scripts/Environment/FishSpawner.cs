@@ -152,7 +152,6 @@ public class FishSpawner : MonoBehaviour
                 {
                     for (int i = 0; i < Random.Range(0, obj.maxSpawn + 1); ++i)
                     {
-                        Quaternion random_rotation = Quaternion.Euler(Random.Range(-20, 20), Random.Range(0, 360), 0);
                         Vector3 random_position = GetRandomPosition();
                         if(IsValidLocation(random_position, 30))
                         {

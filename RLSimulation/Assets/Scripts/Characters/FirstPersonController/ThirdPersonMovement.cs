@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
 {
+    [HideInInspector]
     public List<Transform> target_transforms = new List<Transform>();
 
     private float originalDrag;
@@ -17,16 +18,13 @@ public class ThirdPersonMovement : MonoBehaviour
     public float groundDragConstant;
     public float groundAngularDragConstant;
 
-    public Material roverMaterial;
-
     private Rigidbody m_RigidBody;
     private bool m_Hovering = false;
 
     public LayerMask groundMask;
     public LayerMask waterMask;
     private List<string> collision_objects = new List<string>();
-    [HideInInspector]
-    public bool m_IsUnderwater;
+    private bool m_IsUnderwater;
 
     public ThirdPersonControlSettings movement_controls = new ThirdPersonControlSettings();
 
@@ -35,32 +33,28 @@ public class ThirdPersonMovement : MonoBehaviour
     public CinemachineFreeLook cinecamera;
 
     [HideInInspector] 
-    public Camera activeCamera;
+    public Camera active_cam, inactive_cam;
 
     public Tuple<int,int> resolution = new Tuple<int, int>(256, 256);
 
+    private AudioSource m_audio_motor;
+
     private void Start()
     {
+        m_audio_motor = GetComponent<AudioSource>();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
         originalDrag = m_RigidBody.drag;
         originalAngularDrag = m_RigidBody.angularDrag;
-        activeCamera = firstPersonCam;
+        active_cam = firstPersonCam;
+        inactive_cam = thirdPersonCam;
         SimulationManager._instance.rover = gameObject;
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
         {
             firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.fov;
-            RenderSettings.fogStartDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogStart;
-            RenderSettings.fogEndDistance = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogEnd;
-            RenderSettings.fog = SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn;
-        }
-        else
-        {
-            RenderSettings.fogStartDistance = 10;
-            RenderSettings.fogEndDistance = 200;
-            RenderSettings.fog = true;
+            m_RigidBody.mass += SimulationManager._instance.server.server_config.payload.roverConfig.structureConfig.ballastMass;
         }
     }
 
@@ -74,30 +68,23 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (movement_controls.cameraChange)
         {
-            if(activeCamera == firstPersonCam)
-            {
-                SwitchActiveCamera(ref firstPersonCam, ref thirdPersonCam);
-            }
-            else
-            {
-                SwitchActiveCamera(ref thirdPersonCam, ref firstPersonCam);
-            }
+            SwitchActiveCamera(active_cam, inactive_cam);
         }
 
         if (movement_controls.hovering)
         {
             m_Hovering = !m_Hovering;
-            roverMaterial.color = m_Hovering ? Color.green : Color.blue;
         }
     }
 
-    private void SwitchActiveCamera(ref Camera active, ref Camera inactive)
+    private void SwitchActiveCamera(Camera active, Camera inactive)
     {
         inactive.depth = 0;
         inactive.rect = new Rect(0, 0, 1, 1);
         active.depth = 1;
         active.rect = new Rect(0.7f, 0, 0.3f, 0.3f);
-        activeCamera = inactive;
+        active_cam = inactive;
+        inactive_cam = active;
     }
 
     private void FixedUpdate()
@@ -105,48 +92,42 @@ public class ThirdPersonMovement : MonoBehaviour
         m_RigidBody.drag = originalDrag * (m_IsUnderwater ? waterDragConstant : 1);
         m_RigidBody.angularDrag = originalAngularDrag * (m_IsUnderwater ? waterAngularDragConstant : 1);
 
-        if (!m_IsUnderwater)
-        {
-            return;
-        }
-
-        if (m_Hovering)
-        {
-            m_RigidBody.AddForce(new Vector3(0, 9.81f, 0), ForceMode.Acceleration);
-        }
-
-        /* Movement */
-        if (movement_controls.movementInputs.magnitude > float.Epsilon && (m_RigidBody.velocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower, 2)))
+        if (m_IsUnderwater)
         {
             Vector3 desiredMove = new Vector3();
-            if (movement_controls.movementInputs.y != 0 && m_IsUnderwater)
+            Vector3 desiredRotation = new Vector3();
+
+            /* Movement */
+            if (movement_controls.movementInputs.magnitude > float.Epsilon && (m_RigidBody.velocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower, 2)))
             {
-                desiredMove += firstPersonCam.transform.up * movement_controls.movementInputs.y;
-            }
-            if (movement_controls.movementInputs.z != 0)
-            {
-                desiredMove += firstPersonCam.transform.forward * movement_controls.movementInputs.z;
+                if (movement_controls.movementInputs.y != 0)
+                {
+                    desiredMove += firstPersonCam.transform.up * movement_controls.movementInputs.y;
+                }
+                if (movement_controls.movementInputs.z != 0)
+                {
+                    desiredMove += firstPersonCam.transform.forward * movement_controls.movementInputs.z;
+                }
+
+                desiredMove *= movement_controls.ThrustPower / 2;
+
             }
 
-            desiredMove *= movement_controls.ThrustPower / 2;
+            /* Rotation */
+            if (movement_controls.rotationInputs.magnitude > float.Epsilon && m_RigidBody.angularVelocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower / 10, 2))
+            {
+                if (movement_controls.rotationInputs.y != 0)
+                {
+                    desiredRotation.y += movement_controls.rotationInputs.y;
+                }
+
+                desiredRotation *= movement_controls.ThrustPower / 1000;
+            }
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Impulse);
-        }
-
-        /* Rotation */
-        if (movement_controls.rotationInputs.magnitude > float.Epsilon && m_RigidBody.angularVelocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower / 10, 2))
-        {
-            Vector3 desiredRotation = new Vector3();
-            if (movement_controls.rotationInputs.y != 0)
-            {
-                desiredRotation.y += movement_controls.rotationInputs.y;
-            }
-
-            desiredRotation *= movement_controls.ThrustPower / 1000;
-
             m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Impulse);
         }
-
+        
     }
 
     private void LateUpdate()

@@ -4,6 +4,9 @@
         "roverConfig": {
             "camConfig": {
                 "fov": 100
+            },
+            "structureConfig" : {
+                "ballastMass": 1.2
             }
         },
         "envConfig": {
@@ -18,33 +21,23 @@
                 "aiGroups": [
                     {
                         "prefabName": "dolphin",
-                        "maxAmount": 1,
-                        "maxSpawn": 1,
+                        "maxAmount": 30,
+                        "maxSpawn": 5,
                         "enableSpawner": true,
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [0,0,0],
-                        "scale" : 1
-                    },
-                    {
-                        "prefabName": "whale",
-                        "maxAmount": 20,
-                        "maxSpawn": 3,
-                        "enableSpawner": true,
-                        "randomMovement": true,
-                        "randomizeStats": false,
-                        "rotationOffset": [0,180,0],
-                        "scale" : 15
+                        "scale" : 5
                     },
                     {
                         "prefabName": "fish",
-                        "maxAmount": 100000,
-                        "maxSpawn": 10000,
+                        "maxAmount": 10000,
+                        "maxSpawn": 100,
                         "enableSpawner": true,
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [0,90,0],
-                        "scale" : 4
+                        "scale" : 5
                     }
                 ]
             }

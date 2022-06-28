@@ -22,9 +22,9 @@
                 "aiGroups": [
                     {
                         "prefabName": "dolphin",
-                        "maxAmount": 30,
-                        "maxSpawn": 5,
-                        "enableSpawner": true,
+                        "maxAmount": 1,
+                        "maxSpawn": 1,
+                        "enableSpawner": false,
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [0,0,0],
@@ -34,7 +34,7 @@
                         "prefabName": "fish",
                         "maxAmount": 10000,
                         "maxSpawn": 100,
-                        "enableSpawner": true,
+                        "enableSpawner": false,
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [0,90,0],

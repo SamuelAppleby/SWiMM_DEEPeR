@@ -73,6 +73,10 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public bool IsInitialized { get; private set; }
 
+    GameObject[] lighting_objs;
+
+    GameObject[] water_objs;
+
     private void Start()
     {
         _instance.InvokeRepeating("UpdateFPS", 1, 1);
@@ -85,10 +89,10 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.network_config_dir = "../../../Configs/data/network_config.json";
 #endif
 
-        _instance.ProcessConfig(ref debug_config, debug_config_dir);
-        _instance.ProcessConfig(ref network_config, network_config_dir);
-        PurgeAndCreateDirectory(_instance.debug_config.payload.packet_sent_dir);
-        PurgeAndCreateDirectory(_instance.debug_config.payload.image_dir);
+        _instance.ProcessConfig(ref _instance.debug_config, _instance.debug_config_dir);
+        _instance.ProcessConfig(ref _instance.network_config, _instance.network_config_dir);
+        _instance.PurgeAndCreateDirectory(_instance.debug_config.payload.packet_sent_dir);
+        _instance.PurgeAndCreateDirectory(_instance.debug_config.payload.image_dir);
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
@@ -96,7 +100,7 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.server = new Server();
         _instance.in_manual_mode = true;
 
-        ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
+        _instance.ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
 
         _instance.IsInitialized = true;
     }
@@ -122,6 +126,14 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         Debug.Log("No server response");
         SceneManager.LoadScene(main_menu_name);
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+
+        _instance.water_objs = GameObject.FindGameObjectsWithTag("Water");
+        _instance.lighting_objs = GameObject.FindGameObjectsWithTag("Lighting");
     }
 
     void Update()
@@ -153,8 +165,47 @@ public class SimulationManager : Singleton<SimulationManager>
             _instance.screenIndex = _instance.screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
             Screen.fullScreenMode = _instance.screenmodes[screenIndex];
         }
-    }
 
+
+        if (globalControls.cursor_change)
+        {
+            Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = !Cursor.visible;
+        }
+
+        if (globalControls.water_toggle)
+        {
+            if (_instance.water_objs.Length > 0)
+            {
+                foreach(GameObject obj in _instance.water_objs)
+                {
+                    obj.SetActive(!obj.activeSelf);
+                }
+            }
+        }
+
+        if (globalControls.volumetric_lighting_toggle)
+        {
+            if (_instance.lighting_objs.Length > 0)
+            {
+                foreach (GameObject obj in _instance.lighting_objs)
+                {
+                    obj.SetActive(!obj.activeSelf);
+                }
+            }
+        }
+
+        if (globalControls.reset_ncps)
+        {
+            foreach (Transform group_trans in FishSpawner.m_group_parent.GetComponentInChildren<Transform>().transform)
+            {
+                foreach (Transform ai in group_trans.transform)
+                {
+                    Destroy(ai.gameObject);
+                }
+            }
+        }
+    }
 
     public void Clear_Cache()
     {

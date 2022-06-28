@@ -1,13 +1,15 @@
 using System;
 using UnityEngine;
-using static Server;
-using static SimulationManager;
 
 static class GlobalControlMap
 {
     public static KeyCode QuitKey = KeyCode.Escape;
     public static KeyCode ChangeWindowKey = KeyCode.P;
     public static KeyCode ReloadKey = KeyCode.RightBracket;
+    public static KeyCode CursorLock = KeyCode.L;
+    public static KeyCode WaterToggle = KeyCode.F10;
+    public static KeyCode LightingToggle = KeyCode.F11;
+    public static KeyCode ResetNPCs = KeyCode.F12;
 }
 
 [Serializable]
@@ -16,6 +18,10 @@ public class GlobalControlSettings
     [HideInInspector] public bool quitting = false;
     [HideInInspector] public bool changeWindow = false;
     [HideInInspector] public bool reload_scene = false;
+    [HideInInspector] public bool cursor_change = false;
+    [HideInInspector] public bool water_toggle = false;
+    [HideInInspector] public bool volumetric_lighting_toggle = false;
+    [HideInInspector] public bool reset_ncps = false;
 
     public void Update(bool manual_controls)
     {
@@ -32,5 +38,10 @@ public class GlobalControlSettings
             quitting = SimulationManager._instance.server.global_command.payload.end_simulation;
             SimulationManager._instance.server.global_command.Reset();
         }
+
+        cursor_change = Input.GetKeyDown(GlobalControlMap.CursorLock);
+        water_toggle = Input.GetKeyDown(GlobalControlMap.WaterToggle);
+        volumetric_lighting_toggle = Input.GetKeyDown(GlobalControlMap.LightingToggle);
+        reset_ncps = Input.GetKeyDown(GlobalControlMap.ResetNPCs);
     }
 }

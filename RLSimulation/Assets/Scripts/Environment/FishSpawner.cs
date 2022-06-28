@@ -61,7 +61,7 @@ public class AIGroup
 
 public class FishSpawner : MonoBehaviour
 {
-    public Transform[] waypoints;
+    private Transform[] waypoints;
 
     public float spawn_timer { get { return m_spawn_timer; } }
     public float spawn_container_ratio { get { return m_spawn_container_ratio; } }
@@ -83,13 +83,17 @@ public class FishSpawner : MonoBehaviour
 
     private Vector3 m_spawn_area;
 
-    // Start is called before the first frame update
+    public static GameObject m_group_parent;
+
     void Start()
     {
         if (SimulationManager._instance.server.connected && SimulationManager._instance.server.server_config.is_overridden)
         {
             TakeServerOverrides();
         }
+
+        m_group_parent = new GameObject("NPCS");
+        m_group_parent.transform.parent = gameObject.transform;
 
         CreateSpawnableArea();
         GetWaypoints();
@@ -136,7 +140,7 @@ public class FishSpawner : MonoBehaviour
                 }
 
                 GameObject m_ai_group_spawn = new GameObject("Group: " + obj.prefabName);
-                m_ai_group_spawn.transform.parent = gameObject.transform;
+                m_ai_group_spawn.transform.parent = m_group_parent.transform;
             }
         }
     }

@@ -8,6 +8,10 @@ using UnityEngine.Rendering;
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
 {
+    private BoxCollider m_collider;
+
+    private float hover_force_equilibrium;
+
     [HideInInspector]
     public List<Transform> target_transforms = new List<Transform>();
 
@@ -19,7 +23,8 @@ public class ThirdPersonMovement : MonoBehaviour
     public float groundAngularDragConstant;
 
     private Rigidbody m_RigidBody;
-    private bool m_Hovering = false;
+    [HideInInspector]
+    public bool m_Hovering = false;
 
     public LayerMask groundMask;
     public LayerMask waterMask;
@@ -37,11 +42,15 @@ public class ThirdPersonMovement : MonoBehaviour
 
     public Tuple<int, int> resolution;
 
-    private AudioSource m_audio_motor;
+    private void CalculateHoverForce()
+    {
+        float max_volume_displacement = (m_collider.size.x * m_collider.size.y * m_collider.size.z);
+        hover_force_equilibrium = (WaterDynamics.water_density * WaterDynamics.g * max_volume_displacement) - (m_RigidBody.mass * WaterDynamics.g); // Fb = pgV - mg
+    }
 
     private void Start()
     {
-        m_audio_motor = GetComponent<AudioSource>();
+        m_collider = GetComponentInChildren<BoxCollider>();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
@@ -58,6 +67,8 @@ public class ThirdPersonMovement : MonoBehaviour
                 SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.resolution[1]);
             m_RigidBody.mass += SimulationManager._instance.server.server_config.payload.roverConfig.structureConfig.ballastMass;
         }
+
+        CalculateHoverForce();
     }
 
     void Update()
@@ -100,11 +111,11 @@ public class ThirdPersonMovement : MonoBehaviour
             Vector3 desiredRotation = new Vector3();
 
             /* Movement */
-            if (movement_controls.movementInputs.magnitude > float.Epsilon && (m_RigidBody.velocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower, 2)))
+            if (movement_controls.movementInputs.magnitude > float.Epsilon)
             {
                 if (movement_controls.movementInputs.y != 0)
                 {
-                    desiredMove += firstPersonCam.transform.up * movement_controls.movementInputs.y;
+                    desiredMove += firstPersonCam.transform.up * movement_controls.movementInputs.y * 2;    // Vertical thrusters more power to overcome buoyancy
                 }
                 if (movement_controls.movementInputs.z != 0)
                 {
@@ -112,11 +123,15 @@ public class ThirdPersonMovement : MonoBehaviour
                 }
 
                 desiredMove *= movement_controls.ThrustPower / 2;
+            }
 
+            if (m_Hovering)
+            {
+                desiredMove.y -= hover_force_equilibrium;
             }
 
             /* Rotation */
-            if (movement_controls.rotationInputs.magnitude > float.Epsilon && m_RigidBody.angularVelocity.sqrMagnitude < Mathf.Pow(movement_controls.ThrustPower / 10, 2))
+            if (movement_controls.rotationInputs.magnitude > float.Epsilon)
             {
                 if (movement_controls.rotationInputs.y != 0)
                 {
@@ -126,8 +141,8 @@ public class ThirdPersonMovement : MonoBehaviour
                 desiredRotation *= movement_controls.ThrustPower / 1000;
             }
 
-            m_RigidBody.AddForce(desiredMove, ForceMode.Impulse);
-            m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Impulse);
+            m_RigidBody.AddForce(desiredMove, ForceMode.Force);
+            m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Force);
         }
         
     }

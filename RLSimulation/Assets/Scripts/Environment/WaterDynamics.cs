@@ -5,22 +5,15 @@ using UnityEngine;
 
 public class WaterDynamics : MonoBehaviour
 {
-    private const float water_density = 1025;
-    private const float g = 9.81f;
+    public const float water_density = 1025;
+    public const float g = 9.81f;
     private BoxCollider m_collider;
     private Vector3 top_of_collider_pos;
 
-    // Start is called before the first frame update
     void Start()
     {
         m_collider = GetComponent<BoxCollider>();
         top_of_collider_pos = transform.position + m_collider.center + new Vector3(0, m_collider.size.y / 2, 0);
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
     private void OnCollisionStay(Collision other)

@@ -16,6 +16,7 @@ public static class MovementControlMap
 public struct Controls_Audio
 {
     public AudioSource audio_motor;
+    public AudioSource hover_noise;
 }
 
 [Serializable]
@@ -66,6 +67,10 @@ public class ThirdPersonControlSettings
         else
         {
             audios.audio_motor.Stop();
+        }
+        if (hovering)
+        {
+            audios.hover_noise.Play();
         }
 
         mouseWheel = Input.GetAxis("Mouse ScrollWheel");

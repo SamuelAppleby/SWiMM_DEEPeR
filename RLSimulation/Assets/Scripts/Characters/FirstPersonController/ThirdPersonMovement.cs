@@ -19,8 +19,6 @@ public class ThirdPersonMovement : MonoBehaviour
     private float originalAngularDrag;
     public float waterDragConstant;
     public float waterAngularDragConstant;
-    public float groundDragConstant;
-    public float groundAngularDragConstant;
 
     private Rigidbody m_RigidBody;
     [HideInInspector]
@@ -41,6 +39,9 @@ public class ThirdPersonMovement : MonoBehaviour
     public Camera active_cam, inactive_cam;
 
     public Tuple<int, int> resolution;
+
+    public Vector3 desiredMove;
+    public Vector3 desiredRotation;
 
     private void CalculateHoverForce()
     {
@@ -88,6 +89,18 @@ public class ThirdPersonMovement : MonoBehaviour
         {
             m_Hovering = !m_Hovering;
         }
+
+        if (movement_controls.increase_far_plane && firstPersonCam.farClipPlane < 2000)
+        { 
+            firstPersonCam.farClipPlane += 100;
+            cinecamera.m_Lens.FarClipPlane += 100;
+        }
+
+        if (movement_controls.decrease_far_plane && firstPersonCam.farClipPlane > 100)
+        {
+            firstPersonCam.farClipPlane -= 100;
+            cinecamera.m_Lens.FarClipPlane -= 100;
+        }
     }
 
     private void SwitchActiveCamera(Camera active, Camera inactive)
@@ -102,14 +115,14 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        desiredMove = new Vector3();
+        desiredRotation = new Vector3();
+
         m_RigidBody.drag = originalDrag * (m_IsUnderwater ? waterDragConstant : 1);
         m_RigidBody.angularDrag = originalAngularDrag * (m_IsUnderwater ? waterAngularDragConstant : 1);
 
         if (m_IsUnderwater)
         {
-            Vector3 desiredMove = new Vector3();
-            Vector3 desiredRotation = new Vector3();
-
             /* Movement */
             if (movement_controls.movementInputs.magnitude > float.Epsilon)
             {
@@ -138,13 +151,12 @@ public class ThirdPersonMovement : MonoBehaviour
                     desiredRotation.y += movement_controls.rotationInputs.y;
                 }
 
-                desiredRotation *= movement_controls.ThrustPower / 1000;
+                desiredRotation *= movement_controls.ThrustPower / 500;
             }
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);
             m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Force);
         }
-        
     }
 
     private void LateUpdate()

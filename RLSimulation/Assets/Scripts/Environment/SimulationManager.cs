@@ -73,9 +73,11 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public bool IsInitialized { get; private set; }
 
-    GameObject[] lighting_objs;
+    [HideInInspector]
+    public GameObject[] lighting_objs;
 
-    GameObject[] water_objs;
+    [HideInInspector]
+    public GameObject[] water_objs;
 
     private void Start()
     {

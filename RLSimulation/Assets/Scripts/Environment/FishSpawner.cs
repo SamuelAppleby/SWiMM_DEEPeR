@@ -22,7 +22,6 @@ public class AIGroup
     public bool randomMovement;
     [SerializeField]
     public bool randomizeStats;
-    [SerializeField]
     private int[] rotationOffset;
     [SerializeField]
     public Vector3 rotationOffsetVector;
@@ -176,6 +175,25 @@ public class FishSpawner : MonoBehaviour
                 }
             }
         }
+    }
+
+    public int GetTotalNPCs()
+    {
+        int total = 0;
+
+        foreach (AIGroup obj in ai_groups)
+        {
+            if (obj.objectPrefab != null && obj.enableSpawner)
+            {
+                GameObject temp_group = GameObject.Find("Group: " + obj.prefabName);
+                if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < obj.maxAmount)
+                {
+                    total += temp_group.GetComponentInChildren<Transform>().childCount;
+                }
+            }
+        }
+
+        return total;
     }
 
     public Vector3 GetRandomPosition()

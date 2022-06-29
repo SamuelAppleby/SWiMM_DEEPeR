@@ -6,28 +6,56 @@ using UnityEngine;
 public class GameUI : MonoBehaviour
 {
     [SerializeField]
-    private GameObject fps_obj;
+    private FishSpawner spawner;
+
+    [SerializeField]
+    private ThirdPersonMovement third_person_movement;
+
+    [SerializeField]
     private TextMeshProUGUI fps_value_text;
 
     [SerializeField]
-    private GameObject packets_obj;
     private TextMeshProUGUI packes_value_text;
 
     [SerializeField]
-    private GameObject hovering_obj;
     private TextMeshProUGUI hovering_value_text;
 
-    void Start()
-    {
-        fps_value_text = fps_obj.GetComponent<TextMeshProUGUI>();
-        packes_value_text = packets_obj.GetComponent<TextMeshProUGUI>();
-        hovering_value_text = hovering_obj.GetComponent<TextMeshProUGUI>();
-    }
+    [SerializeField]
+    private TextMeshProUGUI movement_input_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI rotation_input_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI movement_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI rotation_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI water_shader_text;
+
+    [SerializeField]
+    private TextMeshProUGUI global_lighting_text;
+
+    [SerializeField]
+    private TextMeshProUGUI total_ai_text;
+
+    [SerializeField]
+    private TextMeshProUGUI far_plane_text;
 
     void Update()
     {
         fps_value_text.text = SimulationManager._instance.avgFrameRate.ToString();
         packes_value_text.text = (SimulationManager._instance.server.sequence_num - 1).ToString();
-        hovering_value_text.text = SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().m_Hovering.ToString();
+        hovering_value_text.text = third_person_movement.m_Hovering.ToString();
+        movement_input_value_text.text = third_person_movement.movement_controls.movementInputs.ToString();
+        rotation_input_value_text.text = third_person_movement.movement_controls.rotationInputs.ToString();
+        movement_value_text.text = third_person_movement.desiredMove.ToString();
+        rotation_value_text.text = third_person_movement.desiredRotation.ToString();
+        water_shader_text.text = SimulationManager._instance.water_objs[0].activeSelf.ToString();
+        global_lighting_text.text = SimulationManager._instance.lighting_objs[0].activeSelf.ToString();
+        total_ai_text.text = spawner.GetTotalNPCs().ToString();
+        far_plane_text.text = third_person_movement.firstPersonCam.farClipPlane.ToString();
     }
 }

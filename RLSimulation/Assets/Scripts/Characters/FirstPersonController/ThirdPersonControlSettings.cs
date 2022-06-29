@@ -10,6 +10,8 @@ public static class MovementControlMap
     public static KeyCode RiseKey = KeyCode.Space;
     public static KeyCode FallKey = KeyCode.LeftControl;
     public static KeyCode HoverKey = KeyCode.H;
+    public static KeyCode IncreaseFarPlane = KeyCode.Equals;
+    public static KeyCode DecreaseFarPlane = KeyCode.Minus;
 }
 
 [Serializable]
@@ -35,6 +37,8 @@ public class ThirdPersonControlSettings
     [HideInInspector] public bool hovering = false;
     [HideInInspector] public float mouseWheel = 0.0f;
     [HideInInspector] public bool cameraChange = false;
+    [HideInInspector] public bool increase_far_plane = false;
+    [HideInInspector] public bool decrease_far_plane = false;
 
     public void Update(bool in_manual_mode)
     {
@@ -75,5 +79,7 @@ public class ThirdPersonControlSettings
 
         mouseWheel = Input.GetAxis("Mouse ScrollWheel");
         cameraChange = Input.GetKeyDown(MovementControlMap.CameraChange);
+        increase_far_plane = Input.GetKeyDown(MovementControlMap.IncreaseFarPlane);
+        decrease_far_plane = Input.GetKeyDown(MovementControlMap.DecreaseFarPlane);
     }
 }

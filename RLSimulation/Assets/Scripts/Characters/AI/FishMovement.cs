@@ -56,7 +56,6 @@ public class FishMovement : MonoBehaviour
     private void FixedUpdate()
     {
         float turn_speed = m_speed * UnityEngine.Random.Range(0.3f, 1f);
-
         Quaternion look_at = Quaternion.LookRotation(m_waypoint - transform.position);
         Quaternion correction = Quaternion.Euler(rotation_offset);
 
@@ -90,9 +89,6 @@ public class FishMovement : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.yellow;
-        Vector3 forward = transform.TransformDirection(Vector3.forward) * 10;
-
         Debug.DrawRay(transform.position, (Quaternion.Inverse(Quaternion.Euler(rotation_offset)) * transform.forward).normalized * 10, Color.green);
     }
 }

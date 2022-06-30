@@ -117,7 +117,8 @@ public class FishSpawner : MonoBehaviour
         BoxCollider col = m_water_collider as BoxCollider;
         if (col)
         {
-            m_spawn_area = new Vector3((m_spawn_container_ratio * 10) * col.size.x, m_spawn_container_ratio * col.size.y, (m_spawn_container_ratio * 10) * col.size.z);
+            m_spawn_area = m_spawn_container_ratio * new Vector3(col.transform.localScale.x * col.size.x, col.transform.localScale.y * col.size.y,
+                col.transform.localScale.z * col.size.z);
         }
     }
 

@@ -39,6 +39,16 @@
                         "randomizeStats": false,
                         "rotationOffset": [0,90,0],
                         "scale" : 5
+                    },
+                    {
+                        "prefabName": "whale",
+                        "maxAmount": 10,
+                        "maxSpawn": 1,
+                        "enableSpawner": false,
+                        "randomMovement": true,
+                        "randomizeStats": false,
+                        "rotationOffset": [0,180,0],
+                        "scale" : 5
                     }
                 ]
             }

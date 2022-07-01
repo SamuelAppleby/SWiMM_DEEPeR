@@ -15,7 +15,7 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI fps_value_text;
 
     [SerializeField]
-    private TextMeshProUGUI packes_value_text;
+    private TextMeshProUGUI packets_value_text;
 
     [SerializeField]
     private TextMeshProUGUI hovering_value_text;
@@ -47,7 +47,7 @@ public class GameUI : MonoBehaviour
     void Update()
     {
         fps_value_text.text = SimulationManager._instance.avgFrameRate.ToString();
-        packes_value_text.text = (SimulationManager._instance.server.sequence_num - 1).ToString();
+        packets_value_text.text = (SimulationManager._instance.server.sequence_num - 1).ToString();
         hovering_value_text.text = third_person_movement.m_Hovering.ToString();
         movement_input_value_text.text = third_person_movement.movement_controls.movementInputs.ToString();
         rotation_input_value_text.text = third_person_movement.movement_controls.rotationInputs.ToString();

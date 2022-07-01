@@ -7,8 +7,9 @@ TagManager:
   - Fish
   - Waypoint
   - Terrain
-  - Water
   - Lighting
+  - Water
+  - Floater
   layers:
   - Default
   - TransparentFX

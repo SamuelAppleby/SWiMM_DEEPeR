@@ -2,7 +2,6 @@ using Cinemachine;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 
 [RequireComponent(typeof(Rigidbody))]
@@ -15,16 +14,15 @@ public class ThirdPersonMovement : MonoBehaviour
     [HideInInspector]
     public List<Transform> target_transforms = new List<Transform>();
 
-    private float originalDrag;
-    private float originalAngularDrag;
-    public float waterDragConstant;
-    public float waterAngularDragConstant;
+    public float air_drag;
+    public float angular_air_drag;
+    public float water_drag;
+    public float angular_water_drag;
 
     private Rigidbody m_RigidBody;
     [HideInInspector]
     public bool m_Hovering = false;
 
-    public LayerMask groundMask;
     public LayerMask waterMask;
     private List<string> collision_objects = new List<string>();
     private bool m_IsUnderwater;
@@ -46,7 +44,7 @@ public class ThirdPersonMovement : MonoBehaviour
     private void CalculateHoverForce()
     {
         float max_volume_displacement = (m_collider.size.x * m_collider.size.y * m_collider.size.z);
-        hover_force_equilibrium = (WaterDynamics.water_density * WaterDynamics.g * max_volume_displacement) - (m_RigidBody.mass * WaterDynamics.g); // Fb = pgV - mg
+        hover_force_equilibrium = (WaterDynamics.water_density * Physics.gravity.y * max_volume_displacement) - (m_RigidBody.mass * Physics.gravity.y); // Fb = pgV - mg
     }
 
     private void Start()
@@ -55,8 +53,8 @@ public class ThirdPersonMovement : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
-        originalDrag = m_RigidBody.drag;
-        originalAngularDrag = m_RigidBody.angularDrag;
+        m_RigidBody.drag = air_drag;
+        m_RigidBody.angularDrag = angular_air_drag;
         active_cam = thirdPersonCam;
         inactive_cam = firstPersonCam;
         SimulationManager._instance.rover = gameObject;
@@ -118,8 +116,8 @@ public class ThirdPersonMovement : MonoBehaviour
         desiredMove = new Vector3();
         desiredRotation = new Vector3();
 
-        m_RigidBody.drag = originalDrag * (m_IsUnderwater ? waterDragConstant : 1);
-        m_RigidBody.angularDrag = originalAngularDrag * (m_IsUnderwater ? waterAngularDragConstant : 1);
+        m_RigidBody.drag = m_IsUnderwater ? water_drag : air_drag;
+        m_RigidBody.angularDrag = m_IsUnderwater ? angular_water_drag : angular_air_drag;
 
         if (m_IsUnderwater)
         {
@@ -151,7 +149,7 @@ public class ThirdPersonMovement : MonoBehaviour
                     desiredRotation.y += movement_controls.rotationInputs.y;
                 }
 
-                desiredRotation *= movement_controls.ThrustPower / 500;
+                desiredRotation *= movement_controls.ThrustPower / 250;
             }
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);

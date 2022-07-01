@@ -75,12 +75,16 @@ public class FishSpawner : MonoBehaviour
     [SerializeField]
     private Color m_spawn_color = new Color(1f, 0f, 0f, 0.3f);
     [SerializeField]
-    private Collider m_water_collider;
+    private BoxCollider m_water_collider;
 
     [Header("AI Group Settings")]
     public AIGroup[] ai_groups;
 
     private Vector3 m_spawn_area;
+
+    private Vector3 m_min_spawn;
+
+    private Vector3 m_max_spawn;
 
     public static GameObject m_group_parent;
 
@@ -93,6 +97,7 @@ public class FishSpawner : MonoBehaviour
 
         m_group_parent = new GameObject("NPCS");
         m_group_parent.transform.parent = gameObject.transform;
+        m_group_parent.transform.position = m_water_collider.transform.position;
 
         CreateSpawnableArea();
         GetWaypoints();
@@ -114,11 +119,13 @@ public class FishSpawner : MonoBehaviour
 
     private void CreateSpawnableArea()
     {
-        BoxCollider col = m_water_collider as BoxCollider;
-        if (col)
+        if (m_water_collider)
         {
-            m_spawn_area = m_spawn_container_ratio * new Vector3(col.transform.localScale.x * col.size.x, col.transform.localScale.y * col.size.y,
-                col.transform.localScale.z * col.size.z);
+            m_spawn_area = m_spawn_container_ratio * new Vector3(m_water_collider.transform.localScale.x * m_water_collider.size.x, m_water_collider.transform.localScale.y 
+                * m_water_collider.size.y, m_water_collider.transform.localScale.z * m_water_collider.size.z) / 2;
+
+            m_min_spawn = (m_group_parent.transform.position - m_spawn_area);
+            m_max_spawn = (m_group_parent.transform.position + m_spawn_area);
         }
     }
 
@@ -199,9 +206,9 @@ public class FishSpawner : MonoBehaviour
 
     public Vector3 GetRandomPosition()
     {
-        Vector3 random_position = new Vector3(Random.Range(-m_spawn_area.x, m_spawn_area.x),
-            Random.Range(-m_spawn_area.y, m_spawn_area.y),
-            Random.Range(-m_spawn_area.z, m_spawn_area.z)) * .5f;
+        Vector3 random_position = new Vector3(Random.Range(m_min_spawn.x, m_max_spawn.x),
+            Random.Range(m_min_spawn.y, m_max_spawn.y),
+            Random.Range(m_min_spawn.z, m_max_spawn.z));
 
         return random_position;
     }
@@ -219,6 +226,6 @@ public class FishSpawner : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = m_spawn_color;
-        Gizmos.DrawCube(transform.position, m_spawn_area);
+        Gizmos.DrawCube(m_water_collider.transform.position, m_spawn_area);
     }
 }

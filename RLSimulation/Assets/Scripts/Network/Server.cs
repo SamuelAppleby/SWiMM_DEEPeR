@@ -71,6 +71,7 @@ public class Server
     {
         [Range(0f, 1.2f)]
         public float ballastMass;   // rover spec, 6x200g masses
+        public float totalBuoyantForce;
     }
 
     [Serializable]
@@ -83,8 +84,8 @@ public class Server
     [Serializable]
     public struct FogConfig
     {
-        public float fogStart;
-        public float fogEnd;
+        public float fogDensity;
+        public int[] fogColour;
         public bool fogOn;
     }
 
@@ -292,12 +293,6 @@ public class Server
                 {
                     ready_to_send = true;
                 }
-
-                //byte[] msg = System.Text.Encoding.ASCII.GetBytes(data);
-
-                //// Send back a response.
-                //stream.Write(msg, 0, msg.Length);
-                //Console.WriteLine("Sent: {0}", data);
             }
         }
         catch (Exception e)

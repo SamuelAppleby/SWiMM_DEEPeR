@@ -14,12 +14,12 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 0
+  m_Fog: 1
   m_FogColor: {r: 0, g: 0.9529412, b: 1, a: 1}
-  m_FogMode: 1
-  m_FogDensity: 1
-  m_LinearFogStart: 5
-  m_LinearFogEnd: 300
+  m_FogMode: 2
+  m_FogDensity: 0.0026
+  m_LinearFogStart: 50
+  m_LinearFogEnd: 100
   m_AmbientSkyColor: {r: 0, g: 1, b: 0.8328996, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
@@ -1176,6 +1176,7 @@ MonoBehaviour:
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
+    rotationOffset: 
     rotationOffsetVector: {x: 180, y: 0, z: 180}
     scale: 5
   - prefabName: fish
@@ -1184,6 +1185,7 @@ MonoBehaviour:
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
+    rotationOffset: 
     rotationOffsetVector: {x: 0, y: 90, z: 0}
     scale: 20
   - prefabName: dolphin
@@ -1192,6 +1194,7 @@ MonoBehaviour:
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
+    rotationOffset: 
     rotationOffsetVector: {x: 0, y: 0, z: 0}
     scale: 6
 --- !u!1 &450816083
@@ -2017,7 +2020,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: -0.000000009157245, z: 5.629926e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: 0.0000000091572465, z: -5.629952e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2279,7 +2282,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 569179580}
   m_LocalRotation: {x: 0.38268343, y: -0.000000015896621, z: 0.000000006584596, w: 0.92387956}
-  m_LocalPosition: {x: 0, y: 8.999966, z: 4.999995}
+  m_LocalPosition: {x: 0, y: 8.999962, z: 5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3066,7 +3069,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: -0.000000008582, z: 6.034475e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: 0.000000008582001, z: -6.0344757e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -4363,7 +4366,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290624799}
-  m_LocalRotation: {x: 0.053078998, y: 0.000000002147766, z: -1.141622e-10, w: 0.99859035}
+  m_LocalRotation: {x: 0.053078998, y: 0.0000000021477655, z: -1.1416218e-10, w: 0.99859035}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -4833,7 +4836,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1498372150}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 5, z: 0}
+  m_LocalPosition: {x: 0, y: -34.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4975,6 +4978,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   total_buoyant_strength: 400
+  is_initialized: 0
 --- !u!1 &1509826151
 GameObject:
   m_ObjectHideFlags: 0

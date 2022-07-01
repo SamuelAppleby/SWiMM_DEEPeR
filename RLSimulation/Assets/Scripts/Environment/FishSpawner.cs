@@ -22,6 +22,7 @@ public class AIGroup
     public bool randomMovement;
     [SerializeField]
     public bool randomizeStats;
+    [SerializeField][HideInInspector]
     private int[] rotationOffset;
     [SerializeField]
     public Vector3 rotationOffsetVector;
@@ -90,7 +91,7 @@ public class FishSpawner : MonoBehaviour
 
     void Start()
     {
-        if (SimulationManager._instance.server.connected && SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server.server_config.is_overridden)
         {
             TakeServerOverrides();
         }
@@ -121,8 +122,8 @@ public class FishSpawner : MonoBehaviour
     {
         if (m_water_collider)
         {
-            m_spawn_area = m_spawn_container_ratio * new Vector3(m_water_collider.transform.localScale.x * m_water_collider.size.x, m_water_collider.transform.localScale.y 
-                * m_water_collider.size.y, m_water_collider.transform.localScale.z * m_water_collider.size.z) / 2;
+            m_spawn_area = new Vector3(m_spawn_container_ratio * (m_water_collider.size.x / 2), m_water_collider.size.y / 2,
+                m_spawn_container_ratio * (m_water_collider.size.z / 2));
 
             m_min_spawn = (m_group_parent.transform.position - m_spawn_area);
             m_max_spawn = (m_group_parent.transform.position + m_spawn_area);
@@ -226,6 +227,6 @@ public class FishSpawner : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = m_spawn_color;
-        Gizmos.DrawCube(m_water_collider.transform.position, m_spawn_area);
+        Gizmos.DrawCube(m_water_collider.transform.position, m_spawn_area * 2);
     }
 }

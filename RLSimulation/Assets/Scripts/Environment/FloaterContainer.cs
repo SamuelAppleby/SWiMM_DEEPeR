@@ -10,11 +10,18 @@ public class FloaterContainer : MonoBehaviour
     public float total_buoyant_strength = 300;
     private Collider m_collider;
     private List<GameObject> floaters = new List<GameObject>();
+    public bool is_initialized = false;
 
     void Start()
     {
+        if (SimulationManager._instance.server.server_config.is_overridden)
+        {
+            total_buoyant_strength = SimulationManager._instance.server.server_config.payload.roverConfig.structureConfig.totalBuoyantForce;
+        }
+
         m_collider = GetComponent<Collider>();
         InitialiseFloaters();
+        is_initialized = true;
     }
 
     public void InitialiseFloaters()

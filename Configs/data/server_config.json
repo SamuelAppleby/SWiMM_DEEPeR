@@ -3,17 +3,25 @@
     "payload": {
         "roverConfig": {
             "camConfig": {
-                "resolution": [256,256],
+                "resolution": [
+                    256,
+                    256
+                ],
                 "fov": 100
             },
-            "structureConfig" : {
-                "ballastMass": 1.2
+            "structureConfig": {
+                "ballastMass": 1.2,
+                "totalBuoyantForce": 400
             }
         },
         "envConfig": {
             "fogConfig": {
-                "fogStart": 5,
-                "fogEnd": 200,
+                "fogDensity": 0.005,
+                "fogColour": [
+                    0,
+                    0,
+                    255
+                ],
                 "fogOn": true
             },
             "faunaConfig": {
@@ -22,13 +30,17 @@
                 "aiGroups": [
                     {
                         "prefabName": "dolphin",
-                        "maxAmount": 1,
-                        "maxSpawn": 1,
+                        "maxAmount": 50,
+                        "maxSpawn": 5,
                         "enableSpawner": false,
                         "randomMovement": true,
                         "randomizeStats": false,
-                        "rotationOffset": [0,0,0],
-                        "scale" : 5
+                        "rotationOffset": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": 5
                     },
                     {
                         "prefabName": "fish",
@@ -37,8 +49,12 @@
                         "enableSpawner": false,
                         "randomMovement": true,
                         "randomizeStats": false,
-                        "rotationOffset": [0,90,0],
-                        "scale" : 5
+                        "rotationOffset": [
+                            0,
+                            90,
+                            0
+                        ],
+                        "scale": 5
                     },
                     {
                         "prefabName": "whale",
@@ -47,8 +63,12 @@
                         "enableSpawner": false,
                         "randomMovement": true,
                         "randomizeStats": false,
-                        "rotationOffset": [0,180,0],
-                        "scale" : 5
+                        "rotationOffset": [
+                            0,
+                            180,
+                            0
+                        ],
+                        "scale": 5
                     }
                 ]
             }

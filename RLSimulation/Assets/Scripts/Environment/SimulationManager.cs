@@ -138,6 +138,23 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.lighting_objs = GameObject.FindGameObjectsWithTag("Lighting");
     }
 
+    protected override void OnSceneChanged()
+    {
+        base.OnSceneChanged();
+
+        if (SceneManager.GetActiveScene().name == "UnderwaterScene")
+        {
+            if (_instance.server.server_config.is_overridden)
+            {
+                RenderSettings.fogMode = FogMode.Exponential;
+                RenderSettings.fog = _instance.server.server_config.payload.envConfig.fogConfig.fogOn;
+                RenderSettings.fogDensity = _instance.server.server_config.payload.envConfig.fogConfig.fogDensity;
+                RenderSettings.fogColor = new Color(_instance.server.server_config.payload.envConfig.fogConfig.fogColour[0], 
+                    _instance.server.server_config.payload.envConfig.fogConfig.fogColour[1], _instance.server.server_config.payload.envConfig.fogConfig.fogColour[2]);
+            }
+        }
+    }
+
     void Update()
     {
         globalControls.Update(_instance.in_manual_mode);

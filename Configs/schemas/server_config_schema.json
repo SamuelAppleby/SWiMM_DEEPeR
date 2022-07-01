@@ -35,10 +35,14 @@
                             "properties": {
                                 "ballastMass": {
                                     "type": "number"
+                                },
+                                "totalBuoyantForce": {
+                                    "type": "number"
                                 }
                             },
                             "required": [
-                                "ballastMass"
+                                "ballastMass",
+                                "totalBuoyantForce"
                             ]
                         }
                     },
@@ -53,19 +57,24 @@
                         "fogConfig": {
                             "type": "object",
                             "properties": {
-                                "fogStart": {
+                                "fogDensity": {
                                     "type": "number"
                                 },
-                                "fogEnd": {
-                                    "type": "number"
+                                "fogColour": {
+                                    "type" : "array",
+                                    "items": {
+                                        "type": "number"
+                                    },
+                                    "minItems": 3,
+                                    "maxItems": 3
                                 },
                                 "fogOn": {
                                     "type": "boolean"
                                 }
                             },
                             "required": [
-                                "fogStart",
-                                "fogEnd",
+                                "fogDensity",
+                                "fogColour",
                                 "fogOn"
                             ]
                         },

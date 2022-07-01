@@ -1,10 +1,11 @@
 using Cinemachine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody))][RequireComponent(typeof(FloaterContainer))]
 public class ThirdPersonMovement : MonoBehaviour
 {
     private BoxCollider m_collider;
@@ -41,13 +42,7 @@ public class ThirdPersonMovement : MonoBehaviour
     public Vector3 desiredMove;
     public Vector3 desiredRotation;
 
-    private void CalculateHoverForce()
-    {
-        float max_volume_displacement = (m_collider.size.x * m_collider.size.y * m_collider.size.z);
-        hover_force_equilibrium = (WaterDynamics.water_density * Physics.gravity.y * max_volume_displacement) - (m_RigidBody.mass * Physics.gravity.y); // Fb = pgV - mg
-    }
-
-    private void Start()
+    private IEnumerator Start()
     {
         m_collider = GetComponentInChildren<BoxCollider>();
         Cursor.lockState = CursorLockMode.Locked;
@@ -59,7 +54,7 @@ public class ThirdPersonMovement : MonoBehaviour
         inactive_cam = firstPersonCam;
         SimulationManager._instance.rover = gameObject;
 
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server.server_config.is_overridden)
         {
             firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.fov;
             resolution = new Tuple<int, int>(SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.resolution[0],
@@ -67,7 +62,8 @@ public class ThirdPersonMovement : MonoBehaviour
             m_RigidBody.mass += SimulationManager._instance.server.server_config.payload.roverConfig.structureConfig.ballastMass;
         }
 
-        CalculateHoverForce();
+        yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
+        hover_force_equilibrium = GetComponent<FloaterContainer>().total_buoyant_strength - (m_RigidBody.mass * -Physics.gravity.y);
     }
 
     void Update()

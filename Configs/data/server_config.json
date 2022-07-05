@@ -16,13 +16,13 @@
         },
         "envConfig": {
             "fogConfig": {
-                "fogDensity": 0.005,
+                "fogDensity": 0.003,
                 "fogColour": [
                     0,
-                    0,
+                    255,
                     255
                 ],
-                "fogOn": true
+                "fogOn": false
             },
             "faunaConfig": {
                 "spawnTimer": 5,
@@ -32,7 +32,7 @@
                         "prefabName": "dolphin",
                         "maxAmount": 50,
                         "maxSpawn": 5,
-                        "enableSpawner": false,
+                        "enableSpawner": true,
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [
@@ -46,7 +46,7 @@
                         "prefabName": "fish",
                         "maxAmount": 10000,
                         "maxSpawn": 100,
-                        "enableSpawner": false,
+                        "enableSpawner": true,
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [
@@ -60,7 +60,7 @@
                         "prefabName": "whale",
                         "maxAmount": 10,
                         "maxSpawn": 1,
-                        "enableSpawner": false,
+                        "enableSpawner": true,
                         "randomMovement": true,
                         "randomizeStats": false,
                         "rotationOffset": [

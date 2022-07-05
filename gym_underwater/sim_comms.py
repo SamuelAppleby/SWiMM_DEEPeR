@@ -201,9 +201,13 @@ class UnitySimHandler():
         action_msg = {
             "msgType": "receive_json_controls",
             "payload": {
-                "forwardThrust": action[0].__str__(),
+                "lateralThrust": action[0].__str__(),
                 "verticalThrust": action[1].__str__(),
-                "yRotation": action[2].__str__(),
+                "forwardThrust": action[2].__str__(),
+                "pitchThurst": action[3].__str__(),
+                "yawThrust" : action[4].__str__(),
+                "rollThrust" : action[5].__str__(),
+                "depthHoldMode" : action[6].__str__()
             }
         }
         self.server.msg = json.dumps(action_msg)

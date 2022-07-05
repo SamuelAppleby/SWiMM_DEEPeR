@@ -22,7 +22,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private Rigidbody m_RigidBody;
     [HideInInspector]
-    public bool m_Hovering = false;
+    public bool m_Hovering = true;
 
     public LayerMask waterMask;
     private List<string> collision_objects = new List<string>();
@@ -39,7 +39,10 @@ public class ThirdPersonMovement : MonoBehaviour
 
     public Tuple<int, int> resolution;
 
+    [HideInInspector]
     public Vector3 desiredMove;
+
+    [HideInInspector]
     public Vector3 desiredRotation;
 
     private IEnumerator Start()
@@ -48,6 +51,7 @@ public class ThirdPersonMovement : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
+        m_Hovering = true;
         m_RigidBody.drag = air_drag;
         m_RigidBody.angularDrag = angular_air_drag;
         active_cam = thirdPersonCam;
@@ -120,6 +124,10 @@ public class ThirdPersonMovement : MonoBehaviour
             /* Movement */
             if (movement_controls.movementInputs.magnitude > float.Epsilon)
             {
+                if (movement_controls.movementInputs.x != 0)
+                {
+                    desiredMove += firstPersonCam.transform.right * movement_controls.movementInputs.x;
+                }
                 if (movement_controls.movementInputs.y != 0)
                 {
                     desiredMove += firstPersonCam.transform.up * movement_controls.movementInputs.y * 2;    // Vertical thrusters more power to overcome buoyancy
@@ -129,7 +137,7 @@ public class ThirdPersonMovement : MonoBehaviour
                     desiredMove += firstPersonCam.transform.forward * movement_controls.movementInputs.z;
                 }
 
-                desiredMove *= movement_controls.ThrustPower / 2;
+                desiredMove *= movement_controls.ThrustPower;
             }
 
             if (m_Hovering)
@@ -140,12 +148,20 @@ public class ThirdPersonMovement : MonoBehaviour
             /* Rotation */
             if (movement_controls.rotationInputs.magnitude > float.Epsilon)
             {
+                if (movement_controls.rotationInputs.x != 0)
+                {
+                    desiredRotation.x += movement_controls.rotationInputs.x;
+                }
                 if (movement_controls.rotationInputs.y != 0)
                 {
                     desiredRotation.y += movement_controls.rotationInputs.y;
                 }
+                if (movement_controls.rotationInputs.z != 0)
+                {
+                    desiredRotation.z += movement_controls.rotationInputs.z;
+                }
 
-                desiredRotation *= movement_controls.ThrustPower / 250;
+                desiredRotation *= movement_controls.ThrustPower / 100;
             }
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);
@@ -251,10 +267,30 @@ public class ThirdPersonMovement : MonoBehaviour
     private void OnTriggerStay(Collider other)
     {
         m_IsUnderwater = ((1 << other.gameObject.layer) & waterMask) != 0;
+
+        if (SimulationManager._instance.server.server_config.is_overridden && !SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn)
+        {
+            return;
+        }
+
+        if (m_IsUnderwater && !RenderSettings.fog)
+        {
+            RenderSettings.fog = true;
+        }
     }
 
     private void OnTriggerExit(Collider other)
     {
         m_IsUnderwater = ((1 << other.gameObject.layer) & waterMask) == 0;
+
+        if (SimulationManager._instance.server.server_config.is_overridden && !SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn)
+        {
+            return;
+        }
+
+        if (!m_IsUnderwater && RenderSettings.fog)
+        {
+            RenderSettings.fog = false;
+        }
     }
 }

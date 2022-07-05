@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using static Server;
 
@@ -55,7 +56,6 @@ public class SimulationManager : Singleton<SimulationManager>
     /* Local configs for reading */
     [HideInInspector]
     public JsonMessage<DebugConfig> debug_config;
-
 
     [Serializable]
     public struct NetworkConfig
@@ -141,18 +141,6 @@ public class SimulationManager : Singleton<SimulationManager>
     protected override void OnSceneChanged()
     {
         base.OnSceneChanged();
-
-        if (SceneManager.GetActiveScene().name == "UnderwaterScene")
-        {
-            if (_instance.server.server_config.is_overridden)
-            {
-                RenderSettings.fogMode = FogMode.Exponential;
-                RenderSettings.fog = _instance.server.server_config.payload.envConfig.fogConfig.fogOn;
-                RenderSettings.fogDensity = _instance.server.server_config.payload.envConfig.fogConfig.fogDensity;
-                RenderSettings.fogColor = new Color(_instance.server.server_config.payload.envConfig.fogConfig.fogColour[0], 
-                    _instance.server.server_config.payload.envConfig.fogConfig.fogColour[1], _instance.server.server_config.payload.envConfig.fogConfig.fogColour[2]);
-            }
-        }
     }
 
     void Update()
@@ -184,7 +172,6 @@ public class SimulationManager : Singleton<SimulationManager>
             _instance.screenIndex = _instance.screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
             Screen.fullScreenMode = _instance.screenmodes[screenIndex];
         }
-
 
         if (globalControls.cursor_change)
         {

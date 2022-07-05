@@ -4,11 +4,20 @@ using static Server;
 
 public static class MovementControlMap
 {
-    public static KeyCode CameraChange = KeyCode.C;
+    /* Movement */
     public static string ForwardKey = "Vertical";
-    public static string SidewaysKey = "Horizontal";
+    public static string StrafeKey = "Horizontal";
     public static KeyCode RiseKey = KeyCode.Space;
     public static KeyCode FallKey = KeyCode.LeftControl;
+
+    /* Rotation */
+    public static string YawKey = "Yaw";
+    public static string PitchKey = "Pitch";
+    public static KeyCode RollPositive = KeyCode.Q;
+    public static KeyCode RollNegative = KeyCode.E;
+
+    public static KeyCode CameraChange = KeyCode.C;
+
     public static KeyCode HoverKey = KeyCode.H;
     public static KeyCode IncreaseFarPlane = KeyCode.Equals;
     public static KeyCode DecreaseFarPlane = KeyCode.Minus;
@@ -45,16 +54,27 @@ public class ThirdPersonControlSettings
         /* Get manual input when not using tcp */
         if (in_manual_mode)
         {
+            movementInputs.x = Input.GetAxisRaw(MovementControlMap.StrafeKey);
             movementInputs.y = Input.GetKey(MovementControlMap.RiseKey) ? 1 : Input.GetKey(MovementControlMap.FallKey) ? -1 : 0;
             movementInputs.z = Input.GetAxisRaw(MovementControlMap.ForwardKey);
-            rotationInputs.y = Input.GetAxisRaw(MovementControlMap.SidewaysKey);
+            rotationInputs.x = Input.GetAxisRaw(MovementControlMap.PitchKey);
+            rotationInputs.y = Input.GetAxisRaw(MovementControlMap.YawKey);
+            rotationInputs.z = Input.GetKey(MovementControlMap.RollPositive) ? 1 : Input.GetKey(MovementControlMap.RollNegative) ? -1 : 0;
+
             hovering = Input.GetKeyDown(MovementControlMap.HoverKey);
         }
         else if (SimulationManager._instance.server.rover_controls.is_overridden)
         {
+            movementInputs.x = Input.GetAxisRaw(MovementControlMap.StrafeKey);
             movementInputs.y = SimulationManager._instance.server.rover_controls.payload.verticalThrust;
             movementInputs.z = SimulationManager._instance.server.rover_controls.payload.forwardThrust;
-            rotationInputs.y = SimulationManager._instance.server.rover_controls.payload.yRotation;
+            rotationInputs.x = SimulationManager._instance.server.rover_controls.payload.pitchThrust;
+            rotationInputs.x = rotationInputs.x < 0.5 && rotationInputs.x > -0.5 ? 0 : rotationInputs.x <= -0.5 ? -1 : 1;     // Uses Dpad, no intermediate values
+            rotationInputs.y = SimulationManager._instance.server.rover_controls.payload.yawThrust;
+            rotationInputs.z = SimulationManager._instance.server.rover_controls.payload.rollThrust;
+            rotationInputs.z = rotationInputs.z < 0.5 && rotationInputs.z > -0.5 ? 0 : rotationInputs.z <= -0.5 ? -1 : 1;     // Uses Dpad, no intermediate values
+
+            hovering = SimulationManager._instance.server.rover_controls.payload.depthHoldMode < 0.5 ? false : true;
 
             // Sam.A Talk to Kirsten, do we want previous controls for good?
             //SimulationManager._instance.server.rover_controls.Reset();

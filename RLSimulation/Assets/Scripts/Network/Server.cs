@@ -219,9 +219,13 @@ public class Server
     [Serializable]
     public struct JsonControls
     {
+        public float lateralThrust;
         public float forwardThrust;
         public float verticalThrust;
-        public float yRotation;
+        public float pitchThrust;
+        public float yawThrust;
+        public float rollThrust;
+        public float depthHoldMode;
     }
 
     [Serializable]

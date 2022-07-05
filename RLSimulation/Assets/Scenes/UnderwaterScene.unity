@@ -14,10 +14,10 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0, g: 0.9529412, b: 1, a: 1}
   m_FogMode: 2
-  m_FogDensity: 0.0026
+  m_FogDensity: 0.003
   m_LinearFogStart: 50
   m_LinearFogEnd: 100
   m_AmbientSkyColor: {r: 0, g: 1, b: 0.8328996, a: 1}
@@ -697,6 +697,7 @@ GameObject:
   - component: {fileID: 300520025}
   - component: {fileID: 300520022}
   - component: {fileID: 300520027}
+  - component: {fileID: 300520028}
   m_Layer: 0
   m_Name: FPC
   m_TagString: Untagged
@@ -838,6 +839,18 @@ MonoBehaviour:
   m_BeforeTransparentBundles: []
   m_BeforeStackBundles: []
   m_AfterStackBundles: []
+--- !u!114 &300520028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 300520020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79dd2ba2523ba5e46a64f71e2c9494f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &373546118
 GameObject:
   m_ObjectHideFlags: 0
@@ -2006,6 +2019,7 @@ GameObject:
   - component: {fileID: 566393374}
   - component: {fileID: 566393377}
   - component: {fileID: 566393379}
+  - component: {fileID: 566393380}
   m_Layer: 0
   m_Name: TPC
   m_TagString: Untagged
@@ -2020,7 +2034,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: 0.0000000091572465, z: -5.629952e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: -0.000000009157246, z: 5.6299504e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2173,6 +2187,18 @@ MonoBehaviour:
   m_BeforeTransparentBundles: []
   m_BeforeStackBundles: []
   m_AfterStackBundles: []
+--- !u!114 &566393380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566393372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79dd2ba2523ba5e46a64f71e2c9494f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &566756931
 GameObject:
   m_ObjectHideFlags: 0
@@ -3069,7 +3095,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: 0.000000008582001, z: -6.0344757e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: -0.000000008582, z: 6.034475e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -4366,7 +4392,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290624799}
-  m_LocalRotation: {x: 0.053078998, y: 0.0000000021477655, z: -1.1416218e-10, w: 0.99859035}
+  m_LocalRotation: {x: 0.053078998, y: -0.000000002147766, z: 1.141622e-10, w: 0.99859035}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -4885,7 +4911,7 @@ MonoBehaviour:
     audios:
       audio_motor: {fileID: 971931243}
       hover_noise: {fileID: 563266353}
-    ThrustPower: 500
+    ThrustPower: 250
     SlopeCurveModifier:
       serializedVersion: 2
       m_Curve:

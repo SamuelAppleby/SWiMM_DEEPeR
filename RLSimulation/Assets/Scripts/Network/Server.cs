@@ -77,16 +77,7 @@ public class Server
     [Serializable]
     public struct EnvironmentConfig
     {
-        public FogConfig fogConfig;
         public FaunaConfig faunaConfig;
-    }
-
-    [Serializable]
-    public struct FogConfig
-    {
-        public float fogDensity;
-        public int[] fogColour;
-        public bool fogOn;
     }
 
     [Serializable]
@@ -95,6 +86,7 @@ public class Server
         public float spawnTimer;
         public float spawnContainerRatio;
         public AIGroup[] aiGroups;
+        public float spawnRadius;
     }
 
     [Serializable]

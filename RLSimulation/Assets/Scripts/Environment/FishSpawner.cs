@@ -75,32 +75,26 @@ public class FishSpawner : MonoBehaviour
     private float m_spawn_container_ratio;
     [SerializeField]
     private Color m_spawn_color = new Color(1f, 0f, 0f, 0.3f);
-    [SerializeField]
-    private BoxCollider m_water_collider;
+
+    public float spawn_radius;
+
+    public Transform environment_transform;
+
+    public static GameObject m_group_parent;
 
     [Header("AI Group Settings")]
     public AIGroup[] ai_groups;
 
-    private Vector3 m_spawn_area;
-
-    private Vector3 m_min_spawn;
-
-    private Vector3 m_max_spawn;
-
-    public static GameObject m_group_parent;
-
     void Start()
     {
-        if (SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
         {
             TakeServerOverrides();
         }
 
         m_group_parent = new GameObject("NPCS");
-        m_group_parent.transform.parent = gameObject.transform;
-        m_group_parent.transform.position = m_water_collider.transform.position;
+        m_group_parent.transform.parent = environment_transform;
 
-        CreateSpawnableArea();
         GetWaypoints();
         InitialiseGroups();
         InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
@@ -110,23 +104,12 @@ public class FishSpawner : MonoBehaviour
     {
         m_spawn_timer = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnTimer;
         m_spawn_container_ratio = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnContainerRatio;
+        spawn_radius = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnRadius;
         ai_groups = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.aiGroups;
 
         foreach(AIGroup group in ai_groups)
         {
             group.IntArrayToVector3();
-        }
-    }
-
-    private void CreateSpawnableArea()
-    {
-        if (m_water_collider)
-        {
-            m_spawn_area = new Vector3(m_spawn_container_ratio * (m_water_collider.size.x / 2), m_water_collider.size.y / 2,
-                m_spawn_container_ratio * (m_water_collider.size.z / 2));
-
-            m_min_spawn = (m_group_parent.transform.position - m_spawn_area);
-            m_max_spawn = (m_group_parent.transform.position + m_spawn_area);
         }
     }
 
@@ -164,8 +147,8 @@ public class FishSpawner : MonoBehaviour
                 {
                     for (int i = 0; i < Random.Range(0, obj.maxSpawn + 1); ++i)
                     {
-                        Vector3 random_position = GetRandomPosition();
-                        if(IsValidLocation(random_position, 30))
+                        Vector3 random_position = GetRandomValidPosition();
+                        if(random_position != Vector3.zero)
                         {
                             GameObject fixed_rotation = new GameObject(obj.objectPrefab + "fixed rotation");
                             GameObject temp_spawn = Instantiate(obj.objectPrefab, new Vector3(0, 0, 0), Quaternion.Euler(new Vector3(0, 0, 0)));
@@ -175,10 +158,11 @@ public class FishSpawner : MonoBehaviour
                             fixed_rotation.transform.rotation = Quaternion.Euler(obj.rotationOffsetVector);
                             fixed_rotation.AddComponent<FishMovement>();
                             fixed_rotation.GetComponent<FishMovement>().random_movement = obj.randomMovement;
+                            fixed_rotation.GetComponent<FishMovement>().ai_manager = this;
                             fixed_rotation.GetComponent<FishMovement>().rotation_offset = fixed_rotation.transform.rotation.eulerAngles;
                             temp_spawn.transform.localScale *= (obj.scale * Random.Range(0.75f, 1.25f));
 
-                            SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().target_transforms.Add(fixed_rotation.transform);
+                            GetComponent<ThirdPersonMovement>().target_transforms.Add(fixed_rotation.transform);
                         }
                     }
                 }
@@ -195,7 +179,7 @@ public class FishSpawner : MonoBehaviour
             if (obj.objectPrefab != null && obj.enableSpawner)
             {
                 GameObject temp_group = GameObject.Find("Group: " + obj.prefabName);
-                if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < obj.maxAmount)
+                if (temp_group != null)
                 {
                     total += temp_group.GetComponentInChildren<Transform>().childCount;
                 }
@@ -205,18 +189,20 @@ public class FishSpawner : MonoBehaviour
         return total;
     }
 
-    public Vector3 GetRandomPosition()
+    public Vector3 GetRandomValidPosition()
     {
-        Vector3 random_position = new Vector3(Random.Range(m_min_spawn.x, m_max_spawn.x),
-            Random.Range(m_min_spawn.y, m_max_spawn.y),
-            Random.Range(m_min_spawn.z, m_max_spawn.z));
+        Vector3 temp_pos = transform.position + (Random.insideUnitSphere * spawn_radius);
 
-        return random_position;
-    }
+        Collider[] hit_colliders = Physics.OverlapSphere(temp_pos, 1);
+        foreach (Collider col in hit_colliders)
+        {
+            if (((1 << col.gameObject.layer) & GetComponent<ThirdPersonMovement>().water_mask) != 0)
+            {
+                return temp_pos;        // We have contacted the water, spawn
+            }
+        }
 
-    public bool IsValidLocation(Vector3 pos, float radius)
-    {
-        return Physics.CheckSphere(pos, radius);
+        return Vector3.zero;
     }
 
     public Vector3 RandomWaypoint()
@@ -227,6 +213,6 @@ public class FishSpawner : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = m_spawn_color;
-        Gizmos.DrawCube(m_water_collider.transform.position, m_spawn_area * 2);
+        Gizmos.DrawSphere(transform.position, spawn_radius);
     }
 }

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 262.3369, g: 325.0498, b: 430.21924, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -2682,7 +2682,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NN
+  m_text: INFERENCE
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
@@ -2716,7 +2716,7 @@ MonoBehaviour:
   m_fontSizeMin: 20
   m_fontSizeMax: 30
   m_fontStyle: 0
-  m_HorizontalAlignment: 2
+  m_HorizontalAlignment: 1
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -3189,7 +3189,7 @@ GameObject:
   - component: {fileID: 1257156782}
   - component: {fileID: 1257156781}
   m_Layer: 5
-  m_Name: NN_Button
+  m_Name: Inference_Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3213,8 +3213,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -25.23, y: 9}
-  m_SizeDelta: {x: 20, y: 20}
+  m_AnchoredPosition: {x: -18.45, y: 9}
+  m_SizeDelta: {x: 100, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1257156781
 MonoBehaviour:
@@ -5685,6 +5685,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   in_manual_mode: 0
   rover: {fileID: 0}
+  avgFrameRate: 0
   debug_config:
     msgType: 
     payload:
@@ -5705,6 +5706,8 @@ MonoBehaviour:
         client_send_buffer_size_kb: 0
     is_overridden: 0
   main_menu_name: MainMenu
+  lighting_objs: []
+  water_objs: []
 --- !u!4 &2021487730
 Transform:
   m_ObjectHideFlags: 0

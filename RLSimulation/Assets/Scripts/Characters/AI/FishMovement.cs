@@ -6,7 +6,7 @@ using UnityEngine;
 public class FishMovement : MonoBehaviour
 {
     public bool random_movement = false;
-    private FishSpawner m_ai_manager;
+    public FishSpawner ai_manager;
     private Vector3 m_waypoint;
     private Vector3 m_last_waypoint = new Vector3(0f, 0f, 0f);
     private Animation m_animation;
@@ -21,7 +21,6 @@ public class FishMovement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        m_ai_manager = transform.parent.GetComponentInParent<FishSpawner>();
         m_animation = GetComponentInChildren<Animation>();
         call = GetComponentInChildren<AudioSource>();
         FindNewTarget();
@@ -65,7 +64,7 @@ public class FishMovement : MonoBehaviour
 
     private Vector3 GetWaypoint()
     {
-        return random_movement ? m_ai_manager.GetRandomPosition() : m_ai_manager.RandomWaypoint();
+        return random_movement ? ai_manager.GetRandomValidPosition() : ai_manager.RandomWaypoint();
     }
 
     private void FindNewTarget()

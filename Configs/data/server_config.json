@@ -15,18 +15,10 @@
             }
         },
         "envConfig": {
-            "fogConfig": {
-                "fogDensity": 0.003,
-                "fogColour": [
-                    0,
-                    255,
-                    255
-                ],
-                "fogOn": false
-            },
             "faunaConfig": {
                 "spawnTimer": 5,
                 "spawnContainerRatio": 0.8,
+                "spawnRadius": 50,
                 "aiGroups": [
                     {
                         "prefabName": "dolphin",

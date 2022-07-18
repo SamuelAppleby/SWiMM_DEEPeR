@@ -3,13 +3,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.Rendering.PostProcessing;
 
 [RequireComponent(typeof(Rigidbody))][RequireComponent(typeof(FloaterContainer))]
 public class ThirdPersonMovement : MonoBehaviour
 {
-    private BoxCollider m_collider;
-
     private float hover_force_equilibrium;
 
     [HideInInspector]
@@ -24,9 +22,12 @@ public class ThirdPersonMovement : MonoBehaviour
     [HideInInspector]
     public bool m_Hovering = true;
 
-    public LayerMask waterMask;
+    public LayerMask water_mask;
+    public LayerMask ground_mask;
+
     private List<string> collision_objects = new List<string>();
     private bool m_IsUnderwater;
+    private bool m_is_grounded;
 
     public ThirdPersonControlSettings movement_controls = new ThirdPersonControlSettings();
 
@@ -45,9 +46,25 @@ public class ThirdPersonMovement : MonoBehaviour
     [HideInInspector]
     public Vector3 desiredRotation;
 
+    public Material underwater_skybox_mat;
+
+    public Material ground_skybox_mat;
+
+    public PostProcessVolume volume;
+
+    private ColorGrading m_colour_grading;
+    private Color m_color_grading_filter_start;
+    private float max_depth = 1000;
+    public GameObject water_collider;
+    private float top_of_water;
+    private float m_distance_undewater;
+
     private IEnumerator Start()
     {
-        m_collider = GetComponentInChildren<BoxCollider>();
+        top_of_water = water_collider.transform.position.y + (water_collider.GetComponent<BoxCollider>().size.y / 2);
+        volume.profile.TryGetSettings(out m_colour_grading);
+        m_color_grading_filter_start = m_colour_grading.colorFilter.value;
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
@@ -72,6 +89,8 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Update()
     {
+        m_distance_undewater = top_of_water - transform.position.y;
+        CheckCameraEffects();
         movement_controls.Update(SimulationManager._instance.in_manual_mode);
 
         ref float fov = ref cinecamera.m_Lens.FieldOfView;
@@ -119,7 +138,7 @@ public class ThirdPersonMovement : MonoBehaviour
         m_RigidBody.drag = m_IsUnderwater ? water_drag : air_drag;
         m_RigidBody.angularDrag = m_IsUnderwater ? angular_water_drag : angular_air_drag;
 
-        if (m_IsUnderwater)
+        if (!m_is_grounded)
         {
             /* Movement */
             if (movement_controls.movementInputs.magnitude > float.Epsilon)
@@ -262,35 +281,41 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-    }
-
-    private void OnTriggerStay(Collider other)
-    {
-        m_IsUnderwater = ((1 << other.gameObject.layer) & waterMask) != 0;
-
-        if (SimulationManager._instance.server.server_config.is_overridden && !SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn)
-        {
-            return;
-        }
-
-        if (m_IsUnderwater && !RenderSettings.fog)
-        {
-            RenderSettings.fog = true;
-        }
+        m_IsUnderwater = ((1 << other.gameObject.layer) & water_mask) != 0;
+        m_is_grounded = ((1 << other.gameObject.layer) & ground_mask) != 0;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        m_IsUnderwater = ((1 << other.gameObject.layer) & waterMask) == 0;
+        m_IsUnderwater = ((1 << other.gameObject.layer) & water_mask) == 0;
+        m_is_grounded = ((1 << other.gameObject.layer) & ground_mask) == 0;
+    }
 
-        if (SimulationManager._instance.server.server_config.is_overridden && !SimulationManager._instance.server.server_config.payload.envConfig.fogConfig.fogOn)
+    public void CheckCameraEffects()
+    {
+        Collider[] hit_colliders = Physics.OverlapSphere(firstPersonCam.transform.position, 0.1f);
+        foreach (Collider col in hit_colliders)
         {
-            return;
+            if (((1 << col.gameObject.layer) & water_mask) != 0)
+            {
+                RenderSettings.fog = true;
+                RenderSettings.skybox = underwater_skybox_mat;
+                if(m_distance_undewater > 0)
+                {
+                    float depth_ratio_underwater_clamped = 1 - Math.Clamp(m_distance_undewater / max_depth, 0, 1);
+
+                    m_colour_grading.colorFilter.value.r = m_color_grading_filter_start.r * depth_ratio_underwater_clamped;
+                    m_colour_grading.colorFilter.value.g = m_color_grading_filter_start.g * depth_ratio_underwater_clamped;
+                    m_colour_grading.colorFilter.value.b = m_color_grading_filter_start.b * depth_ratio_underwater_clamped;
+
+                    Debug.Log(depth_ratio_underwater_clamped);
+                }
+
+                return;
+            }
         }
 
-        if (!m_IsUnderwater && RenderSettings.fog)
-        {
-            RenderSettings.fog = false;
-        }
+        RenderSettings.fog = false;
+        RenderSettings.skybox = ground_skybox_mat;
     }
 }

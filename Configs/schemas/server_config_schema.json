@@ -54,30 +54,6 @@
                 "envConfig": {
                     "type": "object",
                     "properties": {
-                        "fogConfig": {
-                            "type": "object",
-                            "properties": {
-                                "fogDensity": {
-                                    "type": "number"
-                                },
-                                "fogColour": {
-                                    "type" : "array",
-                                    "items": {
-                                        "type": "number"
-                                    },
-                                    "minItems": 3,
-                                    "maxItems": 3
-                                },
-                                "fogOn": {
-                                    "type": "boolean"
-                                }
-                            },
-                            "required": [
-                                "fogDensity",
-                                "fogColour",
-                                "fogOn"
-                            ]
-                        },
                         "faunaConfig": {
                             "type": "object",
                             "properties": {
@@ -85,6 +61,9 @@
                                     "type": "number"
                                 },
                                 "spawnContainerRatio": {
+                                    "type": "number"
+                                },
+                                "spawnRadius" : {
                                     "type": "number"
                                 },
                                 "aiGroups": {
@@ -143,7 +122,6 @@
                         }
                     },
                     "required": [
-                        "fogConfig",
                         "faunaConfig"
                     ]
                 }

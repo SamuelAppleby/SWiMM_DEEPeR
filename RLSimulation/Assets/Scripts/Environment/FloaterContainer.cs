@@ -10,6 +10,7 @@ public class FloaterContainer : MonoBehaviour
     public float total_buoyant_strength = 300;
     private Collider m_collider;
     private List<GameObject> floaters = new List<GameObject>();
+    [HideInInspector]
     public bool is_initialized = false;
 
     void Start()

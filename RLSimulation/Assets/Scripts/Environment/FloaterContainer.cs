@@ -15,7 +15,7 @@ public class FloaterContainer : MonoBehaviour
 
     void Start()
     {
-        if (SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
         {
             total_buoyant_strength = SimulationManager._instance.server.server_config.payload.roverConfig.structureConfig.totalBuoyantForce;
         }
@@ -27,8 +27,12 @@ public class FloaterContainer : MonoBehaviour
 
     public void InitialiseFloaters()
     {
-        BoxCollider col = m_collider as BoxCollider;
-        if (col)
+        Vector2 extents = Vector2.zero;
+
+        extents.x = m_collider.bounds.extents.x;
+        extents.y = m_collider.bounds.extents.y;
+
+        if (extents != Vector2.zero)
         {
             for (int i = 0; i < 4; ++i)
             {
@@ -38,19 +42,19 @@ public class FloaterContainer : MonoBehaviour
 
                 if (i == 0)
                 {
-                    new_floater.transform.position = transform.position + new Vector3(col.size.x / 2, 0, 0);
+                    new_floater.transform.position = transform.position + new Vector3(extents.x / 2, 0, 0);
                 }
                 else if (i == 1)
                 {
-                    new_floater.transform.position = transform.position + new Vector3(-col.size.x / 2, 0, 0);
+                    new_floater.transform.position = transform.position + new Vector3(-extents.x / 2, 0, 0);
                 }
                 else if (i == 2)
                 {
-                    new_floater.transform.position = transform.position + new Vector3(0, 0, col.size.z / 2);
+                    new_floater.transform.position = transform.position + new Vector3(0, 0, extents.y / 2);
                 }
                 else if (i == 3)
                 {
-                    new_floater.transform.position = transform.position + new Vector3(0, 0, -col.size.z / 2);
+                    new_floater.transform.position = transform.position + new Vector3(0, 0, -extents.y / 2);
                 }
 
                 new_floater.AddComponent<SphereCollider>();

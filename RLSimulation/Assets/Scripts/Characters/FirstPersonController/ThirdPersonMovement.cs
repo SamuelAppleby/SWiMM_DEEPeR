@@ -298,7 +298,7 @@ public class ThirdPersonMovement : MonoBehaviour
         {
             if (((1 << col.gameObject.layer) & water_mask) != 0)
             {
-                RenderSettings.fog = true;
+                //RenderSettings.fog = true;
                 RenderSettings.skybox = underwater_skybox_mat;
                 if(m_distance_undewater > 0)
                 {
@@ -307,15 +307,13 @@ public class ThirdPersonMovement : MonoBehaviour
                     m_colour_grading.colorFilter.value.r = m_color_grading_filter_start.r * depth_ratio_underwater_clamped;
                     m_colour_grading.colorFilter.value.g = m_color_grading_filter_start.g * depth_ratio_underwater_clamped;
                     m_colour_grading.colorFilter.value.b = m_color_grading_filter_start.b * depth_ratio_underwater_clamped;
-
-                    Debug.Log(depth_ratio_underwater_clamped);
                 }
 
                 return;
             }
         }
 
-        RenderSettings.fog = false;
+        //RenderSettings.fog = false;
         RenderSettings.skybox = ground_skybox_mat;
     }
 }

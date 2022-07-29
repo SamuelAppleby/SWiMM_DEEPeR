@@ -82,6 +82,10 @@ public class FishSpawner : MonoBehaviour
 
     public static GameObject m_group_parent;
 
+    public GameObject water_surface;
+
+    private Vector3 spawn_centre;
+
     [Header("AI Group Settings")]
     public AIGroup[] ai_groups;
 
@@ -145,7 +149,7 @@ public class FishSpawner : MonoBehaviour
                 GameObject temp_group = GameObject.Find("Group: " + obj.prefabName);
                 if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < obj.maxAmount)
                 {
-                    for (int i = 0; i < Random.Range(0, obj.maxSpawn + 1); ++i)
+                    for (int i = 0; i < Random.Range(1, obj.maxSpawn + 1); ++i)
                     {
                         Vector3 random_position = GetRandomValidPosition();
                         if(random_position != Vector3.zero)
@@ -191,18 +195,14 @@ public class FishSpawner : MonoBehaviour
 
     public Vector3 GetRandomValidPosition()
     {
-        Vector3 temp_pos = transform.position + (Random.insideUnitSphere * spawn_radius);
+        spawn_centre = transform.position;
 
-        Collider[] hit_colliders = Physics.OverlapSphere(temp_pos, 1);
-        foreach (Collider col in hit_colliders)
+        if(transform.position.y + spawn_radius > water_surface.transform.position.y)
         {
-            if (((1 << col.gameObject.layer) & GetComponent<ThirdPersonMovement>().water_mask) != 0)
-            {
-                return temp_pos;        // We have contacted the water, spawn
-            }
+            spawn_centre.y -= (transform.position.y + spawn_radius - water_surface.transform.position.y);
         }
 
-        return Vector3.zero;
+        return spawn_centre + (Random.insideUnitSphere * spawn_radius);
     }
 
     public Vector3 RandomWaypoint()
@@ -213,6 +213,6 @@ public class FishSpawner : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = m_spawn_color;
-        Gizmos.DrawSphere(transform.position, spawn_radius);
+        Gizmos.DrawSphere(spawn_centre, spawn_radius);
     }
 }

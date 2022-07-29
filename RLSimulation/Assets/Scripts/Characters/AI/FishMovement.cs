@@ -14,13 +14,22 @@ public class FishMovement : MonoBehaviour
     private float call_timer = 10f;
     private float m_speed;
     private Tuple<float, float> m_mix_max_speed = new Tuple<float, float>(1, 7);
+    private Collider m_collider;
 
     // For axis fixing import from fbx, 3dsmax etc
     public Vector3 rotation_offset;
 
+    private Vector3 correct_forward;
+    private Vector3 correct_up;
+    private Vector3 correct_right;
+
+    public LayerMask m_water_mask;
+
     // Start is called before the first frame update
     void Start()
     {
+        m_water_mask = LayerMask.GetMask("Water");
+        m_collider = GetComponentInChildren<Collider>();
         m_animation = GetComponentInChildren<Animation>();
         call = GetComponentInChildren<AudioSource>();
         FindNewTarget();
@@ -29,13 +38,6 @@ public class FishMovement : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        ResolveCollisions();
-
-        if((m_waypoint - transform.position).magnitude < 10)
-        {
-            FindNewTarget();
-        }
-
         if(call != null)
         {
             call_timer -= Time.deltaTime;
@@ -54,40 +56,79 @@ public class FishMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        float turn_speed = m_speed * UnityEngine.Random.Range(0.3f, 1f);
-        Quaternion look_at = Quaternion.LookRotation(m_waypoint - transform.position);
-        Quaternion correction = Quaternion.Euler(rotation_offset);
+        ResolveCollisions();
+        Quaternion inverse = Quaternion.Inverse(Quaternion.Euler(rotation_offset));
 
-        transform.rotation = Quaternion.Slerp(transform.rotation, look_at * correction, Time.deltaTime * turn_speed);
-        transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.deltaTime);
-    }
+        correct_forward = (inverse * transform.forward).normalized;
+        correct_right = (inverse * transform.right).normalized;
+        correct_up = (inverse * transform.up).normalized;
 
-    private Vector3 GetWaypoint()
-    {
-        return random_movement ? ai_manager.GetRandomValidPosition() : ai_manager.RandomWaypoint();
+        float turn_speed = m_speed * UnityEngine.Random.Range(0.03f, 0.1f);
+        Vector3 dir = m_waypoint - transform.position;
+
+        float angle_x = Vector3.SignedAngle(dir.normalized, correct_forward, -transform.right);
+        float angle_y = Vector3.SignedAngle(dir.normalized, correct_forward, -transform.up);
+
+        Vector3 angles = new Vector3(angle_x, angle_y, 0) * Time.deltaTime * turn_speed;
+        transform.Rotate(angles);
+
+        Quaternion q = transform.rotation;
+        q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
+        transform.rotation = q;
+
+        transform.position += correct_forward * Time.deltaTime * m_speed;
+
+        if ((m_waypoint - transform.position).magnitude < 10)
+        {
+            FindNewTarget();
+        }
+
+        //Quaternion look_at = Quaternion.LookRotation(m_waypoint - transform.position);
+        //Quaternion correction = Quaternion.Euler(rotation_offset);
+
+        //transform.rotation = Quaternion.Slerp(transform.rotation, look_at * correction, Time.deltaTime * turn_speed);
+        //transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.deltaTime);
+
+        //if (Math.Abs(angle_z) > 5.0f)
+        //{
+        //    //transform.RotateAround(transform.position, correct_forwards, angle_z * Time.deltaTime * turn_speed);
+        //}
+        //if (transform.rotation.eulerAngles.z > 1.0f)
+        //{
+        //    transform.RotateAround(transform.position, -correct_forwards, 50 * Time.deltaTime * turn_speed);
+        //}
+        //if (transform.rotation.eulerAngles.z < -1.0f)
+        //{
+        //    transform.RotateAround(transform.position, correct_forwards, 50 * Time.deltaTime * turn_speed);
+        //}
+
+        //Quaternion lookOnLook = Quaternion.LookRotation(m_waypoint - transform.position);
+        //transform.rotation = Quaternion.Slerp(transform.rotation, lookOnLook, Time.deltaTime * turn_speed);       // another option
+
+        //transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.deltaTime);
     }
 
     private void FindNewTarget()
     {
         m_last_waypoint = m_waypoint;
-        m_waypoint = GetWaypoint();
+        m_waypoint = random_movement ? ai_manager.GetRandomValidPosition() : ai_manager.RandomWaypoint();
         m_speed = UnityEngine.Random.Range(m_mix_max_speed.Item1, m_mix_max_speed.Item2);
     }
 
     private void ResolveCollisions()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, (Quaternion.Inverse(Quaternion.Euler(rotation_offset)) * transform.forward).normalized, out hit, 10.0f))
+        RaycastHit[] hit = Physics.RaycastAll(transform.position, correct_forward, 10.0f, ~m_water_mask);
+        if(hit.Length > 0)
         {
-            if (hit.collider.tag == "Waypoint" || hit.collider.tag == "Terrain" || UnityEngine.Random.Range(1, 100) < 40)
-            {
-                FindNewTarget();
-            }
+            FindNewTarget();
         }
     }
 
     private void OnDrawGizmos()
     {
-        Debug.DrawRay(transform.position, (Quaternion.Inverse(Quaternion.Euler(rotation_offset)) * transform.forward).normalized * 10, Color.green);
+        Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
+        //Debug.DrawRay(transform.position, correct_forward * 10, Color.green);
+        Debug.DrawRay(transform.position, correct_forward.normalized * 10, Color.green);
+        Gizmos.DrawSphere(m_waypoint, 10);
     }
 }

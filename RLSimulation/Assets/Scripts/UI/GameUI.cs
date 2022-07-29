@@ -53,8 +53,17 @@ public class GameUI : MonoBehaviour
         rotation_input_value_text.text = third_person_movement.movement_controls.rotationInputs.ToString();
         movement_value_text.text = third_person_movement.desiredMove.ToString();
         rotation_value_text.text = third_person_movement.desiredRotation.ToString();
-        water_shader_text.text = SimulationManager._instance.water_objs[0].activeSelf.ToString();
-        global_lighting_text.text = SimulationManager._instance.lighting_objs[0].activeSelf.ToString();
+
+        if(SimulationManager._instance.water_objs.Length > 0)
+        {
+            water_shader_text.text = SimulationManager._instance.water_objs[0].activeSelf.ToString();
+        }
+
+        if (SimulationManager._instance.lighting_objs.Length > 0)
+        {
+            global_lighting_text.text = SimulationManager._instance.lighting_objs[0].activeSelf.ToString();
+        }
+
         total_ai_text.text = spawner.GetTotalNPCs().ToString();
         far_plane_text.text = third_person_movement.firstPersonCam.farClipPlane.ToString();
     }

@@ -17,7 +17,7 @@ RenderSettings:
   m_Fog: 0
   m_FogColor: {r: 0.14117648, g: 0.5176471, b: 0.5686275, a: 1}
   m_FogMode: 2
-  m_FogDensity: 0.0003
+  m_FogDensity: 0.3
   m_LinearFogStart: 50
   m_LinearFogEnd: 100
   m_AmbientSkyColor: {r: 0, g: 1, b: 0.8328996, a: 1}
@@ -155,7 +155,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3016175423332875902}
+  - {fileID: 3016175423536943902}
   m_Father: {fileID: 432339668}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -180,7 +180,7 @@ AudioSource:
   m_GameObject: {fileID: 50173724}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 24300002, guid: 99ad05366bc473348b4540ac19146389, type: 2}
   m_audioClip: {fileID: 8300000, guid: 7fafb19559666724695d3bc4d360ff94, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
@@ -619,7 +619,6 @@ GameObject:
   - component: {fileID: 300520025}
   - component: {fileID: 300520022}
   - component: {fileID: 300520027}
-  - component: {fileID: 300520028}
   m_Layer: 0
   m_Name: FPC
   m_TagString: Untagged
@@ -672,7 +671,7 @@ Camera:
   m_projectionMatrixMode: 2
   m_GateFitMode: 2
   m_FOVAxisMode: 0
-  m_SensorSize: {x: 2.8, y: 2.8}
+  m_SensorSize: {x: 4.96, y: 3.72}
   m_LensShift: {x: 0, y: 0}
   m_FocalLength: 2.97
   m_NormalizedViewPortRect:
@@ -683,7 +682,7 @@ Camera:
     height: 0.3
   near clip plane: 0.1
   far clip plane: 10000
-  field of view: 50.47655
+  field of view: 64.114746
   orthographic: 0
   orthographic size: 5
   m_Depth: 1
@@ -761,18 +760,6 @@ MonoBehaviour:
   m_BeforeTransparentBundles: []
   m_BeforeStackBundles: []
   m_AfterStackBundles: []
---- !u!114 &300520028
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 300520020}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 79dd2ba2523ba5e46a64f71e2c9494f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &373546118
 GameObject:
   m_ObjectHideFlags: 0
@@ -917,7 +904,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 374129679}
-  - component: {fileID: 374129681}
+  - component: {fileID: 374129680}
   m_Layer: 0
   m_Name: Parent Scripts
   m_TagString: Untagged
@@ -940,7 +927,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &374129681
+--- !u!114 &374129680
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1084,6 +1071,7 @@ Transform:
   - {fileID: 50173725}
   - {fileID: 566756932}
   - {fileID: 7461267098664872773}
+  - {fileID: 1159140180}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1796,7 +1784,7 @@ AudioSource:
   m_GameObject: {fileID: 563266351}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 24300002, guid: 99ad05366bc473348b4540ac19146389, type: 2}
   m_audioClip: {fileID: 8300000, guid: 426fcab34c96aa743b571763f7077bee, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
@@ -1896,7 +1884,6 @@ GameObject:
   - component: {fileID: 566393374}
   - component: {fileID: 566393377}
   - component: {fileID: 566393379}
-  - component: {fileID: 566393380}
   m_Layer: 0
   m_Name: TPC
   m_TagString: Untagged
@@ -2064,18 +2051,6 @@ MonoBehaviour:
   m_BeforeTransparentBundles: []
   m_BeforeStackBundles: []
   m_AfterStackBundles: []
---- !u!114 &566393380
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 566393372}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 79dd2ba2523ba5e46a64f71e2c9494f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &566756931
 GameObject:
   m_ObjectHideFlags: 0
@@ -2185,7 +2160,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 569179580}
   m_LocalRotation: {x: 0.38268343, y: -0.000000015896621, z: 0.000000006584596, w: 0.92387956}
-  m_LocalPosition: {x: 0, y: 8.999994, z: 5}
+  m_LocalPosition: {x: -0.000000059604645, y: 8.999977, z: 4.999997}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3280,7 +3255,7 @@ AudioSource:
   m_GameObject: {fileID: 971931241}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 24300002, guid: 99ad05366bc473348b4540ac19146389, type: 2}
   m_audioClip: {fileID: 8300000, guid: ec9b40d89b6929840b7b7e31d2801783, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
@@ -3598,6 +3573,78 @@ MonoBehaviour:
   global_lighting_text: {fileID: 669195064}
   total_ai_text: {fileID: 2135382580}
   far_plane_text: {fileID: 919753034}
+--- !u!1 &1159140179
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1159140180}
+  - component: {fileID: 1159140181}
+  m_Layer: 0
+  m_Name: Boids
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1159140180
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1159140179}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -50, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 432339668}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1159140181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1159140179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fa35b9623162614881082335023629b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  behavioralCh: {x: 2, y: 6}
+  debug: 0
+  flockNum: 3
+  fragmentedFlock: 500
+  fragmentedFlockYLimit: 0.07
+  migrationFrequency: 0.12
+  posChangeFrequency: 0.7
+  smoothChFrequency: 15
+  birdPref: {fileID: 1534700291726900181, guid: 4245ff9a4dd9cd24d8b511911616bf71, type: 3}
+  birdsNum: 500
+  birdSpeed: 1
+  fragmentedBirds: 100
+  fragmentedBirdsYLimit: 0.112
+  soaring: 1
+  verticalWawe: 20
+  rotationClamp: 0
+  rotationClampValue: 50
+  scaleRandom: {x: 1.5, y: 2}
+  danger: 0
+  dangerRadius: 15
+  dangerSpeed: 1.5
+  dangerSoaring: 0.5
+  dangerLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  HelpURL: nvjob.github.io/unity/nvjob-boids
+  ReportAProblem: nvjob.github.io/support
+  Patrons: nvjob.github.io/patrons
 --- !u!1 &1179440644
 GameObject:
   m_ObjectHideFlags: 0
@@ -3633,7 +3680,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 50.9, y: -0.2}
+  m_AnchoredPosition: {x: -146.7, y: -0.2}
   m_SizeDelta: {x: 200, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1179440646
@@ -3719,7 +3766,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 179.12761, y: 0, z: -197.27113, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -3941,7 +3988,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -97.8, y: -0.3}
+  m_AnchoredPosition: {x: -98.7, y: -0.3}
   m_SizeDelta: {x: 100, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1217975636
@@ -4186,7 +4233,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290624799}
-  m_LocalRotation: {x: 0.053078998, y: -0.000000002147766, z: 1.141622e-10, w: 0.99859035}
+  m_LocalRotation: {x: 0.053078998, y: -0.0000000021477657, z: 1.14162194e-10, w: 0.99859035}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -4657,7 +4704,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1498372150}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -4.93, z: 0}
+  m_LocalPosition: {x: 0, y: -20, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4761,7 +4808,7 @@ MonoBehaviour:
   desiredMove: {x: 0, y: 0, z: 0}
   desiredRotation: {x: 0, y: 0, z: 0}
   underwater_skybox_mat: {fileID: 2100000, guid: 507312846abc13d45a396f47ca8326ea, type: 2}
-  ground_skybox_mat: {fileID: 2100000, guid: 12ccb828343c3405fb94289774b51aad, type: 2}
+  ground_skybox_mat: {fileID: 2100000, guid: 1700716a8dd8948cf8c66ea34a2786d5, type: 2}
   volume: {fileID: 50173731}
   water_collider: {fileID: 50173724}
 --- !u!54 &1498372157
@@ -4824,19 +4871,20 @@ MonoBehaviour:
   m_spawn_color: {r: 1, g: 0, b: 0, a: 0.3}
   spawn_radius: 50
   environment_transform: {fileID: 432339668}
+  water_surface: {fileID: 3016175423536943898}
   ai_groups:
   - prefabName: whale
-    maxAmount: 1
+    maxAmount: 0
     maxSpawn: 1
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
     rotationOffset: 
-    rotationOffsetVector: {x: 180, y: 0, z: 180}
+    rotationOffsetVector: {x: 0, y: 180, z: 0}
     scale: 5
   - prefabName: fish
-    maxAmount: 30
-    maxSpawn: 5
+    maxAmount: 0
+    maxSpawn: 300
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
@@ -4844,14 +4892,14 @@ MonoBehaviour:
     rotationOffsetVector: {x: 0, y: 90, z: 0}
     scale: 20
   - prefabName: dolphin
-    maxAmount: 3
+    maxAmount: 5
     maxSpawn: 1
     enableSpawner: 1
     randomMovement: 1
     randomizeStats: 0
     rotationOffset: 
     rotationOffsetVector: {x: 0, y: 0, z: 0}
-    scale: 6
+    scale: 4
 --- !u!1 &1509826151
 GameObject:
   m_ObjectHideFlags: 0
@@ -5022,7 +5070,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -464, y: 318.5}
+  m_AnchoredPosition: {x: -662.8, y: 318.5}
   m_SizeDelta: {x: 350, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1593823698
@@ -6187,7 +6235,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1905583245}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -11443,7 +11491,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2732117605737155910}
   m_Mesh: {fileID: 4300102, guid: 15b7f0edc13d8f743abc7d4492ca14f1, type: 3}
---- !u!1 &3016175423332875898
+--- !u!1 &3016175423536943898
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -11451,10 +11499,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 3016175423332875902}
-  - component: {fileID: 3016175423332875903}
-  - component: {fileID: 3016175423332875900}
-  - component: {fileID: 3016175423332875901}
+  - component: {fileID: 3016175423536943902}
+  - component: {fileID: 3016175423536943903}
+  - component: {fileID: 3016175423536943900}
+  - component: {fileID: 3016175423536943901}
   m_Layer: 0
   m_Name: Water
   m_TagString: Untagged
@@ -11462,13 +11510,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!23 &3016175423332875900
+--- !u!23 &3016175423536943900
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3016175423332875898}
+  m_GameObject: {fileID: 3016175423536943898}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -11482,7 +11530,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e8c112ab2f1da0f43ae8074ae5676efb, type: 2}
+  - {fileID: 2100000, guid: fd9a104b89431814b9f312a5527175f2, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -11504,13 +11552,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &3016175423332875901
+--- !u!114 &3016175423536943901
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3016175423332875898}
+  m_GameObject: {fileID: 3016175423536943898}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e37ce6c6e7ecdd42a13048d391f594b, type: 3}
@@ -11524,13 +11572,13 @@ MonoBehaviour:
   HelpURL: nvjob.github.io/unity/nvjob-water-shader
   ReportAProblem: nvjob.github.io/support
   Patrons: nvjob.github.io/patrons
---- !u!4 &3016175423332875902
+--- !u!4 &3016175423536943902
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3016175423332875898}
+  m_GameObject: {fileID: 3016175423536943898}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 5000, z: 0}
   m_LocalScale: {x: 10000, y: 1, z: 10000}
@@ -11539,13 +11587,13 @@ Transform:
   m_Father: {fileID: 50173725}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &3016175423332875903
+--- !u!33 &3016175423536943903
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3016175423332875898}
+  m_GameObject: {fileID: 3016175423536943898}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &5895466165193169238
 GameObject:

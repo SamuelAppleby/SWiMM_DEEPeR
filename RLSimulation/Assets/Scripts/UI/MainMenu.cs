@@ -6,9 +6,12 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Audio;
 
 public class MainMenu : MonoBehaviour
 {
+    public AudioMixer audio_mixer;
+
     [SerializeField]
     private string simulation_name;
 
@@ -51,6 +54,8 @@ public class MainMenu : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI working_directory_text;
 
+    public Slider volume_slider;
+
     private IEnumerator Start()
     {
         yield return new WaitUntil(() => SimulationManager._instance.IsInitialized);
@@ -65,6 +70,13 @@ public class MainMenu : MonoBehaviour
         nn_button_text = nn_button.GetComponentInChildren<TextMeshProUGUI>();
         working_directory_text.text = System.IO.Directory.GetCurrentDirectory();
         ChangeUIServerActive(SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood());
+    }
+
+    private void Awake()
+    {
+        float volume = 0F;
+        audio_mixer.GetFloat("Volume", out volume);
+        volume_slider.value = volume;
     }
 
     public void PlayGame(bool manual_controls)
@@ -134,5 +146,11 @@ public class MainMenu : MonoBehaviour
     {
         connect_text.text = "Connect";
         EventSystem.current.SetSelectedGameObject(null);
+    }
+
+    public void SetVolume(float volume)
+    {
+        audio_mixer.SetFloat("Volume", volume);
+        Debug.Log(volume);
     }
 }

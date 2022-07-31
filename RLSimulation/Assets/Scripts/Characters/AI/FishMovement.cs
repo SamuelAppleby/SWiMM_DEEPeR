@@ -13,7 +13,7 @@ public class FishMovement : MonoBehaviour
     private AudioSource call;
     private float call_timer = 10f;
     private float m_speed;
-    private Tuple<float, float> m_mix_max_speed = new Tuple<float, float>(1, 7);
+    public Tuple<float, float> m_mix_max_speed = new Tuple<float, float>(1, 7);
     private Collider m_collider;
 
     // For axis fixing import from fbx, 3dsmax etc

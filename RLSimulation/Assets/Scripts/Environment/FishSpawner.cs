@@ -28,7 +28,10 @@ public class AIGroup
     public Vector3 rotationOffsetVector;
     [SerializeField]
     public int scale;
-
+    [SerializeField]
+    public int minSpeed = 1;
+    [SerializeField]
+    public int maxSpeed = 7;
     public GameObject objectPrefab { get; set; }
 
     public AIGroup(string prefab_name, int max_ai, int spawn_amount, bool random_movement, bool randomize_stats, Vector3 rotation_offfset, int scale_value)
@@ -164,6 +167,7 @@ public class FishSpawner : MonoBehaviour
                             fixed_rotation.GetComponent<FishMovement>().random_movement = obj.randomMovement;
                             fixed_rotation.GetComponent<FishMovement>().ai_manager = this;
                             fixed_rotation.GetComponent<FishMovement>().rotation_offset = fixed_rotation.transform.rotation.eulerAngles;
+                            fixed_rotation.GetComponent<FishMovement>().m_mix_max_speed = new System.Tuple<float, float>(obj.minSpeed, obj.maxSpeed);
                             temp_spawn.transform.localScale *= (obj.scale * Random.Range(0.75f, 1.25f));
 
                             GetComponent<ThirdPersonMovement>().target_transforms.Add(fixed_rotation.transform);

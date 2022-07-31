@@ -85,6 +85,7 @@ public class Server
     {
         public float spawnTimer;
         public float spawnContainerRatio;
+        public BoidGroup[] boidGroups;
         public AIGroup[] aiGroups;
         public float spawnRadius;
     }

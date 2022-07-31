@@ -1898,7 +1898,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: -0.0000000091572465, z: 5.629952e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: 0.000000009157246, z: -5.6299504e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2864,7 +2864,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: -0.000000008582001, z: 6.0344757e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: 0.000000008582, z: -6.034475e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3582,7 +3582,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1159140180}
-  - component: {fileID: 1159140181}
+  - component: {fileID: 1159140182}
   m_Layer: 0
   m_Name: Boids
   m_TagString: Untagged
@@ -3598,14 +3598,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1159140179}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -50, z: 0}
+  m_LocalPosition: {x: 0, y: -60, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 432339668}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1159140181
+--- !u!114 &1159140182
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3614,37 +3614,36 @@ MonoBehaviour:
   m_GameObject: {fileID: 1159140179}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6fa35b9623162614881082335023629b, type: 3}
+  m_Script: {fileID: 11500000, guid: 0f46eeb00afc16249af0f16748275ce6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  behavioralCh: {x: 2, y: 6}
-  debug: 0
-  flockNum: 3
-  fragmentedFlock: 500
-  fragmentedFlockYLimit: 0.07
-  migrationFrequency: 0.12
-  posChangeFrequency: 0.7
-  smoothChFrequency: 15
-  birdPref: {fileID: 1534700291726900181, guid: 4245ff9a4dd9cd24d8b511911616bf71, type: 3}
-  birdsNum: 500
-  birdSpeed: 1
-  fragmentedBirds: 100
-  fragmentedBirdsYLimit: 0.112
-  soaring: 1
-  verticalWawe: 20
-  rotationClamp: 0
-  rotationClampValue: 50
-  scaleRandom: {x: 1.5, y: 2}
-  danger: 0
-  dangerRadius: 15
-  dangerSpeed: 1.5
-  dangerSoaring: 0.5
-  dangerLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  HelpURL: nvjob.github.io/unity/nvjob-boids
-  ReportAProblem: nvjob.github.io/support
-  Patrons: nvjob.github.io/patrons
+  boid_groups:
+  - behavioralCh: {x: 2, y: 6}
+    debug: 0
+    numGroups: 5
+    fragmentedGroup: 50
+    fragmentedFlockYLimit: 0
+    migrationFrequency: 1
+    posChangeFrequency: 0.7
+    smoothChFrequency: 15
+    prefabName: boid fish
+    prefabNum: 500
+    fishSpeed: 1
+    fragmentedIndividual: 10
+    fragmentedFishYLimit: 1
+    soaring: 1
+    verticalWawe: 20
+    rotationClamp: 0
+    rotationClampValue: 50
+    scaleRandom: {x: 1.5, y: 2}
+    danger: 0
+    dangerRadius: 15
+    dangerSpeed: 1.5
+    dangerSoaring: 0.5
+    dangerLayer:
+      serializedVersion: 2
+      m_Bits: 0
+  water_surface: {fileID: 3016175423536943902}
 --- !u!1 &1179440644
 GameObject:
   m_ObjectHideFlags: 0
@@ -4233,7 +4232,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290624799}
-  m_LocalRotation: {x: 0.053078998, y: -0.0000000021477657, z: 1.14162194e-10, w: 0.99859035}
+  m_LocalRotation: {x: 0.053078998, y: 0.0000000021477657, z: -1.14162194e-10, w: 0.99859035}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

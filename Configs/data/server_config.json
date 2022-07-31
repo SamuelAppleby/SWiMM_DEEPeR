@@ -19,6 +19,16 @@
                 "spawnTimer": 5,
                 "spawnContainerRatio": 0.8,
                 "spawnRadius": 50,
+                "boidGroups": [
+                    {
+                        "prefabName": "boid fish",
+                        "prefabNum" : 1000,
+                        "numGroups" : 3,
+                        "fragmentedGroup": 50,
+                        "fragmentedIndividual": 30,
+                        "soaring" : 1
+                    }
+                ],
                 "aiGroups": [
                     {
                         "prefabName": "dolphin",
@@ -32,21 +42,9 @@
                             0,
                             0
                         ],
-                        "scale": 4
-                    },
-                    {
-                        "prefabName": "fish",
-                        "maxAmount": 10000,
-                        "maxSpawn": 100,
-                        "enableSpawner": false,
-                        "randomMovement": true,
-                        "randomizeStats": false,
-                        "rotationOffset": [
-                            0,
-                            90,
-                            0
-                        ],
-                        "scale": 5
+                        "scale": 4,
+                        "minSpeed" : 3,
+                        "maxSpeed" : 10
                     },
                     {
                         "prefabName": "whale",
@@ -60,7 +58,9 @@
                             180,
                             0
                         ],
-                        "scale": 5
+                        "scale": 5,
+                        "minSpeed" : 1,
+                        "maxSpeed" : 7
                     }
                 ]
             }

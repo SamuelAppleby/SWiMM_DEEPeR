@@ -14,7 +14,7 @@
                             "type": "object",
                             "properties": {
                                 "resolution": {
-                                    "type" : "array",
+                                    "type": "array",
                                     "items": {
                                         "type": "number"
                                     },
@@ -63,8 +63,42 @@
                                 "spawnContainerRatio": {
                                     "type": "number"
                                 },
-                                "spawnRadius" : {
+                                "spawnRadius": {
                                     "type": "number"
+                                },
+                                "boidGroups": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "prefabName": {
+                                                "type": "string"
+                                            },
+                                            "prefabNum": {
+                                                "type": "number"
+                                            },
+                                            "numGroups": {
+                                                "type": "number"
+                                            },
+                                            "fragmentedGroup": {
+                                                "type": "number"
+                                            },
+                                            "fragmentedInidividual": {
+                                                "type": "number"
+                                            },
+                                            "soaring": {
+                                                "type": "number"
+                                            }
+                                        },
+                                        "required": [
+                                            "prefabName",
+                                            "prefabNum",
+                                            "numGroups",
+                                            "fragmentedGroup",
+                                            "fragmentedIndividual",
+                                            "soaring"
+                                        ]
+                                    }
                                 },
                                 "aiGroups": {
                                     "type": "array",
@@ -90,16 +124,22 @@
                                                 "type": "boolean"
                                             },
                                             "rotationOffset": {
-                                                "type" : "array",
+                                                "type": "array",
                                                 "items": {
                                                     "type": "number"
                                                 },
                                                 "minItems": 3,
                                                 "maxItems": 3
                                             },
-                                            "scale" : {
-                                                "type" : "number"
-                                            }                             
+                                            "scale": {
+                                                "type": "number"
+                                            },
+                                            "minSpeed" : {
+                                                "type": "number"
+                                            },
+                                            "maxSpeed" : {
+                                                "type": "number"
+                                            }
                                         },
                                         "required": [
                                             "prefabName",
@@ -109,7 +149,9 @@
                                             "enableSpawner",
                                             "randomMovement",
                                             "rotationOffset",
-                                            "scale"
+                                            "scale",
+                                            "minSpeed",
+                                            "maxSpeed"
                                         ]
                                     }
                                 }

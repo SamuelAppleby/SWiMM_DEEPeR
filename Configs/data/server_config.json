@@ -22,7 +22,7 @@
                 "boidGroups": [
                     {
                         "prefabName": "boid fish",
-                        "prefabNum" : 1000,
+                        "prefabNum" : 0,
                         "numGroups" : 3,
                         "fragmentedGroup": 50,
                         "fragmentedIndividual": 30,
@@ -32,7 +32,7 @@
                 "aiGroups": [
                     {
                         "prefabName": "dolphin",
-                        "maxAmount": 5,
+                        "maxAmount": 10,
                         "maxSpawn": 1,
                         "enableSpawner": true,
                         "randomMovement": true,

@@ -30,8 +30,8 @@ class UnderwaterEnv(gym.Env):
         # action space declaration
         print("Declaring action space") 
         self.action_space = spaces.Box(
-            low=np.array([-1.0, -1.0, -1.0]),
-            high=np.array([1.0, 1.0, 1.0]),
+            low=np.array([-1.0, -1.0]),
+            high=np.array([1.0, 1.0]),
             dtype=np.float32,
         )
 

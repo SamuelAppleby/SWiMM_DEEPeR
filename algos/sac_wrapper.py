@@ -65,7 +65,7 @@ class SACWrap(SAC):
 
                 # Compute current learning_rate
                 frac = 1.0 - step / total_timesteps
-                current_lr = self.learning_rate(frac, mean_reward)
+                current_lr = self.learning_rate(frac)
 
                 if callback is not None:
                     # Only stop training if return value is False, not when it is None. This is for backwards

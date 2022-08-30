@@ -43,7 +43,7 @@ public class ThirdPersonControlSettings
 
     [HideInInspector] public Vector3 movementInputs;
     [HideInInspector] public Vector3 rotationInputs;
-    [HideInInspector] public bool hovering = false;
+    [HideInInspector] public bool hover_toggle = false;
     [HideInInspector] public float mouseWheel = 0.0f;
     [HideInInspector] public bool cameraChange = false;
     [HideInInspector] public bool increase_far_plane = false;
@@ -61,7 +61,7 @@ public class ThirdPersonControlSettings
             rotationInputs.y = Input.GetAxisRaw(MovementControlMap.YawKey);
             rotationInputs.z = Input.GetKey(MovementControlMap.RollPositive) ? 1 : Input.GetKey(MovementControlMap.RollNegative) ? -1 : 0;
 
-            hovering = Input.GetKeyDown(MovementControlMap.HoverKey);
+            hover_toggle = Input.GetKeyDown(MovementControlMap.HoverKey);
         }
         else if (SimulationManager._instance.server.rover_controls.is_overridden)
         {
@@ -75,7 +75,18 @@ public class ThirdPersonControlSettings
             rotationInputs.z = SimulationManager._instance.server.rover_controls.payload.rollThrust;
             rotationInputs.z = rotationInputs.z < 0.5 && rotationInputs.z > -0.5 ? 0 : rotationInputs.z <= -0.5 ? -1 : 1;     // Uses Dpad, no intermediate values
 
-            hovering = SimulationManager._instance.server.rover_controls.payload.depthHoldMode < 0.5 ? false : true;
+            if (SimulationManager._instance.server.rover_controls.payload.depthHoldMode < 0.5 && 
+                SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().m_depth_hold_mode ||
+                SimulationManager._instance.server.rover_controls.payload.depthHoldMode >= 0.5 &&
+                !SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().m_depth_hold_mode)
+            {
+                hover_toggle = true;
+            }
+
+            else
+            {
+                hover_toggle = false;
+            }
 
             // Sam.A Talk to Kirsten, do we want previous controls for good?
             //SimulationManager._instance.server.rover_controls.Reset();
@@ -93,7 +104,7 @@ public class ThirdPersonControlSettings
         {
             audios.audio_motor.Stop();
         }
-        if (hovering)
+        if (hover_toggle)
         {
             audios.hover_noise.Play();
         }

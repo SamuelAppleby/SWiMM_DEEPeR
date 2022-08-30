@@ -20,7 +20,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private Rigidbody m_RigidBody;
     [HideInInspector]
-    public bool m_Hovering = true;
+    public bool m_depth_hold_mode = true;
 
     public LayerMask water_mask;
     public LayerMask ground_mask;
@@ -68,7 +68,7 @@ public class ThirdPersonMovement : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
-        m_Hovering = true;
+        m_depth_hold_mode = true;
         m_RigidBody.drag = air_drag;
         m_RigidBody.angularDrag = angular_air_drag;
         active_cam = thirdPersonCam;
@@ -102,9 +102,9 @@ public class ThirdPersonMovement : MonoBehaviour
             SwitchActiveCamera(active_cam, inactive_cam);
         }
 
-        if (movement_controls.hovering)
+        if (movement_controls.hover_toggle)
         {
-            m_Hovering = !m_Hovering;
+            m_depth_hold_mode = !m_depth_hold_mode;
         }
 
         if (movement_controls.increase_far_plane && firstPersonCam.farClipPlane < 2000)
@@ -159,7 +159,7 @@ public class ThirdPersonMovement : MonoBehaviour
                 desiredMove *= movement_controls.ThrustPower;
             }
 
-            if (m_Hovering)
+            if (m_depth_hold_mode)
             {
                 desiredMove.y -= hover_force_equilibrium;
             }

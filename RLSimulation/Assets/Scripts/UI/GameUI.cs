@@ -18,7 +18,7 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI packets_value_text;
 
     [SerializeField]
-    private TextMeshProUGUI hovering_value_text;
+    private TextMeshProUGUI depth_hold_mode_text;
 
     [SerializeField]
     private TextMeshProUGUI movement_input_value_text;
@@ -54,7 +54,7 @@ public class GameUI : MonoBehaviour
     {
         fps_value_text.text = SimulationManager._instance.avgFrameRate.ToString();
         packets_value_text.text = (SimulationManager._instance.server.sequence_num - 1).ToString();
-        hovering_value_text.text = third_person_movement.m_Hovering.ToString();
+        depth_hold_mode_text.text = third_person_movement.m_depth_hold_mode.ToString();
         movement_input_value_text.text = third_person_movement.movement_controls.movementInputs.ToString();
         rotation_input_value_text.text = third_person_movement.movement_controls.rotationInputs.ToString();
         movement_value_text.text = third_person_movement.desiredMove.ToString();

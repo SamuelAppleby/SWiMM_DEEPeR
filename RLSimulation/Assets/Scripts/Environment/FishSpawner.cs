@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.IO;
+using System;
+using Random = UnityEngine.Random;
 
 [System.Serializable]
 public class AIGroup
@@ -22,8 +24,14 @@ public class AIGroup
     public bool randomMovement;
     [SerializeField]
     public bool randomizeStats;
-    [SerializeField][HideInInspector]
-    private int[] rotationOffset;
+    [SerializeField]
+    [HideInInspector]
+    public bool[] movementDirections;
+    [SerializeField]
+    public Vector3 movementDirectionsVector;
+    [SerializeField]
+    [HideInInspector]
+    public int[] rotationOffset;
     [SerializeField]
     public Vector3 rotationOffsetVector;
     [SerializeField]
@@ -32,6 +40,8 @@ public class AIGroup
     public int minSpeed = 1;
     [SerializeField]
     public int maxSpeed = 7;
+    [SerializeField]
+    public bool spawnInfront = false;
     public GameObject objectPrefab { get; set; }
 
     public AIGroup(string prefab_name, int max_ai, int spawn_amount, bool random_movement, bool randomize_stats, Vector3 rotation_offfset, int scale_value)
@@ -59,6 +69,7 @@ public class AIGroup
     public void IntArrayToVector3()
     {
         rotationOffsetVector = new Vector3(rotationOffset[0], rotationOffset[1], rotationOffset[2]);
+        movementDirectionsVector = new Vector3(Convert.ToInt32(movementDirections[0]), Convert.ToInt32(movementDirections[1]), Convert.ToInt32(movementDirections[2]));
     }
 }
 
@@ -114,7 +125,7 @@ public class FishSpawner : MonoBehaviour
         spawn_radius = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnRadius;
         ai_groups = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.aiGroups;
 
-        foreach(AIGroup group in ai_groups)
+        foreach (AIGroup group in ai_groups)
         {
             group.IntArrayToVector3();
         }
@@ -145,33 +156,32 @@ public class FishSpawner : MonoBehaviour
 
     private void SpawnNPC()
     {
-        foreach (AIGroup obj in ai_groups)
+        foreach (AIGroup group in ai_groups)
         {
-            if (obj.objectPrefab != null && obj.enableSpawner)
+            if (group.objectPrefab != null && group.enableSpawner)
             {
-                GameObject temp_group = GameObject.Find("Group: " + obj.prefabName);
-                if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < obj.maxAmount)
+                GameObject temp_group = GameObject.Find("Group: " + group.prefabName);
+                if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < group.maxAmount)
                 {
-                    for (int i = 0; i < Random.Range(1, obj.maxSpawn + 1); ++i)
+                    for (int i = 0; i < Random.Range(1, group.maxSpawn + 1); ++i)
                     {
-                        Vector3 random_position = GetRandomValidPosition();
-                        if(random_position != Vector3.zero)
-                        {
-                            GameObject fixed_rotation = new GameObject(obj.objectPrefab + "fixed rotation");
-                            GameObject temp_spawn = Instantiate(obj.objectPrefab, new Vector3(0, 0, 0), Quaternion.Euler(new Vector3(0, 0, 0)));
-                            temp_spawn.transform.parent = fixed_rotation.transform;
-                            fixed_rotation.transform.parent = temp_group.transform;
-                            fixed_rotation.transform.position = random_position;
-                            fixed_rotation.transform.rotation = Quaternion.Euler(obj.rotationOffsetVector);
-                            fixed_rotation.AddComponent<FishMovement>();
-                            fixed_rotation.GetComponent<FishMovement>().random_movement = obj.randomMovement;
-                            fixed_rotation.GetComponent<FishMovement>().ai_manager = this;
-                            fixed_rotation.GetComponent<FishMovement>().rotation_offset = fixed_rotation.transform.rotation.eulerAngles;
-                            fixed_rotation.GetComponent<FishMovement>().m_mix_max_speed = new System.Tuple<float, float>(obj.minSpeed, obj.maxSpeed);
-                            temp_spawn.transform.localScale *= (obj.scale * Random.Range(0.75f, 1.25f));
+                        GameObject fixed_rotation = new GameObject(group.objectPrefab + "fixed rotation");
+                        GameObject temp_spawn = Instantiate(group.objectPrefab, new Vector3(0, 0, 0), Quaternion.Euler(new Vector3(0, 0, 0)));
+                        temp_spawn.transform.parent = fixed_rotation.transform;
+                        fixed_rotation.transform.parent = temp_group.transform;
+                        fixed_rotation.transform.position = group.spawnInfront ? SimulationManager._instance.rover.transform.position +
+                            (SimulationManager._instance.rover.transform.forward * 20)
+                            : GetRandomValidPosition(group.movementDirectionsVector);
+                        fixed_rotation.transform.rotation = Quaternion.Euler(group.rotationOffsetVector);
+                        fixed_rotation.AddComponent<FishMovement>();
+                        fixed_rotation.GetComponent<FishMovement>().random_movement = group.randomMovement;
+                        fixed_rotation.GetComponent<FishMovement>().ai_manager = this;
+                        fixed_rotation.GetComponent<FishMovement>().rotation_offset = fixed_rotation.transform.rotation.eulerAngles;
+                        fixed_rotation.GetComponent<FishMovement>().m_mix_max_speed = new System.Tuple<float, float>(group.minSpeed, group.maxSpeed);
+                        fixed_rotation.GetComponent<FishMovement>().valid_movements = group.movementDirectionsVector;
+                        temp_spawn.transform.localScale *= (group.scale * Random.Range(0.75f, 1.25f));
 
-                            GetComponent<ThirdPersonMovement>().target_transforms.Add(fixed_rotation.transform);
-                        }
+                        SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().target_transforms.Add(fixed_rotation.transform);
                     }
                 }
             }
@@ -197,16 +207,31 @@ public class FishSpawner : MonoBehaviour
         return total;
     }
 
-    public Vector3 GetRandomValidPosition()
+    public Vector3 GetRandomValidPosition(Vector3 valid_directions)
     {
-        spawn_centre = transform.position;
+        spawn_centre = SimulationManager._instance.rover.transform.position;
 
-        if(transform.position.y + spawn_radius > water_surface.transform.position.y)
+        if (SimulationManager._instance.rover.transform.position.y + spawn_radius > water_surface.transform.position.y)
         {
-            spawn_centre.y -= (transform.position.y + spawn_radius - water_surface.transform.position.y);
+            spawn_centre.y -= (SimulationManager._instance.rover.transform.position.y + spawn_radius - water_surface.transform.position.y);
         }
 
-        return spawn_centre + (Random.insideUnitSphere * spawn_radius);
+        Vector3 random_directions = spawn_centre;
+
+        if (valid_directions.x > 0)
+        {
+            random_directions.x += Random.Range(0, spawn_radius);
+        }
+        if (valid_directions.y > 0)
+        {
+            random_directions.y += Random.Range(0, spawn_radius);
+        }
+        if (valid_directions.z > 0)
+        {
+            random_directions.z += Random.Range(0, spawn_radius);
+        }
+
+        return random_directions;
     }
 
     public Vector3 RandomWaypoint()

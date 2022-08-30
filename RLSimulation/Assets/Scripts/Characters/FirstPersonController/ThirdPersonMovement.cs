@@ -180,7 +180,7 @@ public class ThirdPersonMovement : MonoBehaviour
                     desiredRotation.z += movement_controls.rotationInputs.z;
                 }
 
-                desiredRotation *= movement_controls.ThrustPower / 100;
+                desiredRotation *= movement_controls.ThrustPower / 50;
             }
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);

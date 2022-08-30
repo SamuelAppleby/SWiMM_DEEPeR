@@ -29,6 +29,7 @@ public class Server
     [Serializable]
     public struct ServerConfig
     {
+        public LearningConfig learningConfig;
         public RoverConfig roverConfig;
         public EnvironmentConfig envConfig;
     }
@@ -50,6 +51,18 @@ public class Server
         {
             is_overridden = false;
         }
+    }
+
+    [Serializable]
+    public struct ActionSpaceConfig
+    {
+        public int dimensions;
+    }
+
+    [Serializable]
+    public struct LearningConfig
+    {
+        public ActionSpaceConfig actionSpaceConfig;
     }
 
     [Serializable]

@@ -1,69 +1,71 @@
 {
-    "msgType": "process_server_config",
-    "payload": {
-        "roverConfig": {
-            "camConfig": {
-                "resolution": [
-                    256,
-                    256
-                ],
-                "fov": 100
-            },
-            "structureConfig": {
-                "ballastMass": 1.2,
-                "totalBuoyantForce": 400
-            }
-        },
-        "envConfig": {
-            "faunaConfig": {
-                "spawnTimer": 5,
-                "spawnContainerRatio": 0.8,
-                "spawnRadius": 50,
-                "boidGroups": [
-                    {
-                        "prefabName": "boid fish",
-                        "prefabNum" : 1000,
-                        "numGroups" : 3,
-                        "fragmentedGroup": 50,
-                        "fragmentedIndividual": 30,
-                        "soaring" : 1
-                    }
-                ],
-                "aiGroups": [
-                    {
-                        "prefabName": "dolphin",
-                        "maxAmount": 5,
-                        "maxSpawn": 1,
-                        "enableSpawner": true,
-                        "randomMovement": true,
-                        "randomizeStats": false,
-                        "rotationOffset": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "scale": 4,
-                        "minSpeed" : 3,
-                        "maxSpeed" : 10
-                    },
-                    {
-                        "prefabName": "whale",
-                        "maxAmount": 2,
-                        "maxSpawn": 1,
-                        "enableSpawner": false,
-                        "randomMovement": true,
-                        "randomizeStats": false,
-                        "rotationOffset": [
-                            0,
-                            180,
-                            0
-                        ],
-                        "scale": 5,
-                        "minSpeed" : 1,
-                        "maxSpeed" : 7
-                    }
-                ]
-            }
-        }
+  "msgType": "process_server_config",
+  "payload": {
+    "roverConfig": {
+      "camConfig": {
+        "resolution": [
+          256,
+          256
+        ],
+        "fov": 100
+      },
+      "structureConfig": {
+        "ballastMass": 1.2,
+        "totalBuoyantForce": 400
+      }
+    },
+    "envConfig": {
+      "faunaConfig": {
+        "spawnTimer": 5,
+        "spawnContainerRatio": 0.8,
+        "spawnRadius": 50,
+        "aiGroups": [
+          {
+            "prefabName": "dolphin",
+            "maxAmount": 1,
+            "maxSpawn": 1,
+            "enableSpawner": true,
+            "randomMovement": true,
+            "randomizeStats": false,
+            "movementDirections": [
+              true,
+              false,
+              true
+            ],
+            "spawnInfront": true,
+            "rotationOffset": [
+              0,
+              0,
+              0
+            ],
+            "scale": 4,
+            "minSpeed": 3,
+            "maxSpeed": 10
+          },
+          {
+            "prefabName": "whale",
+            "maxAmount": 1,
+            "maxSpawn": 1,
+            "enableSpawner": false,
+            "randomMovement": true,
+            "randomizeStats": false,
+            "movementDirections": [
+              true,
+              false,
+              true
+            ],
+            "spawnInfront": true,
+            "rotationOffset": [
+              0,
+              180,
+              0
+            ],
+            "scale": 5,
+            "minSpeed": 1,
+            "maxSpeed": 7
+          }
+        ]
+      }
     }
+  }
 }

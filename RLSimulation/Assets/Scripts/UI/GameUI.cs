@@ -33,6 +33,12 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI rotation_value_text;
 
     [SerializeField]
+    private TextMeshProUGUI position_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI orienation_value_text;
+
+    [SerializeField]
     private TextMeshProUGUI water_shader_text;
 
     [SerializeField]
@@ -53,8 +59,10 @@ public class GameUI : MonoBehaviour
         rotation_input_value_text.text = third_person_movement.movement_controls.rotationInputs.ToString();
         movement_value_text.text = third_person_movement.desiredMove.ToString();
         rotation_value_text.text = third_person_movement.desiredRotation.ToString();
+        position_value_text.text = third_person_movement.transform.position.ToString();
+        orienation_value_text.text = third_person_movement.transform.rotation.eulerAngles.ToString();
 
-        if(SimulationManager._instance.water_objs.Length > 0)
+        if (SimulationManager._instance.water_objs.Length > 0)
         {
             water_shader_text.text = SimulationManager._instance.water_objs[0].activeSelf.ToString();
         }

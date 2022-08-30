@@ -65,6 +65,7 @@ public class ThirdPersonControlSettings
         }
         else if (SimulationManager._instance.server.rover_controls.is_overridden)
         {
+            // now it depends on what is passed from learningconfig
             movementInputs.x = Input.GetAxisRaw(MovementControlMap.StrafeKey);
             movementInputs.y = SimulationManager._instance.server.rover_controls.payload.verticalThrust;
             movementInputs.z = SimulationManager._instance.server.rover_controls.payload.forwardThrust;

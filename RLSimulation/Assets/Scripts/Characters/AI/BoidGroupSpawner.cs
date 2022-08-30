@@ -93,6 +93,11 @@ public class BoidGroupSpawner : MonoBehaviour
             TakeServerOverrides();
         }
 
+        if(boid_groups == null)
+        {
+            return;
+        }
+
         foreach (BoidGroup obj in boid_groups)
         {
             InitialiseGroup(obj);
@@ -118,6 +123,11 @@ public class BoidGroupSpawner : MonoBehaviour
 
     void LateUpdate()
     {
+        if (boid_groups == null)
+        {
+            return;
+        }
+
         foreach (BoidGroup obj in boid_groups)
         {
             FlocksMove(obj);

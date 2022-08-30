@@ -12,18 +12,20 @@ public class FishMovement : MonoBehaviour
     private Animation m_animation;
     private AudioSource call;
     private float call_timer = 10f;
-    private float m_speed;
+    private float m_speed = 0f;
     public Tuple<float, float> m_mix_max_speed = new Tuple<float, float>(1, 7);
     private Collider m_collider;
 
     // For axis fixing import from fbx, 3dsmax etc
-    public Vector3 rotation_offset;
+    public Vector3 rotation_offset = Vector3.zero;
 
     private Vector3 correct_forward;
     private Vector3 correct_up;
     private Vector3 correct_right;
 
     public LayerMask m_water_mask;
+
+    public Vector3 valid_movements;
 
     // Start is called before the first frame update
     void Start()
@@ -56,25 +58,37 @@ public class FishMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        ResolveCollisions();
-        Quaternion inverse = Quaternion.Inverse(Quaternion.Euler(rotation_offset));
+        DetectFutureCollisions();
+        //Quaternion inverse = Quaternion.Inverse(Quaternion.Euler(rotation_offset));
 
-        correct_forward = (inverse * transform.forward).normalized;
-        correct_right = (inverse * transform.right).normalized;
-        correct_up = (inverse * transform.up).normalized;
+        correct_forward = (/*inverse * */transform.forward).normalized;
+        ////correct_right = (inverse * transform.right).normalized;
+        ////correct_up = (inverse * transform.up).normalized;
 
         float turn_speed = m_speed * UnityEngine.Random.Range(0.03f, 0.1f);
-        Vector3 dir = m_waypoint - transform.position;
+        //Vector3 dir = m_waypoint - transform.position;
 
-        float angle_x = Vector3.SignedAngle(dir.normalized, correct_forward, -transform.right);
-        float angle_y = Vector3.SignedAngle(dir.normalized, correct_forward, -transform.up);
+        //Vector3 angles = new Vector3(
+        //    Vector3.SignedAngle(dir.normalized, correct_forward, -transform.right),
+        //    Vector3.SignedAngle(dir.normalized, correct_forward, -transform.up),
+        //    0) - rotation_offset;
 
-        Vector3 angles = new Vector3(angle_x, angle_y, 0) * Time.deltaTime * turn_speed;
-        transform.Rotate(angles);
+        //angles *= Time.deltaTime * turn_speed;
 
-        Quaternion q = transform.rotation;
-        q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
-        transform.rotation = q;
+        //transform.Rotate(angles);
+
+        //find the vector pointing from our position to the target
+        Vector3 _direction = (m_waypoint - transform.position).normalized;
+
+        //create the rotation we need to be in to look at the target
+        Quaternion _lookRotation = Quaternion.LookRotation(_direction);
+
+        //rotate us over time according to speed until we are in the required rotation
+        transform.rotation = Quaternion.Slerp(transform.rotation, _lookRotation, Time.deltaTime * turn_speed);
+
+        //Quaternion q = transform.rotation;
+        //q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
+        //transform.rotation = q;
 
         transform.position += correct_forward * Time.deltaTime * m_speed;
 
@@ -111,13 +125,14 @@ public class FishMovement : MonoBehaviour
     private void FindNewTarget()
     {
         m_last_waypoint = m_waypoint;
-        m_waypoint = random_movement ? ai_manager.GetRandomValidPosition() : ai_manager.RandomWaypoint();
+        m_waypoint = random_movement ? ai_manager.GetRandomValidPosition(valid_movements) : ai_manager.RandomWaypoint();
         m_speed = UnityEngine.Random.Range(m_mix_max_speed.Item1, m_mix_max_speed.Item2);
     }
 
-    private void ResolveCollisions()
+    private void DetectFutureCollisions()
     {
         RaycastHit[] hit = Physics.RaycastAll(transform.position, correct_forward, 10.0f, ~m_water_mask);
+
         if(hit.Length > 0)
         {
             FindNewTarget();

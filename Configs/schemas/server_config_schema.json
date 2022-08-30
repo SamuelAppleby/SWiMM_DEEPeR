@@ -123,6 +123,17 @@
                                             "randomMovement": {
                                                 "type": "boolean"
                                             },
+                                            "movementDirections" : {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "boolean"
+                                                },
+                                                "minItems": 3,
+                                                "maxItems": 3
+                                            },
+                                            "spawnInfront" : {
+                                                "type" : "boolean"
+                                            },
                                             "rotationOffset": {
                                                 "type": "array",
                                                 "items": {
@@ -148,6 +159,8 @@
                                             "randomizeStats",
                                             "enableSpawner",
                                             "randomMovement",
+                                            "movementDirections",
+                                            "spawnInfront",
                                             "rotationOffset",
                                             "scale",
                                             "minSpeed",

@@ -462,6 +462,7 @@ RectTransform:
   m_Children:
   - {fileID: 2056904844}
   - {fileID: 2048600336}
+  - {fileID: 1251690379}
   - {fileID: 383966212}
   m_Father: {fileID: 1134540476}
   m_RootOrder: 6
@@ -1342,7 +1343,7 @@ RectTransform:
   - {fileID: 1709387908}
   - {fileID: 1828404984}
   m_Father: {fileID: 110100305}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -2067,7 +2068,7 @@ GameObject:
   - component: {fileID: 546330208}
   - component: {fileID: 546330207}
   m_Layer: 5
-  m_Name: Hovering Title
+  m_Name: Depth Hold Mode Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2113,7 +2114,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Hovering:'
+  m_text: 'Depth Hold:'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
@@ -2345,7 +2346,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: -0.000000009157246, z: 5.6299276e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: 0.000000009157246, z: -5.6299504e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3214,7 +3215,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: -0.000000008582001, z: 6.0344757e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: 0.000000008582, z: -6.034475e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3877,7 +3878,7 @@ MonoBehaviour:
   third_person_movement: {fileID: 1498372156}
   fps_value_text: {fileID: 639050127}
   packets_value_text: {fileID: 1463580715}
-  hovering_value_text: {fileID: 2055595551}
+  depth_hold_mode_text: {fileID: 2055595551}
   movement_input_value_text: {fileID: 859437668}
   rotation_input_value_text: {fileID: 1828404985}
   movement_value_text: {fileID: 1179440646}
@@ -4425,7 +4426,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1251690379}
   m_Layer: 5
-  m_Name: Hovering
+  m_Name: Depth Hold Mode
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4445,12 +4446,12 @@ RectTransform:
   m_Children:
   - {fileID: 546330206}
   - {fileID: 2055595550}
-  m_Father: {fileID: 2048600336}
+  m_Father: {fileID: 110100305}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.19998969, y: -13}
+  m_AnchoredPosition: {x: -0.000015035272, y: -14.600023}
   m_SizeDelta: {x: 300, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1288988228
@@ -5304,7 +5305,7 @@ MonoBehaviour:
   angular_air_drag: 2
   water_drag: 2
   angular_water_drag: 3
-  m_Hovering: 0
+  m_depth_hold_mode: 1
   water_mask:
     serializedVersion: 2
     m_Bits: 16
@@ -5354,7 +5355,7 @@ MonoBehaviour:
     sensitivity: 20
     movementInputs: {x: 0, y: 0, z: 0}
     rotationInputs: {x: 0, y: 0, z: 0}
-    hovering: 0
+    hover_toggle: 0
     mouseWheel: 0
     cameraChange: 0
     increase_far_plane: 0
@@ -7522,7 +7523,6 @@ RectTransform:
   m_Children:
   - {fileID: 109082229}
   - {fileID: 859437667}
-  - {fileID: 1251690379}
   m_Father: {fileID: 110100305}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -7543,7 +7543,7 @@ GameObject:
   - component: {fileID: 2055595552}
   - component: {fileID: 2055595551}
   m_Layer: 5
-  m_Name: Hovering Value
+  m_Name: Depth Hold Mode Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -205,9 +205,9 @@ class UnitySimHandler():
                 "verticalThrust": '0',
                 "forwardThrust": action[0].__str__(),
                 "pitchThurst": '0',
-                "yawThrust" : action[1].__str__(),
-                "rollThrust" : '0',
-                "depthHoldMode" : '1'
+                "yawThrust": action[1].__str__(),
+                "rollThrust": '0',
+                "depthHoldMode": '1'
             }
         }
         self.server.msg = json.dumps(action_msg)

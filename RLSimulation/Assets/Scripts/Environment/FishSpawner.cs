@@ -118,6 +118,11 @@ public class FishSpawner : MonoBehaviour
         InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
     }
 
+    private void Update()
+    {
+        spawn_centre = SimulationManager._instance.rover.transform.position;
+    }
+
     private void TakeServerOverrides()
     {
         m_spawn_timer = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnTimer;
@@ -209,13 +214,6 @@ public class FishSpawner : MonoBehaviour
 
     public Vector3 GetRandomValidPosition(Vector3 valid_directions)
     {
-        spawn_centre = SimulationManager._instance.rover.transform.position;
-
-        if (SimulationManager._instance.rover.transform.position.y + spawn_radius > water_surface.transform.position.y)
-        {
-            spawn_centre.y -= (SimulationManager._instance.rover.transform.position.y + spawn_radius - water_surface.transform.position.y);
-        }
-
         Vector3 random_directions = spawn_centre;
 
         if (valid_directions.x > 0)
@@ -224,6 +222,12 @@ public class FishSpawner : MonoBehaviour
         }
         if (valid_directions.y > 0)
         {
+            /* Force destination below surfae */
+            if (SimulationManager._instance.rover.transform.position.y + spawn_radius > water_surface.transform.position.y)
+            {
+                random_directions.y -= (SimulationManager._instance.rover.transform.position.y + spawn_radius - water_surface.transform.position.y);
+            }
+
             random_directions.y += Random.Range(0, spawn_radius);
         }
         if (valid_directions.z > 0)

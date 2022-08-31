@@ -195,6 +195,8 @@ if args.log_interval > -1:
 print("Starting training run ...")
 model.learn(n_timesteps, **kwargs)
 
+#send messsage via server
+
 # Close the connection properly
 env.reset()
 

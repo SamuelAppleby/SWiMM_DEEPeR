@@ -7,7 +7,7 @@ using UnityEngine;
 public class FloaterContainer : MonoBehaviour
 {
     [Header("Total buoyant strength (N) of ALL colliders, distrubted evenly")]
-    public float total_buoyant_strength = 300;
+    public float total_buoyant_strength;
     private Collider m_collider;
     private List<GameObject> floaters = new List<GameObject>();
     [HideInInspector]

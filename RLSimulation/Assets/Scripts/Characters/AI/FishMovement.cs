@@ -5,6 +5,9 @@ using UnityEngine;
 
 public class FishMovement : MonoBehaviour
 {
+    public float rover_check_timer = 5f;
+    private float current_timer = 0f;
+    public float distance_threshold = 100f;
     public bool random_movement = false;
     public FishSpawner ai_manager;
     private Vector3 m_waypoint;
@@ -23,14 +26,11 @@ public class FishMovement : MonoBehaviour
     private Vector3 correct_up;
     private Vector3 correct_right;
 
-    public LayerMask m_water_mask;
-
     public Vector3 valid_movements;
 
     // Start is called before the first frame update
     void Start()
     {
-        m_water_mask = LayerMask.GetMask("Water");
         m_collider = GetComponentInChildren<Collider>();
         m_animation = GetComponentInChildren<Animation>();
         call = GetComponentInChildren<AudioSource>();
@@ -40,6 +40,17 @@ public class FishMovement : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
+        if((transform.position - SimulationManager._instance.rover.transform.position).magnitude > distance_threshold)
+        {
+            current_timer += Time.deltaTime;
+
+            if(current_timer >= rover_check_timer)
+            {
+                FindNewTarget();
+                current_timer = 0f;
+            }
+        }
+
         if(call != null)
         {
             call_timer -= Time.deltaTime;
@@ -131,11 +142,21 @@ public class FishMovement : MonoBehaviour
 
     private void DetectFutureCollisions()
     {
-        RaycastHit[] hit = Physics.RaycastAll(transform.position, correct_forward, 10.0f, ~m_water_mask);
+        RaycastHit[] hit = Physics.RaycastAll(transform.position, correct_forward, 10.0f);
 
-        if(hit.Length > 0)
+        if (hit.Length > 1)
         {
             FindNewTarget();
+        }
+        else
+        {
+            foreach(RaycastHit h in hit)
+            {
+                if (h.transform.gameObject.tag == "WaterSurface")
+                {
+                    FindNewTarget();
+                }
+            }
         }
     }
 

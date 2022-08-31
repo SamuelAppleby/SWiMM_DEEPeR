@@ -138,7 +138,7 @@ public class ThirdPersonMovement : MonoBehaviour
         m_RigidBody.drag = m_IsUnderwater ? water_drag : air_drag;
         m_RigidBody.angularDrag = m_IsUnderwater ? angular_water_drag : angular_air_drag;
 
-        if (!m_is_grounded)
+        if (m_IsUnderwater)
         {
             /* Movement */
             if (movement_controls.movementInputs.magnitude > float.Epsilon)
@@ -281,14 +281,23 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        m_IsUnderwater = ((1 << other.gameObject.layer) & water_mask) != 0;
         m_is_grounded = ((1 << other.gameObject.layer) & ground_mask) != 0;
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        m_IsUnderwater = ((1 << other.gameObject.layer) & water_mask) != 0;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        m_IsUnderwater = ((1 << other.gameObject.layer) & water_mask) == 0;
-        m_is_grounded = ((1 << other.gameObject.layer) & ground_mask) == 0;
+        if (m_IsUnderwater && ((1 << other.gameObject.layer) & water_mask) != 0)
+        {
+            m_IsUnderwater = false;
+            m_depth_hold_mode = false;
+        }
+
+        m_is_grounded = ((1 << other.gameObject.layer) & ground_mask) != 0;
     }
 
     public void CheckCameraEffects()

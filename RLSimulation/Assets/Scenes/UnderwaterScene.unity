@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.63529414, g: 0.63529414, b: 0.63529414, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 12ccb828343c3405fb94289774b51aad, type: 2}
+  m_SkyboxMaterial: {fileID: 2100000, guid: e11f5b66aad75483b8cd16ee18a0c917, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 0.5
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.07948311, g: 0.25876758, b: 0.5196202, a: 0.5}
+  m_IndirectSpecularColor: {r: 0.1564565, g: 0.3144609, b: 0.42915142, a: 0.5}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -133,7 +133,6 @@ GameObject:
   m_Component:
   - component: {fileID: 50173725}
   - component: {fileID: 50173727}
-  - component: {fileID: 50173726}
   - component: {fileID: 50173730}
   - component: {fileID: 50173731}
   m_Layer: 4
@@ -159,18 +158,6 @@ Transform:
   m_Father: {fileID: 432339668}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &50173726
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 50173724}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6cb80b552d5a8f3468987208c9081028, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!82 &50173727
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1478,7 +1465,7 @@ MonoBehaviour:
     randomMovement: 1
     randomizeStats: 0
     movementDirections: 010101
-    movementDirectionsVector: {x: 1, y: 0, z: 1}
+    movementDirectionsVector: {x: 1, y: 1, z: 1}
     rotationOffset: 
     rotationOffsetVector: {x: 0, y: 0, z: 0}
     scale: 4
@@ -2346,7 +2333,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: 0.000000009157246, z: -5.6299504e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: 0.000000009157246, z: -5.6299276e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3215,7 +3202,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: 0.000000008582, z: -6.034475e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: 0.000000008582001, z: -6.0344757e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3874,7 +3861,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75e71792b4e4cbd4b8cdbf40cbbeb7f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawner: {fileID: 1498372160}
+  spawner: {fileID: 432339669}
   third_person_movement: {fileID: 1498372156}
   fps_value_text: {fileID: 639050127}
   packets_value_text: {fileID: 1463580715}
@@ -4658,7 +4645,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290624799}
-  m_LocalRotation: {x: 0.053078998, y: 0.0000000021477657, z: -1.14162194e-10, w: 0.99859035}
+  m_LocalRotation: {x: 0.053078998, y: -0.0000000021477657, z: 1.14162194e-10, w: 0.99859035}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5248,7 +5235,6 @@ GameObject:
   - component: {fileID: 1498372157}
   - component: {fileID: 1498372158}
   - component: {fileID: 1498372159}
-  - component: {fileID: 1498372160}
   m_Layer: 0
   m_Name: ThirdPersonPlayer
   m_TagString: Player
@@ -5264,7 +5250,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1498372150}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -50, z: 0}
+  m_LocalPosition: {x: 0, y: -4, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5414,67 +5400,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   total_buoyant_strength: 400
   is_initialized: 0
---- !u!114 &1498372160
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1498372150}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 676ae289de20b3a4fad3d066e87d6cbe, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_spawn_timer: 3
-  m_spawn_container_ratio: 0.1
-  m_spawn_color: {r: 1, g: 0, b: 0, a: 0.3}
-  spawn_radius: 50
-  environment_transform: {fileID: 432339668}
-  water_surface: {fileID: 3016175423536943898}
-  ai_groups:
-  - prefabName: whale
-    maxAmount: 0
-    maxSpawn: 1
-    enableSpawner: 0
-    randomMovement: 1
-    randomizeStats: 0
-    movementDirections: 
-    movementDirectionsVector: {x: 0, y: 0, z: 0}
-    rotationOffset: 
-    rotationOffsetVector: {x: 0, y: 180, z: 0}
-    scale: 5
-    minSpeed: 0
-    maxSpeed: 0
-    spawnInfront: 0
-  - prefabName: fish
-    maxAmount: 0
-    maxSpawn: 300
-    enableSpawner: 0
-    randomMovement: 1
-    randomizeStats: 0
-    movementDirections: 
-    movementDirectionsVector: {x: 0, y: 0, z: 0}
-    rotationOffset: 
-    rotationOffsetVector: {x: 0, y: 90, z: 0}
-    scale: 20
-    minSpeed: 0
-    maxSpeed: 0
-    spawnInfront: 0
-  - prefabName: dolphin
-    maxAmount: 1
-    maxSpawn: 1
-    enableSpawner: 1
-    randomMovement: 1
-    randomizeStats: 0
-    movementDirections: 
-    movementDirectionsVector: {x: 0, y: 0, z: 0}
-    rotationOffset: 
-    rotationOffsetVector: {x: 0, y: 0, z: 0}
-    scale: 4
-    minSpeed: 0
-    maxSpeed: 0
-    spawnInfront: 1
 --- !u!1 &1509826151
 GameObject:
   m_ObjectHideFlags: 0
@@ -12346,10 +12271,10 @@ GameObject:
   - component: {fileID: 3016175423536943902}
   - component: {fileID: 3016175423536943903}
   - component: {fileID: 3016175423536943900}
-  - component: {fileID: 3016175423536943901}
-  m_Layer: 0
-  m_Name: Water
-  m_TagString: Untagged
+  - component: {fileID: 3016175423536943904}
+  m_Layer: 4
+  m_Name: WaterSurface
+  m_TagString: WaterSurface
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -12396,26 +12321,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &3016175423536943901
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3016175423536943898}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e37ce6c6e7ecdd42a13048d391f594b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  UvRotateSpeed: 0.4
-  UvRotateDistance: 2
-  UvBumpRotateSpeed: 0.4
-  UvBumpRotateDistance: 2
-  depthTextureModeOn: 1
-  HelpURL: nvjob.github.io/unity/nvjob-water-shader
-  ReportAProblem: nvjob.github.io/support
-  Patrons: nvjob.github.io/patrons
 --- !u!4 &3016175423536943902
 Transform:
   m_ObjectHideFlags: 0
@@ -12425,7 +12330,7 @@ Transform:
   m_GameObject: {fileID: 3016175423536943898}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 5000, z: 0}
-  m_LocalScale: {x: 10000, y: 1, z: 10000}
+  m_LocalScale: {x: 10000, y: 0.0001, z: 10000}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 50173725}
@@ -12438,7 +12343,20 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3016175423536943898}
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!65 &3016175423536943904
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3016175423536943898}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5895466165193169238
 GameObject:
   m_ObjectHideFlags: 0

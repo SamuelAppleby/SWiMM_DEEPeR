@@ -106,44 +106,40 @@ class UnitySimHandler():
 
     def calc_reward(self, done):
 
-        if done:
-            return 0
-
         # heading vector from rover to target
         heading = self.target_pos - self.rover_pos
 
         # normalize
-        # norm_heading = heading/np.linalg.norm(heading)
+        norm_heading = heading/np.linalg.norm(heading)
 
         # if target is ahead of rover, heading[2] (i.e z-coord) should be positive and vice versa
         # so that the optimal tracking position dictated by heading[2] - OPT_D is always *behind* the target
         # regardless of travelling direction in world
-        # if np.dot(norm_heading, self.target_fwd) > 0:
-            # heading[2] = math.fabs(heading[2])
-        # else:
-            # heading[2] = -math.fabs(heading[2])
+        if np.dot(norm_heading, self.target_fwd) > 0:
+            heading[2] = math.fabs(heading[2])
+        else:
+            heading[2] = -math.fabs(heading[2])
 
         # calculate distance i.e. magnitude of heading vector
         # NOTE THAT THIS IS DISTANCE FROM ROVER TO OPTIMAL TRACKING POSITION, NOT ROVER TO TARGET
         self.d = math.sqrt(math.pow(heading[0], 2) + math.pow((heading[2] - OPT_D), 2))
 
         # calculate angle between rover's forward facing vector and heading vector
-        # self.a = math.degrees(math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
+        self.a = math.degrees(math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
 
         # scaling function taken from Luo et al. (2018), range [-1, 1], distance and angle equal contribution
-        reward = 1.0 - self.d / MAX_D
-        # reward = 1.0 - ((self.d / MAX_D) + (math.fabs(self.a) / 180))
+        reward = 1.0 - ((self.d / MAX_D) + (math.fabs(self.a) / 180))
 
         return reward
 
     def determine_episode_over(self):
-        #if self.d > MAX_D:
-            #logger.debug(f"game over: distance {self.d}")
-            #self.over = True
-            #print("Episode terminated as target out of range")
+        if self.d > MAX_D:
+            logger.debug(f"game over: distance {self.d}")
+            self.over = True
+            print("Episode terminated as target out of range")
         if "Fish" in self.hit:
             logger.debug(f"game over: hit {self.hit}")
-            #self.over = True
+            self.over = True
             print("Episode terminated due to collision")
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#

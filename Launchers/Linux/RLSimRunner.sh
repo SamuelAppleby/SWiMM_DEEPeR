@@ -7,11 +7,11 @@
 # "$*"" will do the same thing but put all arguments in one space separated string
 cd ..
 cd ..
-python3 train.py "$@" &
+python3 test_env.py "$@" &
 
 # haven't tested this line yet, need the right build format
 cd RLSimulation/Builds/Linux
 chmod +x ReinforcementLearningSimulation.x86_64
 ReinforcementLearningSimulation.x86_64 server 127.0.0.1:60260
 
-read
+exit

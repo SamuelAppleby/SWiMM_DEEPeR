@@ -88,8 +88,34 @@ else:
     log_dir = os.path.join(run_specific_path, 'monitor_logs')
 os.makedirs(log_dir, exist_ok=True)
 
-# TODO: implement linear and other LR schedules and include as option 
-if isinstance(hyperparams['learning_rate'], float):
+def linear_schedule(init_value):
+    """
+    Linear learning rate schedule.
+
+    :param initial_value: (float or str)
+    :return: (function)
+    """
+    if isinstance(initial_value, str):
+        init_value = float(init_value)
+
+    def func(progress, _):
+        """
+        Progress will decrease from 1 (beginning) to 0
+        :param progress: (float)
+        :return: (float)
+        """
+        return progress * init_value
+
+    return func
+
+if isinstance(hyperparams['learning_rate'], str):
+    schedule, initial_value = hyperparams['learning_rate'].split('_')
+    initial_value = float(initial_value)
+    if schedule == 'lin':
+        hyperparams['learning_rate'] = linear_schedule(initial_value)
+    else:
+        raise ValueError('Schedule not implemented')
+elif isinstance(hyperparams['learning_rate'], float):
     hyperparams['learning_rate'] = constfn(hyperparams['learning_rate'])
 else:
     raise ValueError('Invalid value for learning rate: {}'.format(hyperparams['learning_rate']))

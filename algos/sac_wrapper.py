@@ -111,14 +111,12 @@ class SACWrap(SAC):
 
                 if ep_len == self.train_freq:
                     print("Maximum episode length reached")
+                    obs = self.env.reset()
                     done = True
 
                 episode_rewards[-1] += reward
 
                 if done:
-                    if not isinstance(self.env, VecEnv):
-                        obs = self.env.reset()
-
                     print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
                     episode_rewards.append(0.0)
                     ep_len = 0

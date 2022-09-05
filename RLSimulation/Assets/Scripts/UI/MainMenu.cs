@@ -81,8 +81,7 @@ public class MainMenu : MonoBehaviour
 
     public void PlayGame(bool manual_controls)
     {
-        SimulationManager._instance.in_manual_mode = manual_controls;
-        SceneManager.LoadScene(simulation_name);
+        SimulationManager._instance.MoveBetweenScenes(SceneIndices.MAIN_MENU, SceneIndices.SIMULATION);
     }
 
     public void TerminateApplication()

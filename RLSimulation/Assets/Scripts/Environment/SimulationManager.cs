@@ -1,14 +1,35 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using static Server;
+using Cursor = UnityEngine.Cursor;
+using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
+    public int tip_count;
+    public TextMeshProUGUI tips_text;
+    public CanvasGroup alpha_canvas;
+    public string[] tips;
+    public Sprite[] background_images;
+    public Image background_image;
+
+    private List<AsyncOperation> scenes_loading = new List<AsyncOperation>();
+
+    private float total_scene_progress;
+    private float total_spawn_progress;
+
+    public TextMeshProUGUI text_field;
+    public GameObject loading_screen;
+    public Slider progress_bar;
+
     [HideInInspector]
     public bool in_manual_mode;
 
@@ -68,9 +89,6 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public JsonMessage<NetworkConfig> network_config;
 
-    [SerializeField]
-    private string main_menu_name = "MainMenu";
-
     public bool IsInitialized { get; private set; }
 
     [HideInInspector]
@@ -81,7 +99,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private void Start()
     {
-        _instance.InvokeRepeating("UpdateFPS", 1, 1);
+        _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
 #if UNITY_EDITOR
         _instance.debug_config_dir = "../Configs/data/client_debug_config.json";
@@ -102,9 +120,10 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.server = new Server();
         _instance.in_manual_mode = true;
 
-        _instance.ParseCommandLineArguments(System.Environment.GetCommandLineArgs());
+        _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
         _instance.IsInitialized = true;
+        SceneManager.LoadSceneAsync((int)SceneIndices.MAIN_MENU, LoadSceneMode.Additive);
     }
 
     private void PurgeAndCreateDirectory(string dir_path)
@@ -127,7 +146,7 @@ public class SimulationManager : Singleton<SimulationManager>
     public void OnServerDisconnected()
     {
         Debug.Log("No server response");
-        SceneManager.LoadScene(main_menu_name);
+        SceneManager.LoadScene((int)SceneIndices.MAIN_MENU);
     }
 
     protected override void Awake()
@@ -136,6 +155,89 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.water_objs = GameObject.FindGameObjectsWithTag("Water");
         _instance.lighting_objs = GameObject.FindGameObjectsWithTag("Lighting");
+    }
+
+    public void MoveBetweenScenes(SceneIndices from, SceneIndices to, bool in_manual = true)
+    {
+        background_image.sprite = background_images[Random.Range(0, background_images.Length)];
+        loading_screen.gameObject.SetActive(true);
+
+        StartCoroutine(GenerateTips());
+
+        in_manual_mode = in_manual;
+        scenes_loading.Add(SceneManager.UnloadSceneAsync((int)from));
+        scenes_loading.Add(SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive));
+        StartCoroutine(GetSceneLoadProgress());
+    }
+
+    public IEnumerator GenerateTips()
+    {
+        tip_count = Random.Range(0, tips.Length);
+        tips_text.text = tips[tip_count];
+
+        while (loading_screen.activeInHierarchy)
+        {
+            yield return new WaitForSeconds(3f);
+
+            alpha_canvas.alpha = Mathf.Lerp(alpha_canvas.alpha, 0, 0.1f);
+
+            yield return new WaitForSeconds(.5f);
+
+            tip_count++;
+
+            if(tip_count >= tips.Length)
+            {
+                tip_count = 0;
+            }
+
+            tips_text.text = tips[tip_count];
+
+            alpha_canvas.alpha = Mathf.Lerp(alpha_canvas.alpha, 1, 0.1f);
+        }
+    }
+
+    public IEnumerator GetSceneLoadProgress()
+    {
+        foreach(AsyncOperation scene in scenes_loading)
+        {
+            while (!scene.isDone)
+            {
+                total_scene_progress = 0;
+
+                foreach(AsyncOperation scene1 in scenes_loading)
+                {
+                    total_scene_progress += scene1.progress;
+                }
+
+                total_scene_progress = (total_scene_progress / scenes_loading.Count) * 100f;
+
+                text_field.text = string.Format("Loading Scene: {0}%", total_scene_progress);
+
+                yield return null;
+            }
+        }
+
+        scenes_loading.Clear();
+
+        while (FishSpawner.current != null && !FishSpawner.current.is_done)
+        {
+            total_spawn_progress = Mathf.Round(FishSpawner.current.current_progress * 100f);
+            switch (FishSpawner.current.current_stage)
+            {
+                case InitialisationStage.INITIALISING_NPCS:
+                    text_field.text = string.Format("Initialising NPCs {0}%", total_spawn_progress);
+                    break;
+                case InitialisationStage.SPAWNING_NPCS:
+                    text_field.text = string.Format("Spawning NPCs {0}%", total_spawn_progress);
+                    break;
+            }
+
+        }
+
+        progress_bar.value = Mathf.RoundToInt(Mathf.Round((total_scene_progress + total_spawn_progress) / 2f));
+
+        loading_screen.gameObject.SetActive(false);
+        yield break;
     }
 
     protected override void OnSceneChanged()
@@ -147,17 +249,13 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         globalControls.Update(_instance.in_manual_mode);
 
-        if (_instance.server.server_crash)
+        if (_instance.server.server_crash || globalControls.quitting)
         {
-            SceneManager.LoadScene(_instance.main_menu_name);
-            _instance.server.server_crash = false;
-        }
+            MoveBetweenScenes(SceneIndices.SIMULATION, SceneIndices.MAIN_MENU);
 
-        if (globalControls.quitting)
-        {
-            if(SceneManager.GetActiveScene().name != _instance.main_menu_name)
+            if (_instance.server.server_crash)
             {
-                SceneManager.LoadScene(_instance.main_menu_name);
+                _instance.server.server_crash = false;
             }
         }
 

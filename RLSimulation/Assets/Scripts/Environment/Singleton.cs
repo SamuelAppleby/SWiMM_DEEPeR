@@ -5,12 +5,9 @@ using UnityEngine;
 public class Singleton<T> : MonoBehaviour where T : Component
 {
     public static T _instance { get; private set; }
-    protected static int num = 0;
 
     protected virtual void Awake()
     {
-        num++;
-
         if (_instance == null)
         {
             _instance = this as T; // In first scene, make us the singleton.

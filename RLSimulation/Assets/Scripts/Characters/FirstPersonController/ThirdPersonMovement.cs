@@ -59,6 +59,8 @@ public class ThirdPersonMovement : MonoBehaviour
     private float top_of_water;
     private float m_distance_undewater;
 
+    public bool is_initialized = false;
+
     private IEnumerator Start()
     {
         top_of_water = water_collider.transform.position.y + (water_collider.GetComponent<BoxCollider>().size.y / 2);
@@ -85,6 +87,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
         hover_force_equilibrium = GetComponent<FloaterContainer>().total_buoyant_strength - (m_RigidBody.mass * -Physics.gravity.y);
+        is_initialized = true;
     }
 
     void Update()

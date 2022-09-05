@@ -5,6 +5,7 @@ using System.Linq;
 using System.IO;
 using System;
 using Random = UnityEngine.Random;
+using Unity.VisualScripting;
 
 [System.Serializable]
 public class AIGroup
@@ -73,8 +74,13 @@ public class AIGroup
     }
 }
 
+
 public class FishSpawner : MonoBehaviour
 {
+    public InitialisationStage current_stage;
+
+    public static FishSpawner current;
+
     private Transform[] waypoints;
 
     public float spawn_timer { get { return m_spawn_timer; } }
@@ -103,8 +109,17 @@ public class FishSpawner : MonoBehaviour
     [Header("AI Group Settings")]
     public AIGroup[] ai_groups;
 
-    void Start()
+    public bool is_done;
+    private int total_ai;
+
+    public float current_progress;
+
+    public ThirdPersonMovement third_person;
+
+    private IEnumerator Start()
     {
+        yield return new WaitUntil(() => third_person.is_initialized);
+
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
         {
             TakeServerOverrides();
@@ -115,12 +130,15 @@ public class FishSpawner : MonoBehaviour
 
         GetWaypoints();
         InitialiseGroups();
-        InvokeRepeating("SpawnNPC", 0.5f, spawn_timer);
+        StartCoroutine(SpawnAllNPCs());
     }
 
     private void Update()
     {
-        spawn_centre = SimulationManager._instance.rover.transform.position;
+        if(SimulationManager._instance.rover != null)
+        {
+            spawn_centre = SimulationManager._instance.rover.transform.position;
+        }
     }
 
     private void TakeServerOverrides()
@@ -143,10 +161,15 @@ public class FishSpawner : MonoBehaviour
 
     private void InitialiseGroups()
     {
+        current_stage = InitialisationStage.INITIALISING_NPCS;
+        current_progress = 0;
+
+        float current_intiialized = 0;
         foreach (AIGroup obj in ai_groups)
         {
             obj.LoadPrefabFromPath();
-            if (obj.objectPrefab != null)
+
+            if (obj.objectPrefab != null && obj.enableSpawner)
             {
                 if (obj.randomizeStats)
                 {
@@ -155,12 +178,21 @@ public class FishSpawner : MonoBehaviour
 
                 GameObject m_ai_group_spawn = new GameObject("Group: " + obj.prefabName);
                 m_ai_group_spawn.transform.parent = m_group_parent.transform;
+
+                total_ai += obj.maxAmount;
             }
+            current_intiialized++;
+            current_progress = (float)current_intiialized / ai_groups.Length;
         }
     }
 
-    private void SpawnNPC()
+    private IEnumerator SpawnAllNPCs()
     {
+        current_stage = InitialisationStage.SPAWNING_NPCS;
+        current_progress = 0;
+
+        float current_ai_count = 0;
+
         foreach (AIGroup group in ai_groups)
         {
             if (group.objectPrefab != null && group.enableSpawner)
@@ -168,7 +200,7 @@ public class FishSpawner : MonoBehaviour
                 GameObject temp_group = GameObject.Find("Group: " + group.prefabName);
                 if (temp_group != null && temp_group.GetComponentInChildren<Transform>().childCount < group.maxAmount)
                 {
-                    for (int i = 0; i < Random.Range(1, group.maxSpawn + 1); ++i)
+                    for (int i = 0; i < group.maxAmount; ++i)
                     {
                         GameObject fixed_rotation = new GameObject(group.objectPrefab + "fixed rotation");
                         GameObject temp_spawn = Instantiate(group.objectPrefab, new Vector3(0, 0, 0), Quaternion.Euler(new Vector3(0, 0, 0)));
@@ -187,10 +219,16 @@ public class FishSpawner : MonoBehaviour
                         temp_spawn.transform.localScale *= (group.scale * Random.Range(0.75f, 1.25f));
 
                         SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().target_transforms.Add(fixed_rotation.transform);
+                        current_ai_count++;
+
+                        current_progress = (float)current_ai_count / total_ai;
                     }
                 }
             }
         }
+
+        yield return new WaitForSeconds(.5f);
+        is_done = true;
     }
 
     public int GetTotalNPCs()

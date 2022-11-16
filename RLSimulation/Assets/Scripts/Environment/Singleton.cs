@@ -17,12 +17,9 @@ public class Singleton<T> : MonoBehaviour where T : Component
         {
             Destroy(gameObject); // On reload, singleton already set, so destroy duplicate.
         }
-
-        OnSceneChanged();
     }
 
-    protected virtual void OnSceneChanged()
+    protected virtual void OnSceneChanged(AsyncOperation obj, SceneIndices to)
     {
-
     }
 }

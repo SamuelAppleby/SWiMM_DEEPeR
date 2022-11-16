@@ -81,7 +81,7 @@ public class MainMenu : MonoBehaviour
 
     public void PlayGame(bool manual_controls)
     {
-        SimulationManager._instance.MoveBetweenScenes(SceneIndices.MAIN_MENU, SceneIndices.SIMULATION);
+        SimulationManager._instance.MoveToScene(SceneIndices.SIMULATION);
     }
 
     public void TerminateApplication()
@@ -150,6 +150,5 @@ public class MainMenu : MonoBehaviour
     public void SetVolume(float volume)
     {
         audio_mixer.SetFloat("Volume", volume);
-        Debug.Log(volume);
     }
 }

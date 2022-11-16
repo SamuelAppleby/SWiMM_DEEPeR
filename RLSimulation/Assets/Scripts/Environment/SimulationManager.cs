@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using TMPro;
@@ -9,11 +10,13 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static Server;
+using AsyncOperation = UnityEngine.AsyncOperation;
 using Cursor = UnityEngine.Cursor;
 using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
+    SceneIndices current_scene_index;
     public int tip_count;
     public TextMeshProUGUI tips_text;
     public CanvasGroup alpha_canvas;
@@ -21,7 +24,7 @@ public class SimulationManager : Singleton<SimulationManager>
     public Sprite[] background_images;
     public Image background_image;
 
-    private List<AsyncOperation> scenes_loading = new List<AsyncOperation>();
+    private AsyncOperation scene_loading;
 
     private float total_scene_progress;
     private float total_spawn_progress;
@@ -97,6 +100,8 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public GameObject[] water_objs;
 
+    private Dictionary<SceneIndices, int> scene_indices;
+
     private void Start()
     {
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
@@ -123,7 +128,6 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
         _instance.IsInitialized = true;
-        SceneManager.LoadSceneAsync((int)SceneIndices.MAIN_MENU, LoadSceneMode.Additive);
     }
 
     private void PurgeAndCreateDirectory(string dir_path)
@@ -152,22 +156,54 @@ public class SimulationManager : Singleton<SimulationManager>
     protected override void Awake()
     {
         base.Awake();
-
+        _instance.MoveToScene(SceneIndices.MAIN_MENU);
         _instance.water_objs = GameObject.FindGameObjectsWithTag("Water");
         _instance.lighting_objs = GameObject.FindGameObjectsWithTag("Lighting");
     }
 
-    public void MoveBetweenScenes(SceneIndices from, SceneIndices to, bool in_manual = true)
+    public void MoveToScene(SceneIndices to, bool in_manual = true)
     {
-        background_image.sprite = background_images[Random.Range(0, background_images.Length)];
-        loading_screen.gameObject.SetActive(true);
+        if (to == SceneIndices.EXIT)
+        {
+            _instance.QuitApplication();
+            return;
+        }
 
-        StartCoroutine(GenerateTips());
+        _instance.background_image.sprite = background_images[Random.Range(0, background_images.Length)];
+        _instance.loading_screen.gameObject.SetActive(true);
 
-        in_manual_mode = in_manual;
-        scenes_loading.Add(SceneManager.UnloadSceneAsync((int)from));
-        scenes_loading.Add(SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive));
-        StartCoroutine(GetSceneLoadProgress());
+        _instance.in_manual_mode = in_manual;
+
+        /* We don't want to unload the persistent scene */
+        if (_instance.current_scene_index == SceneIndices.PERSISTENT_SCENE)
+        {
+            StartCoroutine(GenerateTips());
+            StartCoroutine(GetSceneLoadProgress());
+
+            _instance.scene_loading = SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive);
+
+            _instance.scene_loading.completed += handle =>
+            {
+                OnSceneChanged(handle, to);
+            };
+        }
+
+        else
+        {
+            SceneManager.UnloadSceneAsync((int)_instance.current_scene_index).completed += handle =>
+            {
+                StartCoroutine(GenerateTips());
+                StartCoroutine(GetSceneLoadProgress());
+
+                _instance.scene_loading = SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive);
+
+                _instance.scene_loading.completed += handle =>
+                {
+                    OnSceneChanged(handle, to);
+                };
+
+            };
+        }
     }
 
     public IEnumerator GenerateTips()
@@ -185,7 +221,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
             tip_count++;
 
-            if(tip_count >= tips.Length)
+            if (tip_count >= tips.Length)
             {
                 tip_count = 0;
             }
@@ -198,51 +234,48 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public IEnumerator GetSceneLoadProgress()
     {
-        foreach(AsyncOperation scene in scenes_loading)
+        while (_instance.scene_loading != null && !_instance.scene_loading.isDone)
         {
-            while (!scene.isDone)
-            {
-                total_scene_progress = 0;
+            _instance.total_scene_progress = _instance.scene_loading.progress * 100f;
+            _instance.text_field.text = string.Format("Loading Scene: {0}%", _instance.total_scene_progress);
 
-                foreach(AsyncOperation scene1 in scenes_loading)
-                {
-                    total_scene_progress += scene1.progress;
-                }
-
-                total_scene_progress = (total_scene_progress / scenes_loading.Count) * 100f;
-
-                text_field.text = string.Format("Loading Scene: {0}%", total_scene_progress);
-
-                yield return null;
-            }
+            yield return null;
         }
-
-        scenes_loading.Clear();
 
         while (FishSpawner.current != null && !FishSpawner.current.is_done)
         {
-            total_spawn_progress = Mathf.Round(FishSpawner.current.current_progress * 100f);
+            _instance.total_spawn_progress = Mathf.Round(FishSpawner.current.current_progress * 100f);
             switch (FishSpawner.current.current_stage)
             {
                 case InitialisationStage.INITIALISING_NPCS:
-                    text_field.text = string.Format("Initialising NPCs {0}%", total_spawn_progress);
+                    _instance.text_field.text = string.Format("Initialising NPCs {0}%", _instance.total_spawn_progress);
                     break;
                 case InitialisationStage.SPAWNING_NPCS:
-                    text_field.text = string.Format("Spawning NPCs {0}%", total_spawn_progress);
+                    _instance.text_field.text = string.Format("Spawning NPCs {0}%", _instance.total_spawn_progress);
                     break;
             }
-
         }
 
-        progress_bar.value = Mathf.RoundToInt(Mathf.Round((total_scene_progress + total_spawn_progress) / 2f));
+        _instance.progress_bar.value = Mathf.RoundToInt(Mathf.Round((_instance.total_scene_progress + _instance.total_spawn_progress) / 2f));
+        _instance.loading_screen.gameObject.SetActive(false);
 
-        loading_screen.gameObject.SetActive(false);
         yield break;
     }
 
-    protected override void OnSceneChanged()
+    protected override void OnSceneChanged(AsyncOperation handle, SceneIndices to)
     {
-        base.OnSceneChanged();
+        base.OnSceneChanged(handle, to);
+        _instance.scene_loading = null;
+        _instance.current_scene_index = to;
+    }
+
+    public void QuitApplication()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+         Application.Quit();
+#endif
     }
 
     void Update()
@@ -251,7 +284,8 @@ public class SimulationManager : Singleton<SimulationManager>
 
         if (_instance.server.server_crash || globalControls.quitting)
         {
-            MoveBetweenScenes(SceneIndices.SIMULATION, SceneIndices.MAIN_MENU);
+            SceneIndices moving_to = current_scene_index == SceneIndices.MAIN_MENU ? SceneIndices.EXIT : SceneIndices.MAIN_MENU;
+            MoveToScene(moving_to);
 
             if (_instance.server.server_crash)
             {
@@ -281,7 +315,7 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             if (_instance.water_objs.Length > 0)
             {
-                foreach(GameObject obj in _instance.water_objs)
+                foreach (GameObject obj in _instance.water_objs)
                 {
                     obj.SetActive(!obj.activeSelf);
                 }

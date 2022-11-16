@@ -4,9 +4,10 @@ using UnityEngine;
 
 public enum SceneIndices
 {
-    MANAGER = 0,
+    PERSISTENT_SCENE = 0,
     MAIN_MENU = 1,
-    SIMULATION = 2
+    SIMULATION = 2,
+    EXIT = 3
 }
 
 public enum InitialisationStage

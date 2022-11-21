@@ -1,16 +1,18 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
 using static SimulationManager;
 using static ThirdPersonMovement;
 
 public class Server
 {
     public bool server_crash = false;
-    public bool connected = false;
 
     public int sequence_num = 1;
 
@@ -45,12 +47,7 @@ public class Server
     {
         public string msgType;
         public T payload;
-        public bool is_overridden;
-
-        public void Reset()
-        {
-            is_overridden = false;
-        }
+        public bool is_overriden;
     }
 
     [Serializable]
@@ -113,11 +110,13 @@ public class Server
     }
 
     /* Configs/Messages from server */
-    public JsonMessage<ServerConfig> server_config;
+    public JsonMessage<ServerConfig> json_server_config;
 
-    public JsonMessage<JsonControls> rover_controls;
+    public JsonMessage<JsonControls> json_rover_controls;
 
-    public JsonMessage<GlobalCommand> global_command;
+    public JsonMessage<ResetEpisode> json_reset_episode;
+
+    public JsonMessage<EndSimulation> json_end_simulation;
 
     public Server()
     {
@@ -137,15 +136,13 @@ public class Server
 
     public void Disconnect()
     {
-
         client.Close();
         stream = null;
-        connected = false;
         server_crash = true;
         return;
     }
 
-    public async Task<Exception> Connect(NetworkConfig network_config)
+    public Exception Connect(NetworkConfig network_config, string ip, int port)
     {
         client = new TcpClient
         {
@@ -153,14 +150,12 @@ public class Server
             SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024
         };
 
-        receive_buffer = new Byte[client.ReceiveBufferSize];
+        receive_buffer = new byte[client.ReceiveBufferSize];
 
         try
         {
-            await client.ConnectAsync(network_config.host, network_config.port);
+            client.Connect(ip, port);
             stream = client.GetStream();
-            connected = true;
-            ContinueRead();
             return null;
         }
         catch (Exception ex)
@@ -170,20 +165,63 @@ public class Server
         }
     }
 
-    public void ContinueRead()
+    public async Task<GameEvent> ContinueRead()
     {
         try
         {
-            if (IsTcpGood())
+            while (IsTcpGood())
             {
-                stream.BeginRead(receive_buffer, 0, receive_buffer.Length, read_callback, null);
+                stream.Read(receive_buffer, 0, receive_buffer.Length);
+
+                string jsonStr = Encoding.Default.GetString(receive_buffer);
+                receive_buffer = new byte[client.ReceiveBufferSize];
+
+                if (jsonStr != null)
+                {
+                    Debug.Log("Received: " + jsonStr);
+                    MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
+
+                    try
+                    {
+                        switch (message.msgType)
+                        {
+                            case "process_server_config":
+                                json_server_config = JsonUtility.FromJson<JsonMessage<ServerConfig>>(jsonStr);
+                                break;
+                            case "reset_episode":
+                                json_reset_episode = JsonUtility.FromJson<JsonMessage<ResetEpisode>>(jsonStr);
+                                json_reset_episode.is_overriden = true;
+                                break;
+                            case "end_simulation":
+                                json_end_simulation = JsonUtility.FromJson<JsonMessage<EndSimulation>>(jsonStr);
+                                json_end_simulation.is_overriden = true;
+                                break;
+                            case "receive_json_controls":
+                                json_rover_controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
+                                json_rover_controls.is_overriden = true;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+                }
+
+                ready_to_send = true;
             }
         }
-        catch (Exception ex)
+        
+        catch(Exception e)
         {
-            Debug.LogException(ex);
             Disconnect();
+            return null;
         }
+
+        return null;
     }
 
     public async void SendDataAsync<T>(T data)
@@ -194,7 +232,7 @@ public class Server
             string json_str = JsonUtility.ToJson(data);
             Debug.Log("Sending: " + json_str);
 
-            if (SimulationManager._instance.debug_config.is_overridden)
+            if (SimulationManager._instance.debug_config.msgType.Length > 0)
             {
                 if (SimulationManager._instance.debug_config.payload.save_sent_packets)
                 {
@@ -235,9 +273,14 @@ public class Server
     }
 
     [Serializable]
-    public struct GlobalCommand
+    public struct ResetEpisode
     {
         public bool reset_episode;
+    }
+
+    [Serializable]
+    public struct EndSimulation
+    {
         public bool end_simulation;
     }
 
@@ -257,53 +300,7 @@ public class Server
             }
 
             byte[] _data = new byte[_byteLength];
-            Array.Copy(receive_buffer, _data, _byteLength);
-
-            string jsonStr = System.Text.Encoding.Default.GetString(_data);
-
-            if (jsonStr != null)
-            {
-                Debug.Log("Received: " + jsonStr);
-
-                MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
-
-                try
-                {
-                    switch (message.msgType)
-                    {
-                        case "process_server_config":
-                            server_config = JsonUtility.FromJson<JsonMessage<ServerConfig>>(jsonStr);
-                            server_config.is_overridden = true;
-                            break;
-                        case "receive_json_controls":
-                            rover_controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
-                            rover_controls.is_overridden = true;
-                            break;
-                        case "global_message":
-                            global_command = JsonUtility.FromJson<JsonMessage<GlobalCommand>>(jsonStr);
-                            global_command.is_overridden = true;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-
-
-                if (global_command.is_overridden && global_command.payload.end_simulation)
-                {
-                    Disconnect();
-                    return;
-                }
-                else
-                {
-                    ready_to_send = true;
-                }
-            }
+            Array.Copy(receive_buffer, _data, _byteLength);          
         }
         catch (Exception e)
         {
@@ -311,7 +308,5 @@ public class Server
             Disconnect();
             return;
         }
-
-        stream.BeginRead(receive_buffer, 0, receive_buffer.Length, read_callback, null);
     }
 }

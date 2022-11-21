@@ -37,3 +37,5 @@ sysinfo.txt
 *.unitypackage
 
 *.jpeg
+
+gym_underwater/Logs/sac

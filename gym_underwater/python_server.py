@@ -104,9 +104,13 @@ class PythonServer():
         Signal proc_msg loop to stop, wait for thread to finish, close socket, and tell handler
         """
         self.do_process_msgs = False
-        new_msg = GLOBAL_MSG_TEMPLATE
-        new_msg["payload"]["end_simulation"] = True
-        new_msg["payload"]["reset_episode"] = False
+
+        new_msg = {
+            "msgType": "end_simulation",
+            "payload": {
+            }
+        }
+
         self.msg = json.dumps(new_msg)
 
         if self.th is not None:

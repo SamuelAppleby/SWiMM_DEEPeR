@@ -215,8 +215,12 @@ class UnitySimHandler():
         self.server.msg = json.dumps(self.server.server_config)
 
     def send_reset(self):
-        msg = GLOBAL_MSG_TEMPLATE
-        msg["payload"]["reset_episode"] = True
+        msg = {
+            "msgType": "reset_episode",
+            "payload": {
+            }
+        }
+
         self.server.msg = json.dumps(msg)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#

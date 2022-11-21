@@ -81,7 +81,7 @@ public class MainMenu : MonoBehaviour
 
     public void PlayGame(bool manual_controls)
     {
-        SimulationManager._instance.MoveToScene(SceneIndices.SIMULATION);
+        SimulationManager._instance.MoveToScene(SceneIndices.SIMULATION, manual_controls);
     }
 
     public void TerminateApplication()
@@ -93,10 +93,11 @@ public class MainMenu : MonoBehaviour
 #endif
     }
 
-    public async void Connect()
+    public void Connect()
     {
         connect_text.text = "Connecting";
-        Exception e = await SimulationManager._instance.ConnectToServer(ip_addr.text, int.Parse(port.text));
+        Exception e = SimulationManager._instance.ConnectToServer(ip_addr.text, int.Parse(port.text)).Result;
+
         if(e != null)
         {
             ResetConnect();

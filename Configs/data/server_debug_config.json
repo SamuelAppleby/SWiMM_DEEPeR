@@ -1,4 +1,4 @@
 {
-    "save_images" : false,
+    "save_images" : true,
     "image_dir" : "gym_underwater/Logs/received_images/"
 }

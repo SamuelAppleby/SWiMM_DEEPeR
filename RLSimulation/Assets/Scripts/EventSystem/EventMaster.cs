@@ -16,6 +16,9 @@ public class EventMaster : Singleton<EventMaster>
     [SerializeField]
     public JsonControlsEvent json_control_event;
 
+    [SerializeField]
+    public AIGroupsCompleteEvent ai_groups_complete_event;
+
     protected override void Awake()
     {
         base.Awake();

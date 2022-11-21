@@ -1,6 +1,6 @@
 {
-    "save_images" : false,
+    "save_images" : true,
     "image_dir" : "Logs/sent_images/",
-    "save_sent_packets" : false,
+    "save_sent_packets" : true,
     "packet_sent_dir" : "Logs/sent_packets/"
 }

@@ -6,6 +6,7 @@ using System.IO;
 using System;
 using Random = UnityEngine.Random;
 using Unity.VisualScripting;
+using System.Security.Cryptography;
 
 [System.Serializable]
 public class AIGroup
@@ -77,6 +78,7 @@ public class AIGroup
 
 public class FishSpawner : MonoBehaviour
 {
+    [HideInInspector]
     public InitialisationStage current_stage;
 
     public static FishSpawner current;
@@ -114,13 +116,9 @@ public class FishSpawner : MonoBehaviour
 
     public float current_progress;
 
-    public ThirdPersonMovement third_person;
-
-    private IEnumerator Start()
+    public void OnROVInitialised(GameObject rov)
     {
-        yield return new WaitUntil(() => third_person.is_initialized);
-
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
             TakeServerOverrides();
         }
@@ -143,10 +141,10 @@ public class FishSpawner : MonoBehaviour
 
     private void TakeServerOverrides()
     {
-        m_spawn_timer = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnTimer;
-        m_spawn_container_ratio = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnContainerRatio;
-        spawn_radius = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.spawnRadius;
-        ai_groups = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.aiGroups;
+        m_spawn_timer = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.spawnTimer;
+        m_spawn_container_ratio = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.spawnContainerRatio;
+        spawn_radius = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.spawnRadius;
+        ai_groups = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.aiGroups;
 
         foreach (AIGroup group in ai_groups)
         {

@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
+using static Server;
 
 [RequireComponent(typeof(Rigidbody))][RequireComponent(typeof(FloaterContainer))]
 public class ThirdPersonMovement : MonoBehaviour
@@ -59,7 +60,38 @@ public class ThirdPersonMovement : MonoBehaviour
     private float top_of_water;
     private float m_distance_undewater;
 
-    public bool is_initialized = false;
+    public Vector3 linear_force_to_be_applied;
+    public Vector3 angular_force_to_be_applied;
+
+    [Serializable]
+    public struct Controls_Audio
+    {
+        public AudioSource audio_motor;
+        public AudioSource hover_noise;
+    }
+
+    public Controls_Audio audios;
+
+    public void OnJsonControls(JsonMessage<JsonControls> param)
+    {
+        linear_force_to_be_applied = new Vector3(param.payload.lateralThrust, param.payload.verticalThrust, param.payload.forwardThrust);
+        angular_force_to_be_applied = new Vector3(param.payload.pitchThrust, param.payload.yawThrust, param.payload.rollThrust);
+
+        /* Simulate joystick output with boolean values */
+        angular_force_to_be_applied.x = angular_force_to_be_applied.x < 0.5 && angular_force_to_be_applied.x > -0.5 ? 0 : angular_force_to_be_applied.x <= -0.5 ? -1 : 1;    
+        angular_force_to_be_applied.z = angular_force_to_be_applied.z < 0.5 && angular_force_to_be_applied.z > -0.5 ? 0 : angular_force_to_be_applied.z <= -0.5 ? -1 : 1;
+
+        if (param.payload.depthHoldMode < 0 && m_depth_hold_mode || param.payload.depthHoldMode >= 0 && !m_depth_hold_mode)
+        {
+            ToggleDepthHoldMode();
+        }
+    }
+
+    public void ToggleDepthHoldMode()
+    {
+        audios.hover_noise.Play();
+        m_depth_hold_mode = !m_depth_hold_mode;
+    }
 
     private IEnumerator Start()
     {
@@ -75,52 +107,62 @@ public class ThirdPersonMovement : MonoBehaviour
         m_RigidBody.angularDrag = angular_air_drag;
         active_cam = thirdPersonCam;
         inactive_cam = firstPersonCam;
-        SimulationManager._instance.rover = gameObject;
 
-        if (SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
-            firstPersonCam.fieldOfView = SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.fov;
-            resolution = new Tuple<int, int>(SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.resolution[0],
-                SimulationManager._instance.server.server_config.payload.roverConfig.camConfig.resolution[1]);
-            m_RigidBody.mass += SimulationManager._instance.server.server_config.payload.roverConfig.structureConfig.ballastMass;
+            firstPersonCam.fieldOfView = SimulationManager._instance.server.json_server_config.payload.roverConfig.camConfig.fov;
+            resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.roverConfig.camConfig.resolution[0],
+                SimulationManager._instance.server.json_server_config.payload.roverConfig.camConfig.resolution[1]);
+            m_RigidBody.mass += SimulationManager._instance.server.json_server_config.payload.roverConfig.structureConfig.ballastMass;
         }
 
         yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
         hover_force_equilibrium = GetComponent<FloaterContainer>().total_buoyant_strength - (m_RigidBody.mass * -Physics.gravity.y);
-        is_initialized = true;
+        EventMaster._instance.rov_initialised_event.Raise(gameObject);
+    }
+
+    public void PlayAudioEffects()
+    {
+        if (linear_force_to_be_applied.magnitude > 0 || angular_force_to_be_applied.magnitude > 0)
+        {
+            if (!audios.audio_motor.isPlaying)
+            {
+                audios.audio_motor.Play();
+            }
+        }
+        else
+        {
+            audios.audio_motor.Stop();
+        }
+    }
+
+    public void OnMouseWheelScroll(float scroll)
+    {
+        ref float fov = ref cinecamera.m_Lens.FieldOfView;
+        fov -= scroll * movement_controls.sensitivity;
+        fov = Mathf.Clamp(fov, movement_controls.minFov, movement_controls.maxFov);
+    }
+
+    public void OnChangeCamera()
+    {
+        SwitchActiveCamera(active_cam, inactive_cam);
+    }
+
+    public void ChangeFarPlane(float val)
+    {
+        if ((val > 0 && firstPersonCam.farClipPlane < 2000) || (val < 0 && firstPersonCam.farClipPlane > 100))
+        {
+            firstPersonCam.farClipPlane += val;
+            cinecamera.m_Lens.FarClipPlane += val;
+        }
     }
 
     void Update()
     {
         m_distance_undewater = top_of_water - transform.position.y;
         CheckCameraEffects();
-        movement_controls.Update(SimulationManager._instance.in_manual_mode);
-
-        ref float fov = ref cinecamera.m_Lens.FieldOfView;
-        fov -= movement_controls.mouseWheel * movement_controls.sensitivity;
-        fov = Mathf.Clamp(fov, movement_controls.minFov, movement_controls.maxFov);
-
-        if (movement_controls.cameraChange)
-        {
-            SwitchActiveCamera(active_cam, inactive_cam);
-        }
-
-        if (movement_controls.hover_toggle)
-        {
-            m_depth_hold_mode = !m_depth_hold_mode;
-        }
-
-        if (movement_controls.increase_far_plane && firstPersonCam.farClipPlane < 2000)
-        { 
-            firstPersonCam.farClipPlane += 100;
-            cinecamera.m_Lens.FarClipPlane += 100;
-        }
-
-        if (movement_controls.decrease_far_plane && firstPersonCam.farClipPlane > 100)
-        {
-            firstPersonCam.farClipPlane -= 100;
-            cinecamera.m_Lens.FarClipPlane -= 100;
-        }
+        movement_controls.Update(SimulationManager._instance.in_manual_mode, this);
+        PlayAudioEffects();
     }
 
     private void SwitchActiveCamera(Camera active, Camera inactive)
@@ -144,19 +186,19 @@ public class ThirdPersonMovement : MonoBehaviour
         if (m_IsUnderwater)
         {
             /* Movement */
-            if (movement_controls.movementInputs.magnitude > float.Epsilon)
+            if (linear_force_to_be_applied.magnitude > float.Epsilon)
             {
-                if (movement_controls.movementInputs.x != 0)
+                if (linear_force_to_be_applied.x != 0)
                 {
-                    desiredMove += firstPersonCam.transform.right * movement_controls.movementInputs.x;
+                    desiredMove += firstPersonCam.transform.right * linear_force_to_be_applied.x;
                 }
-                if (movement_controls.movementInputs.y != 0)
+                if (linear_force_to_be_applied.y != 0)
                 {
-                    desiredMove += firstPersonCam.transform.up * movement_controls.movementInputs.y * 2;    // Vertical thrusters more power to overcome buoyancy
+                    desiredMove += firstPersonCam.transform.up * linear_force_to_be_applied.y * 2;    // Vertical thrusters more power to overcome buoyancy
                 }
-                if (movement_controls.movementInputs.z != 0)
+                if (linear_force_to_be_applied.z != 0)
                 {
-                    desiredMove += firstPersonCam.transform.forward * movement_controls.movementInputs.z;
+                    desiredMove += firstPersonCam.transform.forward * linear_force_to_be_applied.z;
                 }
 
                 desiredMove *= movement_controls.ThrustPower;
@@ -168,19 +210,19 @@ public class ThirdPersonMovement : MonoBehaviour
             }
 
             /* Rotation */
-            if (movement_controls.rotationInputs.magnitude > float.Epsilon)
+            if (angular_force_to_be_applied.magnitude > float.Epsilon)
             {
-                if (movement_controls.rotationInputs.x != 0)
+                if (angular_force_to_be_applied.x != 0)
                 {
-                    desiredRotation.x += movement_controls.rotationInputs.x;
+                    desiredRotation.x += angular_force_to_be_applied.x;
                 }
-                if (movement_controls.rotationInputs.y != 0)
+                if (angular_force_to_be_applied.y != 0)
                 {
-                    desiredRotation.y += movement_controls.rotationInputs.y;
+                    desiredRotation.y += angular_force_to_be_applied.y;
                 }
-                if (movement_controls.rotationInputs.z != 0)
+                if (angular_force_to_be_applied.z != 0)
                 {
-                    desiredRotation.z += movement_controls.rotationInputs.z;
+                    desiredRotation.z += angular_force_to_be_applied.z;
                 }
 
                 desiredRotation *= movement_controls.ThrustPower / 50;
@@ -189,11 +231,14 @@ public class ThirdPersonMovement : MonoBehaviour
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);
             m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Force);
         }
+
+        linear_force_to_be_applied = Vector3.zero;
+        angular_force_to_be_applied = Vector3.zero;
     }
 
     private void LateUpdate()
     {
-        if (!SimulationManager._instance.in_manual_mode && SimulationManager._instance.server.ready_to_send)
+        if (!SimulationManager._instance.in_manual_mode && SimulationManager._instance.server != null && SimulationManager._instance.server.ready_to_send)
         {
             SimulationManager._instance.server.ready_to_send = false;
             SendImageData();

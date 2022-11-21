@@ -88,7 +88,7 @@ public class BoidGroupSpawner : MonoBehaviour
 
     private void Start()
     {
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.server_config.is_overridden)
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
             TakeServerOverrides();
         }
@@ -117,9 +117,8 @@ public class BoidGroupSpawner : MonoBehaviour
 
     private void TakeServerOverrides()
     {
-        boid_groups = SimulationManager._instance.server.server_config.payload.envConfig.faunaConfig.boidGroups;
+        boid_groups = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.boidGroups;
     }
-
 
     void LateUpdate()
     {

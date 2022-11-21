@@ -845,6 +845,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1373481078}
   - component: {fileID: 1373481077}
+  - component: {fileID: 1373481080}
+  - component: {fileID: 1373481079}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -864,7 +866,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 032c2d7b78f0ab0498cc6c1d20bef718, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tip_count: 0
+  current_scene_index: 0
   tips_text: {fileID: 1395858809}
   alpha_canvas: {fileID: 1395858811}
   tips:
@@ -892,7 +894,7 @@ MonoBehaviour:
       image_dir: 
       save_sent_packets: 0
       packet_sent_dir: 
-    is_overridden: 0
+    is_overriden: 0
   network_config:
     msgType: 
     payload:
@@ -903,7 +905,7 @@ MonoBehaviour:
         client_receive_buffer_size_kb: 0
         server_receive_buffer_size_kb: 0
         client_send_buffer_size_kb: 0
-    is_overridden: 0
+    is_overriden: 0
   lighting_objs: []
   water_objs: []
 --- !u!4 &1373481078
@@ -921,6 +923,80 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1373481079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373481076}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59e29382abe22b440b6b6f3274f8f574, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  game_events: []
+  reset_episode_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: ResetEpiosde
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  end_simulation_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: EndSimulation
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  rov_initialised_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: OnROVInitialised
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1373481080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373481076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1609b0b373077994caa89e438e63625f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rov_initialised_event: {fileID: 11400000, guid: 41843b116b426e344ad4e99ad633451e, type: 2}
+  end_simulation_event: {fileID: 11400000, guid: 6fd0906aa8d5a1642a45cd31b68ddee6, type: 2}
+  reset_episode_event: {fileID: 11400000, guid: 01592ad09c1d18247aff71088ca37e0c, type: 2}
+  json_control_event: {fileID: 11400000, guid: 8fd3533b8b14d374484632a1fa9c880e, type: 2}
 --- !u!1 &1395858807
 GameObject:
   m_ObjectHideFlags: 0

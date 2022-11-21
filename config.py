@@ -8,12 +8,12 @@ within the repo's 'hyperparams' folder.
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~ Unity Sim ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-GLOBAL_MSG_TEMPLATE = {
-    "msgType": "global_message",
-    "payload": {
-
-    }
-}
+# GLOBAL_MSG_TEMPLATE = {
+#     "msgType": "global_message",
+#     "payload": {
+#
+#     }
+# }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~ Gym Environment ~~~~~~~~~~~~~~~~~~~~~~~~~#
 

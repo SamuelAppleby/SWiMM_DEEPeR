@@ -16,8 +16,8 @@ using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
-    SceneIndices current_scene_index;
-    public int tip_count;
+    [HideInInspector]
+    public SceneIndices current_scene_index;
     public TextMeshProUGUI tips_text;
     public CanvasGroup alpha_canvas;
     public string[] tips;
@@ -100,7 +100,20 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public GameObject[] water_objs;
 
-    private Dictionary<SceneIndices, int> scene_indices;
+    public void ResetEpiosde(bool in_manual)
+    {
+        MoveToScene(SceneIndices.SIMULATION, in_manual);       // In this case will unload and reload as intended
+    }
+
+    public void ExitCurrentScene()
+    {
+        MoveToScene(SceneIndices.SIMULATION);       // In this case will unload and reload as intended
+    }
+
+    public void EndSimulation()
+    {
+        MoveToScene(SceneIndices.EXIT);       // As above
+    }
 
     private void Start()
     {
@@ -122,7 +135,7 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
 
-        _instance.server = new Server();
+        _instance.server = null;
         _instance.in_manual_mode = true;
 
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
@@ -140,11 +153,30 @@ public class SimulationManager : Singleton<SimulationManager>
         Directory.CreateDirectory(dir_path);
     }
 
+    public void OnROVInitialised(GameObject rov)
+    {
+        rover = rov;
+    }
+
     public async Task<Exception> ConnectToServer(string ip, int port)
     {
-        network_config.payload.host = ip;
-        network_config.payload.port = port;
-        return await server.Connect(network_config.payload);
+        try
+        {
+            server = new Server();
+            Exception e = server.Connect(network_config.payload, ip, port);
+
+            if(e != null)
+            {
+                throw e;
+            }
+
+            Task.Run(() => server.ContinueRead());
+            return null;
+        }
+        catch(Exception e)
+        {
+            return e;
+        }
     }
 
     public void OnServerDisconnected()
@@ -161,7 +193,7 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.lighting_objs = GameObject.FindGameObjectsWithTag("Lighting");
     }
 
-    public void MoveToScene(SceneIndices to, bool in_manual = true)
+    public void MoveToScene(SceneIndices to, bool in_manual = false)
     {
         if (to == SceneIndices.EXIT)
         {
@@ -208,7 +240,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public IEnumerator GenerateTips()
     {
-        tip_count = Random.Range(0, tips.Length);
+        int tip_count = Random.Range(0, tips.Length);
         tips_text.text = tips[tip_count];
 
         while (loading_screen.activeInHierarchy)
@@ -278,11 +310,77 @@ public class SimulationManager : Singleton<SimulationManager>
 #endif
     }
 
+    public void IndexWindow()
+    {
+        _instance.screenIndex = _instance.screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
+        Screen.fullScreenMode = _instance.screenmodes[screenIndex];
+    }
+
+    public void IndexCursor()
+    {
+        Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = !Cursor.visible;
+    }
+
+    public void ToggleWater()
+    {
+        if (_instance.water_objs.Length > 0)
+        {
+            foreach (GameObject obj in _instance.water_objs)
+            {
+                obj.SetActive(!obj.activeSelf);
+            }
+        }
+    }
+
+    public void ToggleVolumetricLighting()
+    {
+        if (_instance.lighting_objs.Length > 0)
+        {
+            foreach (GameObject obj in _instance.lighting_objs)
+            {
+                obj.SetActive(!obj.activeSelf);
+            }
+        }
+    }
+
+    public void ResetNPCs()
+    {
+        foreach (Transform group_trans in FishSpawner.m_group_parent.GetComponentInChildren<Transform>().transform)
+        {
+            foreach (Transform ai in group_trans.transform)
+            {
+                Destroy(ai.gameObject);
+            }
+        }
+    }
+
+    public void FireServerEvents()
+    {
+        if (_instance.server.json_reset_episode.is_overriden)
+        {
+            EventMaster._instance.reset_episode_event.Raise();
+            _instance.server.json_reset_episode.is_overriden = false;
+        }
+
+        if (_instance.server.json_end_simulation.is_overriden)
+        {
+            EventMaster._instance.end_simulation_event.Raise();
+            _instance.server.json_end_simulation.is_overriden = false;
+        }
+
+        if (_instance.server.json_rover_controls.is_overriden)
+        {
+            EventMaster._instance.json_control_event.Raise(_instance.server.json_rover_controls);
+            _instance.server.json_rover_controls.is_overriden = false;
+        }
+    }
+
     void Update()
     {
         globalControls.Update(_instance.in_manual_mode);
 
-        if (_instance.server.server_crash || globalControls.quitting)
+        if (_instance.server != null && _instance.server.server_crash)
         {
             SceneIndices moving_to = current_scene_index == SceneIndices.MAIN_MENU ? SceneIndices.EXIT : SceneIndices.MAIN_MENU;
             MoveToScene(moving_to);
@@ -293,61 +391,15 @@ public class SimulationManager : Singleton<SimulationManager>
             }
         }
 
-        if (globalControls.reload_scene)
+        if (_instance.server != null)
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            globalControls.reload_scene = false;
-        }
-
-        if (globalControls.changeWindow)
-        {
-            _instance.screenIndex = _instance.screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
-            Screen.fullScreenMode = _instance.screenmodes[screenIndex];
-        }
-
-        if (globalControls.cursor_change)
-        {
-            Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = !Cursor.visible;
-        }
-
-        if (globalControls.water_toggle)
-        {
-            if (_instance.water_objs.Length > 0)
-            {
-                foreach (GameObject obj in _instance.water_objs)
-                {
-                    obj.SetActive(!obj.activeSelf);
-                }
-            }
-        }
-
-        if (globalControls.volumetric_lighting_toggle)
-        {
-            if (_instance.lighting_objs.Length > 0)
-            {
-                foreach (GameObject obj in _instance.lighting_objs)
-                {
-                    obj.SetActive(!obj.activeSelf);
-                }
-            }
-        }
-
-        if (globalControls.reset_ncps)
-        {
-            foreach (Transform group_trans in FishSpawner.m_group_parent.GetComponentInChildren<Transform>().transform)
-            {
-                foreach (Transform ai in group_trans.transform)
-                {
-                    Destroy(ai.gameObject);
-                }
-            }
+            FireServerEvents();
         }
     }
 
     public void Clear_Cache()
     {
-        if (debug_config.is_overridden)
+        if (debug_config.msgType.Length > 0)
         {
             DirectoryInfo di = new DirectoryInfo(debug_config.payload.packet_sent_dir);
 
@@ -376,7 +428,7 @@ public class SimulationManager : Singleton<SimulationManager>
             }
             else
             {
-                System.IO.Directory.CreateDirectory(di.FullName);
+                Directory.CreateDirectory(di.FullName);
             }
         }
     }
@@ -387,7 +439,6 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             string json = r.ReadToEnd();
             config.payload = JsonUtility.FromJson<T>(json);
-            config.is_overridden = true;
         }
     }
 

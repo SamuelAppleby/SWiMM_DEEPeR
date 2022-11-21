@@ -226,6 +226,9 @@ public class FishSpawner : MonoBehaviour
         }
 
         yield return new WaitForSeconds(.5f);
+
+        EventMaster._instance.ai_groups_complete_event.Raise();
+
         is_done = true;
     }
 

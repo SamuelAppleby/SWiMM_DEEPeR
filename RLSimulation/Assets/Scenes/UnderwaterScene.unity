@@ -1410,6 +1410,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0835c830d6f693d44984f005fa1e90ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  game_events: []
   rov_initialised_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -2286,7 +2287,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: -0.000000031822907, z: 0.0000000022376434, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: 0.000000031822907, z: -0.0000000022376434, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3155,7 +3156,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: -0.000000008582, z: 6.034475e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: 0.000000008582001, z: -6.0344757e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5362,6 +5363,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e91a13a7bad506d44ab2ddc7bf8a2e0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  game_events: []
   json_control_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -5369,6 +5371,21 @@ MonoBehaviour:
         m_TargetAssemblyTypeName: ThirdPersonMovement, Assembly-CSharp
         m_MethodName: OnJsonControls
         m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  ai_groups_complete_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1498372156}
+        m_TargetAssemblyTypeName: ThirdPersonMovement, Assembly-CSharp
+        m_MethodName: OnAIGroupsComplete
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

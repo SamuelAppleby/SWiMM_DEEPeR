@@ -997,6 +997,7 @@ MonoBehaviour:
   end_simulation_event: {fileID: 11400000, guid: 6fd0906aa8d5a1642a45cd31b68ddee6, type: 2}
   reset_episode_event: {fileID: 11400000, guid: 01592ad09c1d18247aff71088ca37e0c, type: 2}
   json_control_event: {fileID: 11400000, guid: 8fd3533b8b14d374484632a1fa9c880e, type: 2}
+  ai_groups_complete_event: {fileID: 11400000, guid: 0a30bd4564573c54191dda2f3ab0cb31, type: 2}
 --- !u!1 &1395858807
 GameObject:
   m_ObjectHideFlags: 0

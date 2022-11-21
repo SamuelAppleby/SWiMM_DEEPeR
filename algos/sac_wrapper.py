@@ -147,6 +147,8 @@ class SACWrap(SAC):
                     logger.dumpkvs()
                     # Reset infos:
                     infos_values = []
+                else:
+                    print('One of the above criteria is not true')
 
             # Use last batch
             print("Final optimization before saving")

@@ -10,9 +10,13 @@ public class PlayerGameEventListener : GameEventListener
     [SerializeField]
     public JsonControlUnityEvent json_control_unity_event;
 
+    [SerializeField]
+    public UnityEvent ai_groups_complete_unity_event;
+
     public override void OnEnable()
     {
         game_events.Add(EventMaster._instance.json_control_event);
+        game_events.Add(EventMaster._instance.ai_groups_complete_event);
         base.OnEnable();
     }
 
@@ -24,5 +28,10 @@ public class PlayerGameEventListener : GameEventListener
     public void OnJsonControlEventRaised(JsonMessage<JsonControls> msg)
     {
         json_control_unity_event.Invoke(msg);
+    }
+
+    public void OnAIGroupsCompleteEventRaised()
+    {
+        ai_groups_complete_unity_event.Invoke();
     }
 }

@@ -2,6 +2,7 @@ using Cinemachine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using static Server;
@@ -241,6 +242,7 @@ public class ThirdPersonMovement : MonoBehaviour
         if (!SimulationManager._instance.in_manual_mode && SimulationManager._instance.server != null && SimulationManager._instance.server.ready_to_send)
         {
             SimulationManager._instance.server.ready_to_send = false;
+            //Task.Run(() => SendImageData());      // Bad idea, can't render textures
             SendImageData();
         }
     }
@@ -270,47 +272,58 @@ public class ThirdPersonMovement : MonoBehaviour
         public Vector3 fwd;
     }
 
-    private void SendImageData()
+    public void OnAIGroupsComplete()
     {
-        RenderTexture rt = new RenderTexture(resolution.Item1, resolution.Item2, 24);
-        firstPersonCam.targetTexture = rt;
-        firstPersonCam.Render();
-        RenderTexture.active = rt;
-        Texture2D screenShot = new Texture2D(resolution.Item1, resolution.Item2, TextureFormat.RGB24, false);
-        screenShot.ReadPixels(new Rect(0, 0, resolution.Item1, resolution.Item2), 0, 0);
-        screenShot.Apply();
-        firstPersonCam.targetTexture = null;
-        RenderTexture.active = null;
-        Destroy(rt);
-
-        TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
-        int pos = 0;
-
-        foreach(Transform trans in target_transforms)
+        if(SimulationManager._instance.server != null)
         {
-            targetPositions[pos] = new TargetObject
-            {
-                position = trans.position,
-                fwd = trans.forward
-            };
-            pos++;
+            SimulationManager._instance.server.ready_to_send = true;
         }
+    }
 
-        DataToSend<Telemetary_Data> data = new DataToSend<Telemetary_Data>
+    private async void SendImageData()
+    {
+        if (SimulationManager._instance.server.IsTcpGood())
         {
-            msg_type = "on_telemetry",
-            payload = new Telemetary_Data
-            {
-                sequence_num = SimulationManager._instance.server.sequence_num,
-                jpg_image = screenShot.EncodeToJPG(),
-                position = transform.position,
-                collision_objects = collision_objects.ToArray(),
-                fwd = transform.forward,
-                targets = targetPositions,
-            }
-        };
+            RenderTexture rt = new RenderTexture(resolution.Item1, resolution.Item2, 24);
+            firstPersonCam.targetTexture = rt;
+            firstPersonCam.Render();
+            RenderTexture.active = rt;
+            Texture2D screenShot = new Texture2D(resolution.Item1, resolution.Item2, TextureFormat.RGB24, false);
+            screenShot.ReadPixels(new Rect(0, 0, resolution.Item1, resolution.Item2), 0, 0);
+            screenShot.Apply();
+            firstPersonCam.targetTexture = null;
+            RenderTexture.active = null;
+            Destroy(rt);
 
-        SimulationManager._instance.server.SendDataAsync(data);
+            TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
+            int pos = 0;
+
+            foreach (Transform trans in target_transforms)
+            {
+                targetPositions[pos] = new TargetObject
+                {
+                    position = trans.position,
+                    fwd = trans.forward
+                };
+                pos++;
+            }
+
+            DataToSend<Telemetary_Data> data = new DataToSend<Telemetary_Data>
+            {
+                msg_type = "on_telemetry",
+                payload = new Telemetary_Data
+                {
+                    sequence_num = SimulationManager._instance.server.sequence_num,
+                    jpg_image = screenShot.EncodeToJPG(),
+                    position = transform.position,
+                    collision_objects = collision_objects.ToArray(),
+                    fwd = transform.forward,
+                    targets = targetPositions,
+                }
+            };
+
+            await SimulationManager._instance.server.SendDataAsync(data);
+        }
     }
 
     private void OnCollisionEnter(Collision collision)

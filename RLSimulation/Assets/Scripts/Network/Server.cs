@@ -171,7 +171,7 @@ public class Server
         {
             while (IsTcpGood())
             {
-                stream.Read(receive_buffer, 0, receive_buffer.Length);
+                await stream.ReadAsync(receive_buffer, 0, receive_buffer.Length);
 
                 string jsonStr = Encoding.Default.GetString(receive_buffer);
                 receive_buffer = new byte[client.ReceiveBufferSize];
@@ -199,6 +199,7 @@ public class Server
                             case "receive_json_controls":
                                 json_rover_controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
                                 json_rover_controls.is_overriden = true;
+                                ready_to_send = true;
                                 break;
                             default:
                                 break;
@@ -210,8 +211,6 @@ public class Server
                         Debug.LogException(e);
                     }
                 }
-
-                ready_to_send = true;
             }
         }
         
@@ -224,7 +223,7 @@ public class Server
         return null;
     }
 
-    public async void SendDataAsync<T>(T data)
+    public async Task SendDataAsync<T>(T data)
     {
         try
         {
@@ -251,7 +250,7 @@ public class Server
             }
 
             byte[] _packet = Encoding.UTF8.GetBytes(json_str);
-            stream.BeginWrite(_packet, 0, _packet.Length, write_callback, null);
+            await stream.WriteAsync(_packet, 0, _packet.Length);
         }
         catch (Exception e)
         {

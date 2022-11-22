@@ -143,3 +143,13 @@ The following packages were updated:
   com.unity.cinemachine from version 2.8.6 to 2.8.9
   com.unity.collab-proxy from version 1.17.1 to 1.17.6
   com.unity.inputsystem from version 1.4.1 to 1.4.3
+
+=== Tue Nov 22 15:18:24 2022
+
+Packages were changed.
+Update Mode: updateDependencies
+
+The following packages were updated:
+  com.unity.ide.rider from version 3.0.15 to 3.0.16
+  com.unity.inputsystem from version 1.4.3 to 1.4.4
+  com.unity.shadergraph from version 12.1.7 to 12.1.8

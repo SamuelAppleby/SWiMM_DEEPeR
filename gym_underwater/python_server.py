@@ -129,7 +129,7 @@ class PythonServer():
 
             # receive packets
             part = conn.recv(1024 * self.receive_buffer_size)
-            #print("[+] Received", part)
+
             if not part:
                 print("[-] Not Binary Image")
                 self.stop()
@@ -137,7 +137,7 @@ class PythonServer():
 
             # unpack and send json message onto handler
             my_json = part.decode('UTF-8')
-            #print("I HAVE RECEIVED: " + my_json)
+            print("I HAVE RECEIVED: " + my_json)
             json_dict = json.loads(my_json)
             self.handler.on_recv_message(json_dict)
 

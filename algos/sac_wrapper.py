@@ -2,7 +2,7 @@ import time
 from collections import deque
 import numpy as np
 
-from algos.sac import SAC 
+from stable_baselines import SAC
 from stable_baselines import logger
 from stable_baselines.common.vec_env import VecEnv
 from stable_baselines.common.tf_util import total_episode_reward_logger
@@ -10,10 +10,12 @@ from stable_baselines.common.schedules import get_schedule_fn
 from stable_baselines.common.math_util import safe_mean
 from stable_baselines.common import TensorboardWriter
 
+
 class SACWrap(SAC):
     """
     User friendly high level version of algorithm
     """
+
     def optimize(self, step, writer, current_lr):
         """
         Do several optimization steps to update the different networks.
@@ -26,6 +28,7 @@ class SACWrap(SAC):
         mb_infos_vals = []
         for grad_step in range(self.gradient_steps):
             if step < self.batch_size or step < self.learning_starts:
+                print('{} {} batch learning AHHHHHH'.format(self.batch_size, self.learning_starts))
                 break
             self.n_updates += 1
             # Update policy and critics (q functions)
@@ -39,7 +42,7 @@ class SACWrap(SAC):
         return mb_infos_vals
 
     def learn(self, total_timesteps, callback=None,
-              log_interval=1, tb_log_name="SAC", print_freq=100):
+              log_interval=1, tb_log_name="SAC", print_freq=1):
 
         with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name) as writer:
 
@@ -50,7 +53,7 @@ class SACWrap(SAC):
 
             start_time = time.time()
             episode_rewards = [0.0]
-            
+
             obs = self.env.reset()
 
             self.episode_reward = np.zeros((1,))
@@ -63,6 +66,7 @@ class SACWrap(SAC):
 
             for step in range(total_timesteps):
 
+                print('{} total step'.format(step))
                 # Compute current learning_rate
                 frac = 1.0 - step / total_timesteps
                 current_lr = self.learning_rate(frac)
@@ -90,7 +94,7 @@ class SACWrap(SAC):
                 new_obs, reward, done, info = self.env.step(rescaled_action)
                 ep_len += 1
 
-                if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:             
+                if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
                     print("{} steps".format(ep_len))
 
                 # Store transition in the replay buffer.
@@ -107,7 +111,7 @@ class SACWrap(SAC):
                     ep_reward = np.array([reward]).reshape((1, -1))
                     ep_done = np.array([done]).reshape((1, -1))
                     self.episode_reward = total_episode_reward_logger(self.episode_reward, ep_reward,
-                                                                      ep_done, writer, step) 
+                                                                      ep_done, writer, step)
 
                 if ep_len == self.train_freq:
                     print("Maximum episode length reached")
@@ -147,8 +151,6 @@ class SACWrap(SAC):
                     logger.dumpkvs()
                     # Reset infos:
                     infos_values = []
-                else:
-                    print('One of the above criteria is not true')
 
             # Use last batch
             print("Final optimization before saving")

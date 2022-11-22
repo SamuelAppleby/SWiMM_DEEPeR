@@ -276,6 +276,7 @@ public class ThirdPersonMovement : MonoBehaviour
     {
         if(SimulationManager._instance.server != null)
         {
+            Debug.Log("AIGROUPSREMADE READY TO SEND");  
             SimulationManager._instance.server.ready_to_send = true;
         }
     }

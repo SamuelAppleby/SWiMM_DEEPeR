@@ -16,3 +16,18 @@ public class JsonControlUnityEvent: UnityEvent<JsonMessage<JsonControls>>
 public class ROVInitialisedUnityEvent : UnityEvent<GameObject>
 {
 }
+
+[Serializable]
+public class JsonServerConfigUnityEvent : UnityEvent<JsonMessage<ServerConfig>>
+{
+}
+
+[Serializable]
+public class ExceptionUnityEvent : UnityEvent<Exception>
+{
+}
+
+[Serializable]
+public class ServerConnectingUnityEvent : UnityEvent<string, int>
+{
+}

@@ -9,7 +9,7 @@ public class EndSimulationEvent : GameEvent
     {
         foreach (SimulationGameEventListener l in listeners)
         {
-            l.OnEpisodeResetEventRaised();
+            l.OnSimulationEndEventRaised();
         }
     }
 }

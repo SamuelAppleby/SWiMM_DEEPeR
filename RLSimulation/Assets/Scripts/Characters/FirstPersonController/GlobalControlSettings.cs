@@ -21,7 +21,7 @@ public class GlobalControlSettings
         {
             if (Input.GetKeyUp(GlobalControlMap.ReloadKey))
             {
-                SimulationManager._instance.ResetEpiosde(true);
+                SimulationManager._instance.EpisodeReset(true);
             }
         }
 

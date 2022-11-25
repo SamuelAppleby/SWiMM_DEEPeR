@@ -7,6 +7,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Audio;
+using System.Security.Cryptography;
+using Unity.VisualScripting;
 
 public class MainMenu : MonoBehaviour
 {
@@ -56,6 +58,16 @@ public class MainMenu : MonoBehaviour
 
     public Slider volume_slider;
 
+    void OnEnable()
+    {
+        connect_button.onClick.AddListener(() => Connect(ip_addr.text, int.Parse(port.text)));
+    }
+
+    void OnDisable()
+    {
+        connect_button.onClick.RemoveAllListeners();
+    }
+
     private IEnumerator Start()
     {
         yield return new WaitUntil(() => SimulationManager._instance.IsInitialized);
@@ -69,7 +81,7 @@ public class MainMenu : MonoBehaviour
         training_button_text = training_button.GetComponentInChildren<TextMeshProUGUI>();
         nn_button_text = nn_button.GetComponentInChildren<TextMeshProUGUI>();
         working_directory_text.text = System.IO.Directory.GetCurrentDirectory();
-        ChangeUIServerActive(SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood());
+        OnServerModelInitialized(false);
     }
 
     private void Awake()
@@ -93,42 +105,32 @@ public class MainMenu : MonoBehaviour
 #endif
     }
 
-    public void Connect()
+    public void OnServerConnectionResponse(Exception e)
     {
-        connect_text.text = "Connecting";
-        Exception e = SimulationManager._instance.ConnectToServer(ip_addr.text, int.Parse(port.text)).Result;
-
-        if(e != null)
-        {
-            ResetConnect();
-        }
-        else
-        {
-            connect_text.text = "Connected";
-            connect_button.image.color = Color.green;
-            connect_button.interactable = false;
-            ip_addr.interactable = false;
-            port.interactable = false;
-        }
-
-        ChangeUIServerActive(e == null);
+        network_message.text = e == null ? "Succcessfully connected to: " + ip_addr.text + ":" + port.text : "Failed to connect to: " + ip_addr.text + ":" + port.text + ":";
+        network_image.sprite = e == null ? healthy_network : unhealthy_network;
+        ip_addr.interactable = e != null;
+        port.interactable = e != null;
+        connect_button.image.color = e == null ? Color.green : Color.white;
+        connect_text.text = e != null ? "Connect" : "Connected";
+        connect_button.interactable = e != null;
+        ip_addr.interactable = e != null;
+        port.interactable = e != null;
     }
 
-    public void ChangeUIServerActive(bool server_on)
+    public void Connect(string ip, int port)
     {
-        training_button_text.color = server_on ? Color.white : Color.red;
-        training_button.interactable = server_on;
-        training_button.image.enabled = server_on;
-        nn_button_text.color = server_on ? Color.white : Color.red;
-        nn_button.interactable = server_on;
-        nn_button.image.enabled = server_on;
-        network_message.text = server_on ? "Succcessfully connected to: " + ip_addr.text + ":" + port.text : "Failed to connect to: " + ip_addr.text + ":" + port.text + ":";
-        connect_text.text = server_on ? "Connected" : "Connect";
-        connect_button.image.color = server_on ? Color.green : Color.white;
-        connect_button.interactable = server_on ? false : true;
-        ip_addr.interactable = server_on ? false : true;
-        port.interactable = server_on ? false : true;
-        network_image.sprite = server_on ? healthy_network : unhealthy_network;
+        EventMaster._instance.server_connecting_event.Raise(ip, port);
+    }
+
+    public void OnServerModelInitialized(bool init)
+    {
+        training_button_text.color = init ? Color.white : Color.red;
+        training_button.interactable = init;
+        training_button.image.enabled = init;
+        nn_button_text.color = init ? Color.white : Color.red;
+        nn_button.interactable = init;
+        nn_button.image.enabled = init;
     }
 
     public void ChangeToOptions(bool to_options)
@@ -140,12 +142,6 @@ public class MainMenu : MonoBehaviour
         {
             network_message.text = "";
         }
-    }
-
-    public void ResetConnect()
-    {
-        connect_text.text = "Connect";
-        EventSystem.current.SetSelectedGameObject(null);
     }
 
     public void SetVolume(float volume)

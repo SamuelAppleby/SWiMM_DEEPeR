@@ -40,7 +40,12 @@ public class FishMovement : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        if((transform.position - SimulationManager._instance.rover.transform.position).magnitude > distance_threshold)
+        if (Input.GetKeyUp(KeyCode.L))
+        {
+            transform.position = new Vector3(50, 50, 50);
+        }
+
+        if ((transform.position - SimulationManager._instance.rover.transform.position).magnitude > distance_threshold)
         {
             current_timer += Time.deltaTime;
 
@@ -144,18 +149,11 @@ public class FishMovement : MonoBehaviour
     {
         RaycastHit[] hit = Physics.RaycastAll(transform.position, correct_forward, 10.0f);
 
-        if (hit.Length > 1)
+        foreach(RaycastHit h in hit)
         {
-            FindNewTarget();
-        }
-        else
-        {
-            foreach(RaycastHit h in hit)
+            if (h.transform.gameObject.tag == "WaterSurface" || h.transform.gameObject.tag == "Player")
             {
-                if (h.transform.gameObject.tag == "WaterSurface")
-                {
-                    FindNewTarget();
-                }
+                FindNewTarget();
             }
         }
     }

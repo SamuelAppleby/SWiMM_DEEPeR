@@ -7,9 +7,18 @@ public class ResetEpisodeEvent : GameEvent
 {
     public void Raise()
     {
-        foreach (SimulationGameEventListener l in listeners)
+        foreach (GameEventListener l in listeners)
         {
-            l.OnEpisodeResetEventRaised();
+            if (l is SimulationGameEventListener)
+            {
+                SimulationGameEventListener l1 = l as SimulationGameEventListener;
+                l1.OnEpisodeResetEventRaised();
+            }
+            else if (l is MainMenuGameEventListener)
+            {
+                MainMenuGameEventListener l1 = l as MainMenuGameEventListener;
+                l1.OnEpisodeResetEventRaised();
+            }
         }
     }
 }

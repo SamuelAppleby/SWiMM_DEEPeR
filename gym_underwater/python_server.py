@@ -20,6 +20,7 @@ class PythonServer():
     def __init__(self, handler):
 
         # hold onto the handler
+        self.addr = None
         self.handler = handler
 
         # some variable initialisations
@@ -91,8 +92,7 @@ class PythonServer():
 
         # let handler know when connection has been made
         self.handler.on_connect(self)
-        self.handler.generate_server_config()
-        self.send_msg()
+        self.handler.send_server_config()
 
         # the remaining network related code, receiving data and sending data, is ran in a thread
         self.do_process_msgs = True
@@ -105,13 +105,11 @@ class PythonServer():
         """
         self.do_process_msgs = False
 
-        new_msg = {
+        self.msg = json.dumps({
             "msgType": "end_simulation",
             "payload": {
             }
-        }
-
-        self.msg = json.dumps(new_msg)
+        })
 
         if self.th is not None:
             self.th.join()
@@ -126,7 +124,18 @@ class PythonServer():
         """
         # conn.fileno being used to detect if socket has detached
         while self.do_process_msgs and conn.fileno:
+            # wait for handler to point something to self.msg variable dedicated to outgoing messages
+            print('Waiting to send message')
 
+            while self.msg is None:
+                time.sleep(1.0 / 120.0)
+
+            print('Sending: {}'.format(self.msg.encode('utf-8')))
+            self.conn.sendall(self.msg.encode('utf-8'))
+
+            self.msg = None
+
+            print('Waiting to receive message')
             # receive packets
             part = conn.recv(1024 * self.receive_buffer_size)
 
@@ -137,20 +146,6 @@ class PythonServer():
 
             # unpack and send json message onto handler
             my_json = part.decode('UTF-8')
-            print("I HAVE RECEIVED: " + my_json)
+            print('Received: {}'.format(my_json))
             json_dict = json.loads(my_json)
             self.handler.on_recv_message(json_dict)
-
-            # wait for handler to point something to self.msg variable dedicated to outgoing messages
-            # Sam A. Talk to Kirsten about this, potentially dangerous
-            while self.msg is None and self.do_process_msgs:
-                time.sleep(1.0 / 120.0)
-
-            # send 'reply' to client
-            self.send_msg()
-            #print(f"[+] Sent action to {self.addr[0]}:{self.addr[1]}")
-
-    def send_msg(self):
-        print(self.msg.encode('utf-8'))
-        self.conn.sendall(self.msg.encode('utf-8'))
-        self.msg = None

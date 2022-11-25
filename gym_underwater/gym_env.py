@@ -1,27 +1,28 @@
 import logging
+import time
 import warnings
 import gym
 import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from gym_underwater.sim_comms import UnitySimCommunicator 
+from gym_underwater.sim_comms import UnitySimCommunicator
 
 warnings.filterwarnings("ignore", category=UserWarning, module='gym')
 
 logger = logging.getLogger(__name__)
+
 
 class UnderwaterEnv(gym.Env):
     """
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self):         
-
+    def __init__(self):
         print("Starting underwater environment ..")
 
         # set logging level
-        logging.basicConfig(level=logging.INFO)  
+        logging.basicConfig(level=logging.INFO)
         logger.debug("DEBUG ON")
 
         # create instance of class that deals with Unity comms
@@ -36,11 +37,11 @@ class UnderwaterEnv(gym.Env):
         )
 
         # observation space declaration
-        print("Declaring observation space")         
-        self.observation_space = spaces.Box(low=0, high=255, shape=(256,256,3), dtype=np.uint8)
+        print("Declaring observation space")
+        self.observation_space = spaces.Box(low=0, high=255, shape=(256, 256, 3), dtype=np.uint8)
 
-    #     # seed environment
-    #     #self.seed()
+        #     # seed environment
+        #     #self.seed()
 
         # wait until connection established 
         self.communicator.wait_until_loaded()
@@ -52,34 +53,23 @@ class UnderwaterEnv(gym.Env):
     #     #self.np_random, seed = seeding.np_random(seed)
     #     #return [seed]
 
-    def step(self, action):             
-
+    def step(self, action):
         # send action decision to communicator to send off to sim
-        self.communicator.take_action(action)                                                  
+        self.communicator.take_action(action)
 
         # retrieve results of action implementation
-        observation, reward, done, info = self.communicator.observe()                       
+        observation, reward, done, info = self.communicator.observe()
 
-        return observation, reward, done, info                                            
+        return observation, reward, done, info
 
     def reset(self):
-
         # reset simulation to start state
         self.communicator.reset()
 
-        # fetch initial observation  
-        observation, _, _, _ = self.communicator.observe()
-        
+        # fetch initial observation
+        observation, reward, done, info = self.communicator.observe()
+
         return observation
 
     def render(self):
         return self.communicator.handler.image_array
-    def is_game_over(self):
-        return self.communicator.is_game_over()
-
-
-
-
-
-
-

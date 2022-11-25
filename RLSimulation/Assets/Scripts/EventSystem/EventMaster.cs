@@ -19,6 +19,18 @@ public class EventMaster : Singleton<EventMaster>
     [SerializeField]
     public AIGroupsCompleteEvent ai_groups_complete_event;
 
+    [SerializeField]
+    public ServerConfigReceivedEvent server_config_received_event;
+
+    [SerializeField]
+    public ServerConnectingEvent server_connecting_event;
+
+    [SerializeField]
+    public ServerConnectionAttemptEvent server_connection_attempt_event;
+
+    [SerializeField]
+    public ObservationSentEvent observation_sent_event;
+
     protected override void Awake()
     {
         base.Awake();

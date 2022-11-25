@@ -259,6 +259,7 @@ public class FishSpawner : MonoBehaviour
         {
             random_directions.x += Random.Range(0, spawn_radius);
         }
+
         if (valid_directions.y > 0)
         {
             /* Force destination below surfae */
@@ -269,6 +270,7 @@ public class FishSpawner : MonoBehaviour
 
             random_directions.y += Random.Range(0, spawn_radius);
         }
+
         if (valid_directions.z > 0)
         {
             random_directions.z += Random.Range(0, spawn_radius);

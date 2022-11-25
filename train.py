@@ -43,7 +43,6 @@ parser.add_argument('--print-freq', help='Print number of steps to terminal at t
 parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
 args = parser.parse_args()
 
-
 # early check on path to trained model if -i arg passed
 if args.trained_agent != "":
     assert args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent), \
@@ -88,6 +87,7 @@ else:
     log_dir = os.path.join(run_specific_path, 'monitor_logs')
 os.makedirs(log_dir, exist_ok=True)
 
+
 def linear_schedule(init_value):
     """
     Linear learning rate schedule.
@@ -108,6 +108,7 @@ def linear_schedule(init_value):
 
     return func
 
+
 if isinstance(hyperparams['learning_rate'], str):
     schedule, initial_value = hyperparams['learning_rate'].split('_')
     initial_value = float(initial_value)
@@ -123,7 +124,7 @@ else:
 # extract number of time steps want to train for 
 n_timesteps = int(hyperparams['n_timesteps'])
 # once extracted delete since not hyperparam expected by model initialiser
-del hyperparams['n_timesteps'] 
+del hyperparams['n_timesteps']
 
 # process normalisation hyperparams
 normalize = False
@@ -133,16 +134,17 @@ if 'normalize' in hyperparams.keys():
     if isinstance(normalize, str):
         normalize_kwargs = eval(normalize)
         normalize = True
-    del hyperparams['normalize'] 
+    del hyperparams['normalize']
 
 # DummyVecEnv below expects callable as argument so defining function for creating environment instance
+
+
 def make_env(log_d, seed=None):
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
 
     def _init():
-
         # TODO: is below needed again?
         set_global_seeds(seed)
         # create instance of environment
@@ -158,6 +160,7 @@ def make_env(log_d, seed=None):
 
     return _init
 
+
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
 env = DummyVecEnv([make_env(log_dir, seed=hyperparams.get('seed', 0))])
 
@@ -170,7 +173,7 @@ if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
     # Continue training
     print("Loading pretrained agent ...")
     # Policy should not be changed
-    del hyperparams['policy'] # network architecture already set so don't need
+    del hyperparams['policy']  # network architecture already set so don't need
 
     model = ALGOS[args.algo].load(args.trained_agent, env=env,
                                   tensorboard_log=tb_path, verbose=1, **hyperparams)
@@ -195,7 +198,7 @@ if args.log_interval > -1:
 print("Starting training run ...")
 model.learn(n_timesteps, **kwargs)
 
-#send messsage via server
+# send messsage via server
 
 # Close the connection properly
 env.reset()

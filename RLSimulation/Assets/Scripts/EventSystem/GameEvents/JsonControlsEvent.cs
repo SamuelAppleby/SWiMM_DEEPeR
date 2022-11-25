@@ -8,9 +8,18 @@ public class JsonControlsEvent : GameEvent
 {
     public void Raise(JsonMessage<JsonControls> param)
     {
-        foreach (PlayerGameEventListener l in listeners)
+        foreach (GameEventListener l in listeners)
         {
-            l.OnJsonControlEventRaised(param);
+            if (l is SimulationGameEventListener)
+            {
+                SimulationGameEventListener l1 = l as SimulationGameEventListener;
+                l1.OnJsonControlEventRaised(param);
+            }
+            else if (l is PlayerGameEventListener)
+            {
+                PlayerGameEventListener l1 = l as PlayerGameEventListener;
+                l1.OnJsonControlEventRaised(param);
+            }
         }
     }
 }

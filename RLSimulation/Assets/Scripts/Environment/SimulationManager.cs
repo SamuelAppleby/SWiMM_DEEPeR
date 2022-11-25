@@ -1,15 +1,13 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static Server;
+using static ThirdPersonMovement;
 using AsyncOperation = UnityEngine.AsyncOperation;
 using Cursor = UnityEngine.Cursor;
 using Random = UnityEngine.Random;
@@ -52,6 +50,8 @@ public class SimulationManager : Singleton<SimulationManager>
     private int screenIndex;
 
     static public GlobalControlSettings globalControls = new GlobalControlSettings();
+
+    public GameObject processing_obj;
 
     public struct ServerInfo
     {
@@ -100,9 +100,55 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public GameObject[] water_objs;
 
-    public void ResetEpiosde(bool in_manual)
+    public void OnObservationSent()
     {
-        MoveToScene(SceneIndices.SIMULATION, in_manual);       // In this case will unload and reload as intended
+        _instance.server.observations_sent++;
+        Time.timeScale = 0;
+    }
+
+    public void OnActionReceived(JsonMessage<JsonControls> param)
+    {
+        _instance.server.actions_received++;
+        Time.timeScale = 1;
+    }
+
+    public async void OnServerConnectionResponse(Exception e)
+    {
+        processing_obj.SetActive(e == null);
+        processing_obj.GetComponentInChildren<TextMeshProUGUI>().text = "Model initialising...";
+
+        await Task.Run(() => server.ContinueRead());
+        // TODO Clean up server caches
+    }
+
+    public async void OnServerConfigReceived(JsonMessage<ServerConfig> param)
+    {
+        _instance.server.json_server_config = param;
+
+        if (_instance.server.IsTcpGood())
+        {
+            DataToSend<ServerConfigReceivedData> data = new DataToSend<ServerConfigReceivedData>
+            {
+                msg_type = "server_config_received",
+                payload = { }
+            };
+
+            await _instance.server.SendDataAsync(data);
+        }
+    }
+
+    public void EpisodeReset(bool in_manual)
+    {
+        switch (current_scene_index)
+        {
+            case SceneIndices.MAIN_MENU:
+                processing_obj.SetActive(false);
+                break;
+            case SceneIndices.SIMULATION:
+                MoveToScene(SceneIndices.SIMULATION, in_manual);       // In this case will unload and reload as intended
+                Time.timeScale = 1;
+                break;
+        }
     }
 
     public void ExitCurrentScene()
@@ -158,25 +204,11 @@ public class SimulationManager : Singleton<SimulationManager>
         rover = rov;
     }
 
-    public async Task<Exception> ConnectToServer(string ip, int port)
+    public async void ConnectToServer(string ip, int port)
     {
-        try
-        {
-            server = new Server();
-            Exception e = server.Connect(network_config.payload, ip, port);
-
-            if(e != null)
-            {
-                throw e;
-            }
-
-            Task.Run(() => server.ContinueRead());
-            return null;
-        }
-        catch(Exception e)
-        {
-            return e;
-        }
+        server = new Server();
+        Exception e = await server.Connect(network_config.payload, ip, port);
+        EventMaster._instance.server_connection_attempt_event.Raise(e);
     }
 
     public void OnServerDisconnected()
@@ -355,7 +387,7 @@ public class SimulationManager : Singleton<SimulationManager>
         }
     }
 
-    public void FireServerEvents()
+    public void MonitorAndFireServerEvents()
     {
         if (_instance.server.json_reset_episode.is_overriden)
         {
@@ -373,6 +405,12 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             EventMaster._instance.json_control_event.Raise(_instance.server.json_rover_controls);
             _instance.server.json_rover_controls.is_overriden = false;
+        }
+
+        if (_instance.server.json_server_config.is_overriden)
+        {
+            EventMaster._instance.server_config_received_event.Raise(_instance.server.json_server_config);
+            _instance.server.json_server_config.is_overriden = false;
         }
     }
 
@@ -393,7 +431,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
         if (_instance.server != null)
         {
-            FireServerEvents();
+            MonitorAndFireServerEvents();
         }
     }
 

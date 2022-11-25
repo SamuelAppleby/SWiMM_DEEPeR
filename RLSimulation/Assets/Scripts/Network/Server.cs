@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,15 +15,16 @@ public class Server
 {
     public bool server_crash = false;
 
-    public int sequence_num = 1;
+    public int observations_sent = 0;
+
+    public int actions_received = 0;
 
     public bool first_observation_sent = false;
-    public bool ready_to_send = false;
 
     AsyncCallback read_callback = null;
     AsyncCallback write_callback = null;
 
-    Byte[] receive_buffer;
+    byte[] receive_buffer;
 
     public NetworkStream stream = null;
 
@@ -118,6 +120,8 @@ public class Server
 
     public JsonMessage<EndSimulation> json_end_simulation;
 
+    public JsonMessage<EndSimulation> json_server_model_ready;
+
     public Server()
     {
         read_callback = ProcessData;
@@ -126,7 +130,6 @@ public class Server
 
     private void OnImageWrite(IAsyncResult result)
     {
-        sequence_num++;
     }
 
     public bool IsTcpGood()
@@ -142,7 +145,7 @@ public class Server
         return;
     }
 
-    public Exception Connect(NetworkConfig network_config, string ip, int port)
+    public async Task<Exception> Connect(NetworkConfig network_config, string ip, int port)
     {
         client = new TcpClient
         {
@@ -154,7 +157,7 @@ public class Server
 
         try
         {
-            client.Connect(ip, port);
+            await client.ConnectAsync(ip, port);
             stream = client.GetStream();
             return null;
         }
@@ -171,10 +174,16 @@ public class Server
         {
             while (IsTcpGood())
             {
-                await stream.ReadAsync(receive_buffer, 0, receive_buffer.Length);
+                int bytes_read = await stream.ReadAsync(receive_buffer, 0, receive_buffer.Length);
+
+                if (bytes_read == 0)
+                {
+                    await Task.Yield();
+                    break;
+                }
 
                 string jsonStr = Encoding.Default.GetString(receive_buffer);
-                receive_buffer = new byte[client.ReceiveBufferSize];
+                Array.Clear(receive_buffer, 0, receive_buffer.Length);
 
                 if (jsonStr != null)
                 {
@@ -187,6 +196,7 @@ public class Server
                         {
                             case "process_server_config":
                                 json_server_config = JsonUtility.FromJson<JsonMessage<ServerConfig>>(jsonStr);
+                                json_server_config.is_overriden = true;
                                 break;
                             case "reset_episode":
                                 json_reset_episode = JsonUtility.FromJson<JsonMessage<ResetEpisode>>(jsonStr);
@@ -199,7 +209,6 @@ public class Server
                             case "receive_json_controls":
                                 json_rover_controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
                                 json_rover_controls.is_overriden = true;
-                                ready_to_send = true;
                                 break;
                             default:
                                 break;
@@ -216,6 +225,7 @@ public class Server
         
         catch(Exception e)
         {
+            Debug.LogException(e);
             Disconnect();
             return null;
         }
@@ -235,17 +245,7 @@ public class Server
             {
                 if (SimulationManager._instance.debug_config.payload.save_sent_packets)
                 {
-                    await File.WriteAllTextAsync(SimulationManager._instance.debug_config.payload.packet_sent_dir + "sent_data_" + sequence_num.ToString() + ".json", json_str);
-                }
-
-                if (SimulationManager._instance.debug_config.payload.save_images)
-                {
-                    DataToSend<Telemetary_Data>? obj = data as DataToSend<Telemetary_Data>?;
-
-                    if(obj != null)
-                    {
-                        File.WriteAllBytes(SimulationManager._instance.debug_config.payload.image_dir + "sent_image" + sequence_num.ToString() + ".jpg", obj.Value.payload.jpg_image);
-                    }
+                    await File.WriteAllTextAsync(SimulationManager._instance.debug_config.payload.packet_sent_dir + "sent_data_" + observations_sent.ToString() + ".json", json_str);
                 }
             }
 
@@ -281,6 +281,12 @@ public class Server
     public struct EndSimulation
     {
         public bool end_simulation;
+    }
+
+    [Serializable]
+    public struct ServerModelReady
+    {
+        public bool model_ready;
     }
 
     private void ProcessData(IAsyncResult result)

@@ -2,7 +2,7 @@ import logging
 import time
 import json
 import os
-import numpy as np 
+import numpy as np
 import math
 from io import BytesIO
 from PIL import Image
@@ -12,20 +12,17 @@ from config import *
 
 logger = logging.getLogger(__name__)
 
+
 class UnitySimCommunicator:
     def __init__(self):
-
         logger.setLevel(logging.INFO)
-
         self.handler = UnitySimHandler()
-
         self.server = PythonServer(self.handler)
-
 
     def wait_until_loaded(self):
         while self.handler.server is None:
             logger.warning("waiting for sim ..")
-            time.sleep(1.0)          
+            time.sleep(1.0)
 
     def reset(self):
         self.handler.reset()
@@ -42,46 +39,37 @@ class UnitySimCommunicator:
     def render(self):
         pass
 
-    def is_game_over(self):
-        return self.handler.is_game_over()
+    def calc_reward(self):
+        return self.handler.calc_reward()
 
-    def calc_reward(self, done):
-        return self.handler.calc_reward(done)
 
-class UnitySimHandler():
+class UnitySimHandler:
 
     def __init__(self):
-
         self.server = None
-
-        self.image_array = np.zeros((256,256,3))
+        self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
         self.hit = []
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
         self.rover_fwd = np.zeros(3)
         self.target_fwd = np.zeros(3)
-
-        self.over = False
-
         self.d = 0.0
-        # self.a = 0.0
+        self.a = 0.0
 
         self.fns = {
-            "on_telemetry": self.on_telemetry,
+            'server_config_received': self.server_config_confirmation,
+            "on_telemetry": self.on_telemetry
         }
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def reset(self):
-
         logger.debug("resetting")
 
         self.send_reset()
-        # Sam.A Talk to Kirsten about this
-        #time.sleep(1)
 
-        self.image_array = np.zeros((256,256,3))
+        self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
         self.hit = []
         self.rover_pos = np.zeros(3)
@@ -89,28 +77,24 @@ class UnitySimHandler():
         self.rover_fwd = np.zeros(3)
         self.target_fwd = np.zeros(3)
 
-        self.over = False
-    
     def observe(self):
-
         while self.last_obs is self.image_array:
             time.sleep(1.0 / 120.0)
 
         self.last_obs = self.image_array
-        observation = self.image_array                                             
-        done = self.is_game_over()
-        reward = self.calc_reward(done)                                   
-        info = {"dummy": "can add variables here"}                            
+        observation = self.image_array
+        reward = self.calc_reward()
+        done = self.determine_episode_over()
+        info = {"dummy": "can add variables here"}
 
         return observation, reward, done, info
 
-    def calc_reward(self, done):
-
+    def calc_reward(self):
         # heading vector from rover to target
         heading = self.target_pos - self.rover_pos
 
         # normalize
-        norm_heading = heading/np.linalg.norm(heading)
+        norm_heading = heading / np.linalg.norm(heading)
 
         # if target is ahead of rover, heading[2] (i.e z-coord) should be positive and vice versa
         # so that the optimal tracking position dictated by heading[2] - OPT_D is always *behind* the target
@@ -134,15 +118,15 @@ class UnitySimHandler():
 
     def determine_episode_over(self):
         if self.d > MAX_D:
+            print("Episode terminated as target out of range {}".format(self.d))
             logger.debug(f"game over: distance {self.d}")
-            self.over = True
-            print("Episode terminated as target out of range")
+            return True
         if "Fish" in self.hit:
             logger.debug(f"game over: hit {self.hit}")
-            self.over = True
+            return True
             print("Episode terminated due to collision")
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def on_connect(self, server):
         logger.debug("socket connected")
@@ -152,12 +136,12 @@ class UnitySimHandler():
         logger.debug("socket disconnected")
         self.server = None
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def on_recv_message(self, message):
 
         if "msg_type" not in message:
-            logger.warn("expected msg_type field")
+            logger.warning("expected msg_type field")
             return
         msg_type = message["msg_type"]
         payload = message["payload"]
@@ -167,13 +151,10 @@ class UnitySimHandler():
         else:
             logger.warning(f"unknown message type {msg_type}")
 
+    def server_config_confirmation(self, payload):
+        return
+
     def on_telemetry(self, payload):
-        image = bytearray(payload["jpg_image"])
-        self.image_array = np.array(Image.open(BytesIO(image)))
-
-        if self.server.debug_config["save_images"]:
-            self.write_image_to_file_incrementally(image)
-
         self.rover_pos = np.array([payload["position"]["x"], payload["position"]["y"], payload["position"]["z"]])
         self.hit = payload["collision_objects"]
         self.rover_fwd = np.array([payload["fwd"]["x"], payload["fwd"]["y"], payload["fwd"]["z"]])
@@ -184,12 +165,13 @@ class UnitySimHandler():
             self.target_pos = np.array([target["position"]["x"], target["position"]["y"], target["position"]["z"]])
             self.target_fwd = np.array([target["fwd"]["x"], target["fwd"]["y"], target["fwd"]["z"]])
 
-        if self.over:
-            return
+        image = bytearray(payload["jpg_image"])
+        self.image_array = np.array(Image.open(BytesIO(image)))
 
-        self.determine_episode_over()
+        if self.server.debug_config["save_images"]:
+            self.write_image_to_file_incrementally(image)
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def take_action(self, action):
         if self.server is None:
@@ -208,7 +190,7 @@ class UnitySimHandler():
         }
         self.server.msg = json.dumps(action_msg)
 
-    def generate_server_config(self):
+    def send_server_config(self):
         """
         Generate server config for client
         """
@@ -217,13 +199,12 @@ class UnitySimHandler():
     def send_reset(self):
         msg = {
             "msgType": "reset_episode",
-            "payload": {
-            }
+            "payload": {}
         }
 
         self.server.msg = json.dumps(msg)
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def write_image_to_file_incrementally(self, image):
         """
@@ -236,18 +217,3 @@ class UnitySimHandler():
             i += 1
         with open(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg"), "wb") as f:
             f.write(image)
-
-    def is_game_over(self):
-        return self.over
-
-
-
-
-
-
-    
-
-
-
-    
-    

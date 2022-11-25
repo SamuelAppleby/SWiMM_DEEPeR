@@ -15,7 +15,10 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI fps_value_text;
 
     [SerializeField]
-    private TextMeshProUGUI packets_value_text;
+    private TextMeshProUGUI observations_sent;
+
+    [SerializeField]
+    private TextMeshProUGUI actions_received;
 
     [SerializeField]
     private TextMeshProUGUI depth_hold_mode_text;
@@ -56,7 +59,8 @@ public class GameUI : MonoBehaviour
 
         if (SimulationManager._instance.server != null)
         {
-            packets_value_text.text = (SimulationManager._instance.server.sequence_num - 1).ToString();
+            observations_sent.text = SimulationManager._instance.server.observations_sent.ToString();
+            actions_received.text = SimulationManager._instance.server.actions_received.ToString();
         }
 
         depth_hold_mode_text.text = third_person_movement.m_depth_hold_mode.ToString();

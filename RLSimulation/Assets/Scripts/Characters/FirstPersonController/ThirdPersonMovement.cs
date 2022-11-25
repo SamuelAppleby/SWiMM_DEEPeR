@@ -2,6 +2,7 @@ using Cinemachine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
@@ -64,6 +65,11 @@ public class ThirdPersonMovement : MonoBehaviour
     public Vector3 linear_force_to_be_applied;
     public Vector3 angular_force_to_be_applied;
 
+    private int manual_screenshot_count = 0;
+
+    List<Tuple<int, int>> valid_resolutions = new List<Tuple<int, int>> { new Tuple<int, int>(256, 256), new Tuple<int, int>(512, 512), new Tuple<int, int>(1024, 1024),
+    new Tuple<int, int>(2048, 2048)};
+
     [Serializable]
     public struct Controls_Audio
     {
@@ -86,6 +92,8 @@ public class ThirdPersonMovement : MonoBehaviour
         {
             ToggleDepthHoldMode();
         }
+
+        StartCoroutine(SendImageData());
     }
 
     public void ToggleDepthHoldMode()
@@ -96,6 +104,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private IEnumerator Start()
     {
+        environment_ready = false;
         top_of_water = water_collider.transform.position.y + (water_collider.GetComponent<BoxCollider>().size.y / 2);
         volume.profile.TryGetSettings(out m_colour_grading);
         m_color_grading_filter_start = m_colour_grading.colorFilter.value;
@@ -108,6 +117,9 @@ public class ThirdPersonMovement : MonoBehaviour
         m_RigidBody.angularDrag = angular_air_drag;
         active_cam = thirdPersonCam;
         inactive_cam = firstPersonCam;
+
+        firstPersonCam.fieldOfView = 100;
+        resolution = new Tuple<int, int>(2048,2048);
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
@@ -239,11 +251,9 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!SimulationManager._instance.in_manual_mode && SimulationManager._instance.server != null && SimulationManager._instance.server.ready_to_send)
+        if (Input.GetKeyUp(KeyCode.V))
         {
-            SimulationManager._instance.server.ready_to_send = false;
-            //Task.Run(() => SendImageData());      // Bad idea, can't render textures
-            SendImageData();
+            TakeScreenshot(valid_resolutions[manual_screenshot_count], true);
         }
     }
 
@@ -252,6 +262,11 @@ public class ThirdPersonMovement : MonoBehaviour
     {
         public string msg_type;
         public T payload;
+    }
+
+    [Serializable]
+    public struct ServerConfigReceivedData
+    {
     }
 
     [Serializable]
@@ -272,28 +287,45 @@ public class ThirdPersonMovement : MonoBehaviour
         public Vector3 fwd;
     }
 
+    public bool environment_ready;
+
+    private Texture2D current_screenshot;
+
     public void OnAIGroupsComplete()
     {
-        if(SimulationManager._instance.server != null)
-        {
-            SimulationManager._instance.server.ready_to_send = true;
-        }
+        environment_ready = true;
+        StartCoroutine(SendImageData());
     }
 
-    private async void SendImageData()
+    private IEnumerator TakeScreenshot(Tuple<int,int> res, bool save_image)
     {
-        if (SimulationManager._instance.server.IsTcpGood())
+        yield return new WaitForEndOfFrame();
+
+        RenderTexture rt = new RenderTexture(res.Item1, res.Item2, 24);
+        firstPersonCam.targetTexture = rt;
+        firstPersonCam.Render();
+        RenderTexture.active = rt;
+        Texture2D screen_shot = new Texture2D(res.Item1, res.Item2, TextureFormat.RGB24, false);
+        screen_shot.ReadPixels(new Rect(0, 0, res.Item1, res.Item2), 0, 0);
+        screen_shot.Apply();
+        firstPersonCam.targetTexture = null;
+        RenderTexture.active = null;
+        Destroy(rt);
+
+        if (save_image)
         {
-            RenderTexture rt = new RenderTexture(resolution.Item1, resolution.Item2, 24);
-            firstPersonCam.targetTexture = rt;
-            firstPersonCam.Render();
-            RenderTexture.active = rt;
-            Texture2D screenShot = new Texture2D(resolution.Item1, resolution.Item2, TextureFormat.RGB24, false);
-            screenShot.ReadPixels(new Rect(0, 0, resolution.Item1, resolution.Item2), 0, 0);
-            screenShot.Apply();
-            firstPersonCam.targetTexture = null;
-            RenderTexture.active = null;
-            Destroy(rt);
+            File.WriteAllBytes(SimulationManager._instance.debug_config.payload.image_dir + "sent_image" + manual_screenshot_count.ToString() + ".jpg", screen_shot.EncodeToJPG());
+            manual_screenshot_count++;
+        }
+
+        current_screenshot = screen_shot;
+    }
+
+    private IEnumerator SendImageData()
+    {
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood())
+        {
+            yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.payload.save_images));
 
             TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
             int pos = 0;
@@ -313,8 +345,8 @@ public class ThirdPersonMovement : MonoBehaviour
                 msg_type = "on_telemetry",
                 payload = new Telemetary_Data
                 {
-                    sequence_num = SimulationManager._instance.server.sequence_num,
-                    jpg_image = screenShot.EncodeToJPG(),
+                    sequence_num = SimulationManager._instance.server.observations_sent,
+                    jpg_image = current_screenshot.EncodeToJPG(),
                     position = transform.position,
                     collision_objects = collision_objects.ToArray(),
                     fwd = transform.forward,
@@ -322,7 +354,10 @@ public class ThirdPersonMovement : MonoBehaviour
                 }
             };
 
-            await SimulationManager._instance.server.SendDataAsync(data);
+            Task task = SimulationManager._instance.server.SendDataAsync(data);
+            yield return new WaitUntil(() => task.IsCompleted);
+
+            EventMaster._instance.observation_sent_event.Raise();
         }
     }
 

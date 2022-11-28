@@ -20,6 +20,7 @@ class PythonServer():
     def __init__(self, handler):
 
         # hold onto the handler
+        self.sock = None
         self.addr = None
         self.handler = handler
 
@@ -92,12 +93,12 @@ class PythonServer():
 
         # let handler know when connection has been made
         self.handler.on_connect(self)
-        self.handler.send_server_config()
 
         # the remaining network related code, receiving data and sending data, is ran in a thread
         self.do_process_msgs = True
         self.th = Thread(target=self.proc_msg, args=(self.conn,), daemon=True)
         self.th.start()
+        self.handler.send_server_config()
 
     def stop(self):
         """

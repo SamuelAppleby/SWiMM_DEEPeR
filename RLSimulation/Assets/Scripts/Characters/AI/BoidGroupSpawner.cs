@@ -117,7 +117,7 @@ public class BoidGroupSpawner : MonoBehaviour
 
     private void TakeServerOverrides()
     {
-        boid_groups = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.boidGroups;
+        boid_groups = SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.faunaConfig.boidGroups;
     }
 
     void LateUpdate()

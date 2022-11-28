@@ -1,15 +1,13 @@
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Events;
+using static Server;
 using static SimulationManager;
-using static ThirdPersonMovement;
+using Task = System.Threading.Tasks.Task;
 
 public class Server
 {
@@ -21,16 +19,13 @@ public class Server
 
     public bool first_observation_sent = false;
 
-    AsyncCallback read_callback = null;
-    AsyncCallback write_callback = null;
-
     byte[] receive_buffer;
 
     public NetworkStream stream = null;
 
     public TcpClient client;
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct ServerConfig
     {
         public LearningConfig learningConfig;
@@ -38,47 +33,48 @@ public class Server
         public EnvironmentConfig envConfig;
     }
 
-    [Serializable]
-    struct MessageType
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct JsonMessage
     {
         public string msgType;
-    }
-
-    [Serializable]
-    public struct JsonMessage<T>
-    {
-        public string msgType;
-        public T payload;
+        public Payload payload;
         public bool is_overriden;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct Payload
+    {
+        public ServerConfig serverConfig;
+        public JsonControls jsonControls;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct ActionSpaceConfig
     {
         public int dimensions;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct LearningConfig
     {
         public ActionSpaceConfig actionSpaceConfig;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct RoverConfig
     {
         public CameraConfig camConfig;
         public StructureConfig structureConfig;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct CameraConfig
     {
         public int[] resolution;
         public int fov;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct StructureConfig
     {
         [Range(0f, 1.2f)]
@@ -86,13 +82,13 @@ public class Server
         public float totalBuoyantForce;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct EnvironmentConfig
     {
         public FaunaConfig faunaConfig;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct FaunaConfig
     {
         public float spawnTimer;
@@ -102,7 +98,7 @@ public class Server
         public float spawnRadius;
     }
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct Buffers
     {
         public int server_send_buffer_size_kb;
@@ -111,25 +107,64 @@ public class Server
         public int client_send_buffer_size_kb;
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct DataToSend
+    {
+        public string msg_type;
+        public Telemetary_Data payload;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct Telemetary_Data
+    {
+        public int? sequence_num;       // nullify for ints, not native to newtonsoft
+        public byte[] jpg_image;
+        public float[] position;
+        public string[] collision_objects;
+        public float[] fwd;
+        public TargetObject[] targets;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct TargetObject
+    {
+        public float[] position;
+        public float[] fwd;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct JsonControls
+    {
+        public float lateralThrust;
+        public float forwardThrust;
+        public float verticalThrust;
+        public float pitchThrust;
+        public float yawThrust;
+        public float rollThrust;
+        public float depthHoldMode;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct DatalessMessage
+    {
+    }
+
     /* Configs/Messages from server */
-    public JsonMessage<ServerConfig> json_server_config;
+    public JsonMessage json_server_config;
 
-    public JsonMessage<JsonControls> json_rover_controls;
+    public JsonMessage json_rover_controls;
 
-    public JsonMessage<ResetEpisode> json_reset_episode;
+    public JsonMessage json_reset_episode;
 
-    public JsonMessage<EndSimulation> json_end_simulation;
+    public JsonMessage json_end_simulation;
 
-    public JsonMessage<EndSimulation> json_server_model_ready;
+    public DataToSend? last_obsv;
+
+    public DataToSend? obsv;
 
     public Server()
     {
-        read_callback = ProcessData;
-        write_callback = OnImageWrite;
-    }
-
-    private void OnImageWrite(IAsyncResult result)
-    {
+        obsv = null;
     }
 
     public bool IsTcpGood()
@@ -168,12 +203,32 @@ public class Server
         }
     }
 
-    public async Task<GameEvent> ContinueRead()
+    public static async Task WaitUntilAsync(Func<bool> predicate, int sleep = 1 / 120)
+    {
+        while (!predicate())
+        {
+            await Task.Delay(sleep);
+        }
+    }
+
+    private bool DataReadyToSend()
+    {
+        return obsv != null && last_obsv == null;
+    }
+
+    //public void CastAndOverride<T, P>(JsonMessage<T> data, ref JsonMessage<P> param)
+    //{
+    //    param = (JsonMessage<P>)(object)(T)(object)data;
+    //    param.is_overriden = true;
+    //}
+
+    public async Task<GameEvent> ContinueReadWrite() 
     {
         try
         {
             while (IsTcpGood())
             {
+                /* Reading */
                 int bytes_read = await stream.ReadAsync(receive_buffer, 0, receive_buffer.Length);
 
                 if (bytes_read == 0)
@@ -188,27 +243,28 @@ public class Server
                 if (jsonStr != null)
                 {
                     Debug.Log("Received: " + jsonStr);
-                    MessageType message = JsonUtility.FromJson<MessageType>(jsonStr);
+                    JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(jsonStr);
 
                     try
                     {
                         switch (message.msgType)
                         {
                             case "process_server_config":
-                                json_server_config = JsonUtility.FromJson<JsonMessage<ServerConfig>>(jsonStr);
+                                //CastAndOverride(message, ref json_server_config);
+                                json_server_config = message;
                                 json_server_config.is_overriden = true;
                                 break;
                             case "reset_episode":
-                                json_reset_episode = JsonUtility.FromJson<JsonMessage<ResetEpisode>>(jsonStr);
+                                json_reset_episode = message;
                                 json_reset_episode.is_overriden = true;
                                 break;
-                            case "end_simulation":
-                                json_end_simulation = JsonUtility.FromJson<JsonMessage<EndSimulation>>(jsonStr);
-                                json_end_simulation.is_overriden = true;
-                                break;
                             case "receive_json_controls":
-                                json_rover_controls = JsonUtility.FromJson<JsonMessage<JsonControls>>(jsonStr);
+                                json_rover_controls = message;
                                 json_rover_controls.is_overriden = true;
+                                break;
+                            case "end_simulation":
+                                json_end_simulation = message;
+                                json_end_simulation.is_overriden = true;
                                 break;
                             default:
                                 break;
@@ -220,7 +276,36 @@ public class Server
                         Debug.LogException(e);
                     }
                 }
+
+                /* Writing */
+                await WaitUntilAsync(DataReadyToSend);
+
+                string json_str_data_to_send = JsonConvert.SerializeObject(obsv.Value);
+
+                try
+                {
+                    if (SimulationManager._instance.debug_config.save_sent_packets)
+                    {
+                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packet_sent_dir + "sent_data_" + observations_sent.ToString() + ".json", json_str_data_to_send);
+                    }
+
+                    Debug.Log("Sending: " + json_str_data_to_send);
+                    byte[] _packet = Encoding.UTF8.GetBytes(json_str_data_to_send);
+                    await stream.WriteAsync(_packet, 0, _packet.Length);
+
+                    last_obsv = obsv;
+                    obsv = null;
+                }
+
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
             }
+
+            /* TCP is no longer good */
+            Disconnect();
+            return null;
         }
         
         catch(Exception e)
@@ -228,90 +313,6 @@ public class Server
             Debug.LogException(e);
             Disconnect();
             return null;
-        }
-
-        return null;
-    }
-
-    public async Task SendDataAsync<T>(T data)
-    {
-        try
-        {
-
-            string json_str = JsonUtility.ToJson(data);
-            Debug.Log("Sending: " + json_str);
-
-            if (SimulationManager._instance.debug_config.msgType.Length > 0)
-            {
-                if (SimulationManager._instance.debug_config.payload.save_sent_packets)
-                {
-                    await File.WriteAllTextAsync(SimulationManager._instance.debug_config.payload.packet_sent_dir + "sent_data_" + observations_sent.ToString() + ".json", json_str);
-                }
-            }
-
-            byte[] _packet = Encoding.UTF8.GetBytes(json_str);
-            await stream.WriteAsync(_packet, 0, _packet.Length);
-        }
-        catch (Exception e)
-        {
-            Debug.LogException(e);
-            Disconnect();
-        }
-    }
-
-    [Serializable]
-    public struct JsonControls
-    {
-        public float lateralThrust;
-        public float forwardThrust;
-        public float verticalThrust;
-        public float pitchThrust;
-        public float yawThrust;
-        public float rollThrust;
-        public float depthHoldMode;
-    }
-
-    [Serializable]
-    public struct ResetEpisode
-    {
-        public bool reset_episode;
-    }
-
-    [Serializable]
-    public struct EndSimulation
-    {
-        public bool end_simulation;
-    }
-
-    [Serializable]
-    public struct ServerModelReady
-    {
-        public bool model_ready;
-    }
-
-    private void ProcessData(IAsyncResult result)
-    {
-        try
-        {
-            int _byteLength = stream.EndRead(result);
-
-            if (_byteLength <= 0)
-            {
-                if (client.Connected)
-                {
-                    client.Close();
-                    return;
-                }
-            }
-
-            byte[] _data = new byte[_byteLength];
-            Array.Copy(receive_buffer, _data, _byteLength);          
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Disconnect();
-            return;
         }
     }
 }

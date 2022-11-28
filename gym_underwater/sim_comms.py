@@ -1,3 +1,4 @@
+import base64
 import logging
 import time
 import json
@@ -155,17 +156,18 @@ class UnitySimHandler:
         return
 
     def on_telemetry(self, payload):
-        self.rover_pos = np.array([payload["position"]["x"], payload["position"]["y"], payload["position"]["z"]])
+        self.rover_pos = np.array([payload["position"][0], payload["position"][1], payload["position"][2]])
         self.hit = payload["collision_objects"]
-        self.rover_fwd = np.array([payload["fwd"]["x"], payload["fwd"]["y"], payload["fwd"]["z"]])
+        self.rover_fwd = np.array([payload["fwd"][0], payload["fwd"][1], payload["fwd"][2]])
 
         # TODO: implement receiving data on multiple targets
         # Sam.A, targets are now an array, use the last element of it for targeting
         for target in payload["targets"]:
-            self.target_pos = np.array([target["position"]["x"], target["position"]["y"], target["position"]["z"]])
-            self.target_fwd = np.array([target["fwd"]["x"], target["fwd"]["y"], target["fwd"]["z"]])
+            self.target_pos = np.array([target["position"][0], target["position"][1], target["position"][2]])
+            self.target_fwd = np.array([target["fwd"][0], target["fwd"][1], target["fwd"][2]])
 
-        image = bytearray(payload["jpg_image"])
+        image = bytearray(base64.b64decode(payload["jpg_image"]))
+
         self.image_array = np.array(Image.open(BytesIO(image)))
 
         if self.server.debug_config["save_images"]:
@@ -179,13 +181,15 @@ class UnitySimHandler:
         action_msg = {
             "msgType": "receive_json_controls",
             "payload": {
-                "lateralThrust": '0',
-                "verticalThrust": '0',
-                "forwardThrust": action[0].__str__(),
-                "pitchThurst": '0',
-                "yawThrust": action[1].__str__(),
-                "rollThrust": '0',
-                "depthHoldMode": '1'
+                "jsonControls": {
+                    "lateralThrust": '0',
+                    "verticalThrust": '0',
+                    "forwardThrust": action[0].__str__(),
+                    "pitchThurst": '0',
+                    "yawThrust": action[1].__str__(),
+                    "rollThrust": '0',
+                    "depthHoldMode": '1'
+                }
             }
         }
         self.server.msg = json.dumps(action_msg)

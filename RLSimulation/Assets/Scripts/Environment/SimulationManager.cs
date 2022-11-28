@@ -1,16 +1,21 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 using static Server;
 using static ThirdPersonMovement;
 using AsyncOperation = UnityEngine.AsyncOperation;
 using Cursor = UnityEngine.Cursor;
+using Image = UnityEngine.UI.Image;
 using Random = UnityEngine.Random;
+using Slider = UnityEngine.UI.Slider;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
@@ -79,9 +84,9 @@ public class SimulationManager : Singleton<SimulationManager>
 
     /* Local configs for reading */
     [HideInInspector]
-    public JsonMessage<DebugConfig> debug_config;
+    public DebugConfig debug_config;
 
-    [Serializable]
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct NetworkConfig
     {
         public string host;
@@ -90,7 +95,7 @@ public class SimulationManager : Singleton<SimulationManager>
     }
 
     [HideInInspector]
-    public JsonMessage<NetworkConfig> network_config;
+    public NetworkConfig network_config;
 
     public bool IsInitialized { get; private set; }
 
@@ -106,7 +111,7 @@ public class SimulationManager : Singleton<SimulationManager>
         Time.timeScale = 0;
     }
 
-    public void OnActionReceived(JsonMessage<JsonControls> param)
+    public void OnActionReceived(JsonMessage param)
     {
         _instance.server.actions_received++;
         Time.timeScale = 1;
@@ -117,23 +122,21 @@ public class SimulationManager : Singleton<SimulationManager>
         processing_obj.SetActive(e == null);
         processing_obj.GetComponentInChildren<TextMeshProUGUI>().text = "Model initialising...";
 
-        await Task.Run(() => server.ContinueRead());
+        await Task.Run(() => server.ContinueReadWrite());
         // TODO Clean up server caches
     }
 
-    public async void OnServerConfigReceived(JsonMessage<ServerConfig> param)
+    public void OnServerConfigReceived(JsonMessage param)
     {
         _instance.server.json_server_config = param;
 
-        if (_instance.server.IsTcpGood())
+        if (_instance.server != null && _instance.server.IsTcpGood())
         {
-            DataToSend<ServerConfigReceivedData> data = new DataToSend<ServerConfigReceivedData>
+            _instance.server.obsv = new DataToSend
             {
                 msg_type = "server_config_received",
-                payload = { }
+                payload = new Telemetary_Data { }
             };
-
-            await _instance.server.SendDataAsync(data);
         }
     }
 
@@ -175,8 +178,8 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.ProcessConfig(ref _instance.debug_config, _instance.debug_config_dir);
         _instance.ProcessConfig(ref _instance.network_config, _instance.network_config_dir);
-        _instance.PurgeAndCreateDirectory(_instance.debug_config.payload.packet_sent_dir);
-        _instance.PurgeAndCreateDirectory(_instance.debug_config.payload.image_dir);
+        _instance.PurgeAndCreateDirectory(_instance.debug_config.packet_sent_dir);
+        _instance.PurgeAndCreateDirectory(_instance.debug_config.image_dir);
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
@@ -207,7 +210,7 @@ public class SimulationManager : Singleton<SimulationManager>
     public async void ConnectToServer(string ip, int port)
     {
         server = new Server();
-        Exception e = await server.Connect(network_config.payload, ip, port);
+        Exception e = await server.Connect(network_config, ip, port);
         EventMaster._instance.server_connection_attempt_event.Raise(e);
     }
 
@@ -389,16 +392,16 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void MonitorAndFireServerEvents()
     {
+        if (_instance.server.json_server_config.is_overriden)
+        {
+            EventMaster._instance.server_config_received_event.Raise(_instance.server.json_server_config);
+            _instance.server.json_server_config.is_overriden = false;
+        }
+
         if (_instance.server.json_reset_episode.is_overriden)
         {
             EventMaster._instance.reset_episode_event.Raise();
             _instance.server.json_reset_episode.is_overriden = false;
-        }
-
-        if (_instance.server.json_end_simulation.is_overriden)
-        {
-            EventMaster._instance.end_simulation_event.Raise();
-            _instance.server.json_end_simulation.is_overriden = false;
         }
 
         if (_instance.server.json_rover_controls.is_overriden)
@@ -407,10 +410,26 @@ public class SimulationManager : Singleton<SimulationManager>
             _instance.server.json_rover_controls.is_overriden = false;
         }
 
-        if (_instance.server.json_server_config.is_overriden)
+        if (_instance.server.json_end_simulation.is_overriden)
         {
-            EventMaster._instance.server_config_received_event.Raise(_instance.server.json_server_config);
-            _instance.server.json_server_config.is_overriden = false;
+            EventMaster._instance.end_simulation_event.Raise();
+            _instance.server.json_end_simulation.is_overriden = false;
+        }
+
+        if (_instance.server.last_obsv != null)
+        {
+            switch (_instance.server.last_obsv.Value.msg_type)
+            {
+                case "on_server_config_received":
+                    break;
+                case "on_telemetry":
+                    EventMaster._instance.observation_sent_event.Raise();
+                    break;
+                default:
+                    break;
+            }
+
+            _instance.server.last_obsv = null;
         }
     }
 
@@ -437,46 +456,43 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void Clear_Cache()
     {
-        if (debug_config.msgType.Length > 0)
+        DirectoryInfo di = new DirectoryInfo(debug_config.packet_sent_dir);
+
+        if (di.Exists)
         {
-            DirectoryInfo di = new DirectoryInfo(debug_config.payload.packet_sent_dir);
+            FileInfo[] files = di.GetFiles();
+            foreach (FileInfo file in files)
+            {
+                file.Delete();
+            }
+        }
+        else
+        {
+            System.IO.Directory.CreateDirectory(di.FullName);
+        }
 
-            if (di.Exists)
-            {
-                FileInfo[] files = di.GetFiles();
-                foreach (FileInfo file in files)
-                {
-                    file.Delete();
-                }
-            }
-            else
-            {
-                System.IO.Directory.CreateDirectory(di.FullName);
-            }
+        di = new DirectoryInfo(debug_config.image_dir);
 
-            di = new DirectoryInfo(debug_config.payload.image_dir);
-
-            if (di.Exists)
+        if (di.Exists)
+        {
+            FileInfo[] files = di.GetFiles();
+            foreach (FileInfo file in files)
             {
-                FileInfo[] files = di.GetFiles();
-                foreach (FileInfo file in files)
-                {
-                    file.Delete();
-                }
+                file.Delete();
             }
-            else
-            {
-                Directory.CreateDirectory(di.FullName);
-            }
+        }
+        else
+        {
+            Directory.CreateDirectory(di.FullName);
         }
     }
 
-    public void ProcessConfig<T>(ref JsonMessage<T> config, string dir)
+    public void ProcessConfig<T>(ref T config, string dir)
     {
         using (StreamReader r = new StreamReader(dir))
         {
             string json = r.ReadToEnd();
-            config.payload = JsonUtility.FromJson<T>(json);
+            config = JsonConvert.DeserializeObject<T>(json);
         }
     }
 

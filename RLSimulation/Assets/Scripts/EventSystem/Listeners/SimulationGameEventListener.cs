@@ -8,28 +8,28 @@ using UnityEngine.UIElements;
 public class SimulationGameEventListener : GameEventListener
 {
     [SerializeField]
-    public UnityEvent reset_episode_unity_event;
-
-    [SerializeField]
-    public UnityEvent end_simulation_unity_event;
-
-    [SerializeField]
-    public ROVInitialisedUnityEvent rov_initialised_unity_event;
-
-    [SerializeField]
-    public JsonServerConfigUnityEvent server_config_received_unity_event;
-
-    [SerializeField]
     public ServerConnectingUnityEvent server_connecting_unity_event;
 
     [SerializeField]
     public ExceptionUnityEvent server_connection_attempted_unity_event;
 
     [SerializeField]
-    public JsonControlUnityEvent json_control_unity_event;
+    public JsonDataUnityEvent server_config_received_unity_event;
+
+    [SerializeField]
+    public UnityEvent reset_episode_unity_event;
+
+    [SerializeField]
+    public ROVInitialisedUnityEvent rov_initialised_unity_event;
+
+    [SerializeField]
+    public JsonDataUnityEvent json_control_unity_event;
 
     [SerializeField]
     public UnityEvent observation_sent_unity_event;
+
+    [SerializeField]
+    public UnityEvent end_simulation_unity_event;
 
     public override void OnEnable()
     {
@@ -64,7 +64,7 @@ public class SimulationGameEventListener : GameEventListener
         rov_initialised_unity_event.Invoke(obj);
     }
 
-    public void OnServerConfigReceivedEventRasied(JsonMessage<ServerConfig> param)
+    public void OnServerConfigReceivedEventRasied(JsonMessage param)
     {
         server_config_received_unity_event.Invoke(param);
     }
@@ -79,7 +79,7 @@ public class SimulationGameEventListener : GameEventListener
         server_connection_attempted_unity_event.Invoke(e);
     }
 
-    public void OnJsonControlEventRaised(JsonMessage<JsonControls> msg)
+    public void OnJsonControlEventRaised(JsonMessage msg)
     {
         json_control_unity_event.Invoke(msg);
     }

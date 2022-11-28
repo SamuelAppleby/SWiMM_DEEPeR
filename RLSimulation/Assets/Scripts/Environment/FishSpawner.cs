@@ -141,10 +141,10 @@ public class FishSpawner : MonoBehaviour
 
     private void TakeServerOverrides()
     {
-        m_spawn_timer = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.spawnTimer;
-        m_spawn_container_ratio = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.spawnContainerRatio;
-        spawn_radius = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.spawnRadius;
-        ai_groups = SimulationManager._instance.server.json_server_config.payload.envConfig.faunaConfig.aiGroups;
+        m_spawn_timer = SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.faunaConfig.spawnTimer;
+        m_spawn_container_ratio = SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.faunaConfig.spawnContainerRatio;
+        spawn_radius = SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.faunaConfig.spawnRadius;
+        ai_groups = SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.faunaConfig.aiGroups;
 
         foreach (AIGroup group in ai_groups)
         {

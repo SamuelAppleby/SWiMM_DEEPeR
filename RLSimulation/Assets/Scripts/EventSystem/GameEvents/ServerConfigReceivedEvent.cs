@@ -6,7 +6,7 @@ using static Server;
 [CreateAssetMenu]
 public class ServerConfigReceivedEvent : GameEvent
 {
-    public void Raise(JsonMessage<ServerConfig> param)
+    public void Raise(JsonMessage param)
     {
         foreach (SimulationGameEventListener l in listeners)
         {

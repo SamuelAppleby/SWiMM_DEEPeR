@@ -7,183 +7,191 @@
         "payload": {
             "type": "object",
             "properties": {
-                "roverConfig": {
+                "server_config":{
                     "type": "object",
                     "properties": {
-                        "camConfig": {
+                        "roverConfig": {
                             "type": "object",
                             "properties": {
-                                "resolution": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "number"
+                                "camConfig": {
+                                    "type": "object",
+                                    "properties": {
+                                        "resolution": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                        },
+                                        "fov": {
+                                            "type": "number"
+                                        }
                                     },
-                                    "minItems": 2,
-                                    "maxItems": 2
+                                    "required": [
+                                        "resolution",
+                                        "fov"
+                                    ]
                                 },
-                                "fov": {
-                                    "type": "number"
+                                "structureConfig": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ballastMass": {
+                                            "type": "number"
+                                        },
+                                        "totalBuoyantForce": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "required": [
+                                        "ballastMass",
+                                        "totalBuoyantForce"
+                                    ]
                                 }
                             },
                             "required": [
-                                "resolution",
-                                "fov"
+                                "camConfig",
+                                "structureConfig"
                             ]
                         },
-                        "structureConfig": {
+                        "envConfig": {
                             "type": "object",
                             "properties": {
-                                "ballastMass": {
-                                    "type": "number"
-                                },
-                                "totalBuoyantForce": {
-                                    "type": "number"
+                                "faunaConfig": {
+                                    "type": "object",
+                                    "properties": {
+                                        "spawnTimer": {
+                                            "type": "number"
+                                        },
+                                        "spawnContainerRatio": {
+                                            "type": "number"
+                                        },
+                                        "spawnRadius": {
+                                            "type": "number"
+                                        },
+                                        "boidGroups": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "prefabName": {
+                                                        "type": "string"
+                                                    },
+                                                    "prefabNum": {
+                                                        "type": "number"
+                                                    },
+                                                    "numGroups": {
+                                                        "type": "number"
+                                                    },
+                                                    "fragmentedGroup": {
+                                                        "type": "number"
+                                                    },
+                                                    "fragmentedInidividual": {
+                                                        "type": "number"
+                                                    },
+                                                    "soaring": {
+                                                        "type": "number"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "prefabName",
+                                                    "prefabNum",
+                                                    "numGroups",
+                                                    "fragmentedGroup",
+                                                    "fragmentedIndividual",
+                                                    "soaring"
+                                                ]
+                                            }
+                                        },
+                                        "aiGroups": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "prefabName": {
+                                                        "type": "string"
+                                                    },
+                                                    "maxAmount": {
+                                                        "type": "number"
+                                                    },
+                                                    "maxSpawn": {
+                                                        "type": "number"
+                                                    },
+                                                    "randomizeStats": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "enableSpawner": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "randomMovement": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "movementDirections" : {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "minItems": 3,
+                                                        "maxItems": 3
+                                                    },
+                                                    "spawnInfront" : {
+                                                        "type" : "boolean"
+                                                    },
+                                                    "rotationOffset": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "number"
+                                                        },
+                                                        "minItems": 3,
+                                                        "maxItems": 3
+                                                    },
+                                                    "scale": {
+                                                        "type": "number"
+                                                    },
+                                                    "minSpeed" : {
+                                                        "type": "number"
+                                                    },
+                                                    "maxSpeed" : {
+                                                        "type": "number"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "prefabName",
+                                                    "maxAmount",
+                                                    "maxSpawn",
+                                                    "randomizeStats",
+                                                    "enableSpawner",
+                                                    "randomMovement",
+                                                    "movementDirections",
+                                                    "spawnInfront",
+                                                    "rotationOffset",
+                                                    "scale",
+                                                    "minSpeed",
+                                                    "maxSpeed"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "spawnTimer",
+                                        "spawnContainerRatio",
+                                        "aiGroups"
+                                    ]
                                 }
                             },
                             "required": [
-                                "ballastMass",
-                                "totalBuoyantForce"
+                                "faunaConfig"
                             ]
                         }
                     },
                     "required": [
-                        "camConfig",
-                        "structureConfig"
-                    ]
-                },
-                "envConfig": {
-                    "type": "object",
-                    "properties": {
-                        "faunaConfig": {
-                            "type": "object",
-                            "properties": {
-                                "spawnTimer": {
-                                    "type": "number"
-                                },
-                                "spawnContainerRatio": {
-                                    "type": "number"
-                                },
-                                "spawnRadius": {
-                                    "type": "number"
-                                },
-                                "boidGroups": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "prefabName": {
-                                                "type": "string"
-                                            },
-                                            "prefabNum": {
-                                                "type": "number"
-                                            },
-                                            "numGroups": {
-                                                "type": "number"
-                                            },
-                                            "fragmentedGroup": {
-                                                "type": "number"
-                                            },
-                                            "fragmentedInidividual": {
-                                                "type": "number"
-                                            },
-                                            "soaring": {
-                                                "type": "number"
-                                            }
-                                        },
-                                        "required": [
-                                            "prefabName",
-                                            "prefabNum",
-                                            "numGroups",
-                                            "fragmentedGroup",
-                                            "fragmentedIndividual",
-                                            "soaring"
-                                        ]
-                                    }
-                                },
-                                "aiGroups": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "prefabName": {
-                                                "type": "string"
-                                            },
-                                            "maxAmount": {
-                                                "type": "number"
-                                            },
-                                            "maxSpawn": {
-                                                "type": "number"
-                                            },
-                                            "randomizeStats": {
-                                                "type": "boolean"
-                                            },
-                                            "enableSpawner": {
-                                                "type": "boolean"
-                                            },
-                                            "randomMovement": {
-                                                "type": "boolean"
-                                            },
-                                            "movementDirections" : {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "boolean"
-                                                },
-                                                "minItems": 3,
-                                                "maxItems": 3
-                                            },
-                                            "spawnInfront" : {
-                                                "type" : "boolean"
-                                            },
-                                            "rotationOffset": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "number"
-                                                },
-                                                "minItems": 3,
-                                                "maxItems": 3
-                                            },
-                                            "scale": {
-                                                "type": "number"
-                                            },
-                                            "minSpeed" : {
-                                                "type": "number"
-                                            },
-                                            "maxSpeed" : {
-                                                "type": "number"
-                                            }
-                                        },
-                                        "required": [
-                                            "prefabName",
-                                            "maxAmount",
-                                            "maxSpawn",
-                                            "randomizeStats",
-                                            "enableSpawner",
-                                            "randomMovement",
-                                            "movementDirections",
-                                            "spawnInfront",
-                                            "rotationOffset",
-                                            "scale",
-                                            "minSpeed",
-                                            "maxSpeed"
-                                        ]
-                                    }
-                                }
-                            },
-                            "required": [
-                                "spawnTimer",
-                                "spawnContainerRatio",
-                                "aiGroups"
-                            ]
-                        }
-                    },
-                    "required": [
-                        "faunaConfig"
+                        "roverConfig",
+                        "envConfig"
                     ]
                 }
             },
             "required": [
-                "roverConfig",
-                "envConfig"
+                "serverConfig"
             ]
         }
     },

@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 public class PlayerGameEventListener : GameEventListener
 {
     [SerializeField]
-    public JsonControlUnityEvent json_control_unity_event;
+    public JsonDataUnityEvent json_control_unity_event;
 
     [SerializeField]
     public UnityEvent ai_groups_complete_unity_event;
@@ -25,7 +25,7 @@ public class PlayerGameEventListener : GameEventListener
         base.OnDisable();
     }
 
-    public void OnJsonControlEventRaised(JsonMessage<JsonControls> msg)
+    public void OnJsonControlEventRaised(JsonMessage msg)
     {
         json_control_unity_event.Invoke(msg);
     }

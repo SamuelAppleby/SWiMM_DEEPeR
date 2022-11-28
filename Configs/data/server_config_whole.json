@@ -20,6 +20,16 @@
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,
           "spawnRadius": 50,
+          "boidGroups": [
+            {
+              "prefabName": "boid fish",
+              "prefabNum": 1000,
+              "numGroups": 3,
+              "fragmentedGroup": 50,
+              "fragmentedIndividual": 30,
+              "soaring": 1
+            }
+          ],
           "aiGroups": [
             {
               "prefabName": "dolphin",
@@ -41,11 +51,11 @@
               ],
               "scale": 4,
               "minSpeed": 3,
-              "maxSpeed": 5
+              "maxSpeed": 10
             },
             {
               "prefabName": "whale",
-              "maxAmount": 1,
+              "maxAmount": 2,
               "maxSpawn": 1,
               "enableSpawner": false,
               "randomMovement": true,

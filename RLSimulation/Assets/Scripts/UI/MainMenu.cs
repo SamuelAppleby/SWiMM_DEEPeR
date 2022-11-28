@@ -75,8 +75,8 @@ public class MainMenu : MonoBehaviour
         Cursor.visible = true;
         main_menu.SetActive(true);
         options_menu.SetActive(false);
-        ip_addr.text = SimulationManager._instance.network_config.payload.host;
-        port.text = SimulationManager._instance.network_config.payload.port.ToString();
+        ip_addr.text = SimulationManager._instance.network_config.host;
+        port.text = SimulationManager._instance.network_config.port.ToString();
         connect_text = connect_button.GetComponentInChildren<TextMeshProUGUI>();
         training_button_text = training_button.GetComponentInChildren<TextMeshProUGUI>();
         nn_button_text = nn_button.GetComponentInChildren<TextMeshProUGUI>();

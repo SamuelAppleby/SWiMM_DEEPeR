@@ -17,7 +17,7 @@ public class FloaterContainer : MonoBehaviour
     {
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
-            total_buoyant_strength = SimulationManager._instance.server.json_server_config.payload.roverConfig.structureConfig.totalBuoyantForce;
+            total_buoyant_strength = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.totalBuoyantForce;
         }
 
         m_collider = GetComponent<Collider>();

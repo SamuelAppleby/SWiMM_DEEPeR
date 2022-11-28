@@ -1,12 +1,15 @@
 using Cinemachine;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using static Server;
+using static ThirdPersonMovement;
 
 [RequireComponent(typeof(Rigidbody))][RequireComponent(typeof(FloaterContainer))]
 public class ThirdPersonMovement : MonoBehaviour
@@ -28,7 +31,7 @@ public class ThirdPersonMovement : MonoBehaviour
     public LayerMask water_mask;
     public LayerMask ground_mask;
 
-    private List<string> collision_objects = new List<string>();
+    private List<string> collision_objects_list = new List<string>();
     private bool m_IsUnderwater;
     private bool m_is_grounded;
 
@@ -50,12 +53,12 @@ public class ThirdPersonMovement : MonoBehaviour
     public Vector3 desiredRotation;
 
     public Material underwater_skybox_mat;
-
     public Material ground_skybox_mat;
 
     public PostProcessVolume volume;
 
     private ColorGrading m_colour_grading;
+
     private Color m_color_grading_filter_start;
     private float max_depth = 1000;
     public GameObject water_collider;
@@ -79,16 +82,18 @@ public class ThirdPersonMovement : MonoBehaviour
 
     public Controls_Audio audios;
 
-    public void OnJsonControls(JsonMessage<JsonControls> param)
+    public void OnJsonControls(JsonMessage param)
     {
-        linear_force_to_be_applied = new Vector3(param.payload.lateralThrust, param.payload.verticalThrust, param.payload.forwardThrust);
-        angular_force_to_be_applied = new Vector3(param.payload.pitchThrust, param.payload.yawThrust, param.payload.rollThrust);
+        linear_force_to_be_applied = new Vector3(param.payload.jsonControls.lateralThrust, 
+            param.payload.jsonControls.verticalThrust, param.payload.jsonControls.forwardThrust);
+        angular_force_to_be_applied = new Vector3(param.payload.jsonControls.pitchThrust, 
+            param.payload.jsonControls.yawThrust, param.payload.jsonControls.rollThrust);
 
         /* Simulate joystick output with boolean values */
         angular_force_to_be_applied.x = angular_force_to_be_applied.x < 0.5 && angular_force_to_be_applied.x > -0.5 ? 0 : angular_force_to_be_applied.x <= -0.5 ? -1 : 1;    
         angular_force_to_be_applied.z = angular_force_to_be_applied.z < 0.5 && angular_force_to_be_applied.z > -0.5 ? 0 : angular_force_to_be_applied.z <= -0.5 ? -1 : 1;
 
-        if (param.payload.depthHoldMode < 0 && m_depth_hold_mode || param.payload.depthHoldMode >= 0 && !m_depth_hold_mode)
+        if (param.payload.jsonControls.depthHoldMode < 0 && m_depth_hold_mode || param.payload.jsonControls.depthHoldMode >= 0 && !m_depth_hold_mode)
         {
             ToggleDepthHoldMode();
         }
@@ -123,10 +128,10 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
-            firstPersonCam.fieldOfView = SimulationManager._instance.server.json_server_config.payload.roverConfig.camConfig.fov;
-            resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.roverConfig.camConfig.resolution[0],
-                SimulationManager._instance.server.json_server_config.payload.roverConfig.camConfig.resolution[1]);
-            m_RigidBody.mass += SimulationManager._instance.server.json_server_config.payload.roverConfig.structureConfig.ballastMass;
+            firstPersonCam.fieldOfView = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.fov;
+            resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0],
+                SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]);
+            m_RigidBody.mass += SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.ballastMass;
         }
 
         yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
@@ -257,36 +262,6 @@ public class ThirdPersonMovement : MonoBehaviour
         }
     }
 
-    [Serializable]
-    public struct DataToSend<T>
-    {
-        public string msg_type;
-        public T payload;
-    }
-
-    [Serializable]
-    public struct ServerConfigReceivedData
-    {
-    }
-
-    [Serializable]
-    public struct Telemetary_Data
-    {
-        public int sequence_num;
-        public byte[] jpg_image;
-        public Vector3 position;
-        public string[] collision_objects;
-        public Vector3 fwd;
-        public TargetObject[] targets;
-    }
-
-    [Serializable]
-    public struct TargetObject
-    {
-        public Vector3 position;
-        public Vector3 fwd;
-    }
-
     public bool environment_ready;
 
     private Texture2D current_screenshot;
@@ -314,7 +289,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (save_image)
         {
-            File.WriteAllBytes(SimulationManager._instance.debug_config.payload.image_dir + "sent_image" + manual_screenshot_count.ToString() + ".jpg", screen_shot.EncodeToJPG());
+            File.WriteAllBytes(SimulationManager._instance.debug_config.image_dir + "sent_image" + manual_screenshot_count.ToString() + ".jpg", screen_shot.EncodeToJPG());
             manual_screenshot_count++;
         }
 
@@ -325,7 +300,7 @@ public class ThirdPersonMovement : MonoBehaviour
     {
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood())
         {
-            yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.payload.save_images));
+            yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.save_images));
 
             TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
             int pos = 0;
@@ -334,36 +309,31 @@ public class ThirdPersonMovement : MonoBehaviour
             {
                 targetPositions[pos] = new TargetObject
                 {
-                    position = trans.position,
-                    fwd = trans.forward
+                    position = new float[] { trans.position.x, trans.position.y, trans.position.z },
+                    fwd = new float[] { trans.forward.x, trans.forward.y, trans.forward.z }
                 };
                 pos++;
             }
 
-            DataToSend<Telemetary_Data> data = new DataToSend<Telemetary_Data>
+            SimulationManager._instance.server.obsv = new DataToSend
             {
                 msg_type = "on_telemetry",
                 payload = new Telemetary_Data
                 {
                     sequence_num = SimulationManager._instance.server.observations_sent,
                     jpg_image = current_screenshot.EncodeToJPG(),
-                    position = transform.position,
-                    collision_objects = collision_objects.ToArray(),
-                    fwd = transform.forward,
-                    targets = targetPositions,
+                    position = new float[] { transform.position.x, transform.position.y, transform.position.z },
+                    collision_objects = collision_objects_list.ToArray(),
+                    fwd = new float[] { transform.forward.x, transform.forward.y, transform.forward.z },
+                    targets = targetPositions
                 }
             };
-
-            Task task = SimulationManager._instance.server.SendDataAsync(data);
-            yield return new WaitUntil(() => task.IsCompleted);
-
-            EventMaster._instance.observation_sent_event.Raise();
         }
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        collision_objects.Add(collision.gameObject.tag);
+        collision_objects_list.Add(collision.gameObject.tag);
     }
 
     private void OnCollisionStay(Collision collision)
@@ -372,7 +342,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
-        collision_objects.Remove(collision.gameObject.tag);
+        collision_objects_list.Remove(collision.gameObject.tag);
     }
 
     private void OnTriggerEnter(Collider other)

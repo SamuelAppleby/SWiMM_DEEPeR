@@ -37,14 +37,8 @@ public class FishMovement : MonoBehaviour
         FindNewTarget();
     }
 
-    // Update is called once per frame
     private void Update()
     {
-        if (Input.GetKeyUp(KeyCode.L))
-        {
-            transform.position = new Vector3(50, 50, 50);
-        }
-
         if ((transform.position - SimulationManager._instance.rover.transform.position).magnitude > distance_threshold)
         {
             current_timer += Time.deltaTime;
@@ -100,13 +94,13 @@ public class FishMovement : MonoBehaviour
         Quaternion _lookRotation = Quaternion.LookRotation(_direction);
 
         //rotate us over time according to speed until we are in the required rotation
-        transform.rotation = Quaternion.Slerp(transform.rotation, _lookRotation, Time.deltaTime * turn_speed);
+        transform.rotation = Quaternion.Slerp(transform.rotation, _lookRotation, Time.fixedDeltaTime * turn_speed);
 
         //Quaternion q = transform.rotation;
         //q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
         //transform.rotation = q;
 
-        transform.position += correct_forward * Time.deltaTime * m_speed;
+        transform.position += correct_forward * Time.fixedDeltaTime * m_speed;
 
         if ((m_waypoint - transform.position).magnitude < 10)
         {
@@ -116,16 +110,16 @@ public class FishMovement : MonoBehaviour
         //Quaternion look_at = Quaternion.LookRotation(m_waypoint - transform.position);
         //Quaternion correction = Quaternion.Euler(rotation_offset);
 
-        //transform.rotation = Quaternion.Slerp(transform.rotation, look_at * correction, Time.deltaTime * turn_speed);
-        //transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.deltaTime);
+        //transform.rotation = Quaternion.Slerp(transform.rotation, look_at * correction, Time.fixedDeltaTime * turn_speed);
+        //transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.fixedDeltaTime);
 
         //if (Math.Abs(angle_z) > 5.0f)
         //{
-        //    //transform.RotateAround(transform.position, correct_forwards, angle_z * Time.deltaTime * turn_speed);
+        //    //transform.RotateAround(transform.position, correct_forwards, angle_z * Time.fixedDeltaTime * turn_speed);
         //}
         //if (transform.rotation.eulerAngles.z > 1.0f)
         //{
-        //    transform.RotateAround(transform.position, -correct_forwards, 50 * Time.deltaTime * turn_speed);
+        //    transform.RotateAround(transform.position, -correct_forwards, 50 * Time.fixedDeltaTime * turn_speed);
         //}
         //if (transform.rotation.eulerAngles.z < -1.0f)
         //{
@@ -133,9 +127,9 @@ public class FishMovement : MonoBehaviour
         //}
 
         //Quaternion lookOnLook = Quaternion.LookRotation(m_waypoint - transform.position);
-        //transform.rotation = Quaternion.Slerp(transform.rotation, lookOnLook, Time.deltaTime * turn_speed);       // another option
+        //transform.rotation = Quaternion.Slerp(transform.rotation, lookOnLook, Time.fixedDeltaTime * turn_speed);       // another option
 
-        //transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.deltaTime);
+        //transform.position = Vector3.MoveTowards(transform.position, m_waypoint, m_speed * Time.fixedDeltaTime);
     }
 
     private void FindNewTarget()

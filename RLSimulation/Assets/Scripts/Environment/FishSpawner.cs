@@ -216,7 +216,7 @@ public class FishSpawner : MonoBehaviour
                         fixed_rotation.GetComponent<FishMovement>().valid_movements = group.movementDirectionsVector;
                         temp_spawn.transform.localScale *= (group.scale * Random.Range(0.75f, 1.25f));
 
-                        SimulationManager._instance.rover.GetComponent<ThirdPersonMovement>().target_transforms.Add(fixed_rotation.transform);
+                        SimulationManager._instance.rover.GetComponent<ROVController>().target_transforms.Add(fixed_rotation.transform);
                         current_ai_count++;
 
                         current_progress = (float)current_ai_count / total_ai;

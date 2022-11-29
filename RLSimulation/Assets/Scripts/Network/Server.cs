@@ -17,6 +17,8 @@ public class Server
 
     public int actions_received = 0;
 
+    public int resets_received = 0;
+
     public bool first_observation_sent = false;
 
     byte[] receive_buffer;

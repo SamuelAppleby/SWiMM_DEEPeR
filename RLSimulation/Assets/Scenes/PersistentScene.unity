@@ -980,24 +980,10 @@ MonoBehaviour:
   avgFrameRate: 0
   processing_obj: {fileID: 1582158832}
   debug_config:
-    msgType: 
-    payload:
-      save_images: 0
-      image_dir: 
-      save_sent_packets: 0
-      packet_sent_dir: 
-    is_overriden: 0
-  network_config:
-    msgType: 
-    payload:
-      host: 
-      port: 0
-      buffers:
-        server_send_buffer_size_kb: 0
-        client_receive_buffer_size_kb: 0
-        server_receive_buffer_size_kb: 0
-        client_send_buffer_size_kb: 0
-    is_overriden: 0
+    save_images: 0
+    image_dir: 
+    save_sent_packets: 0
+    packet_sent_dir: 
   lighting_objs: []
   water_objs: []
 --- !u!4 &1373481078
@@ -1028,66 +1014,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   game_events: []
-  reset_episode_unity_event:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1373481077}
-        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
-        m_MethodName: EpisodeReset
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  end_simulation_unity_event:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1373481077}
-        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
-        m_MethodName: EndSimulation
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  rov_initialised_unity_event:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1373481077}
-        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
-        m_MethodName: OnROVInitialised
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  server_config_received_unity_event:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1373481077}
-        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
-        m_MethodName: OnServerConfigReceived
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   server_connecting_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -1145,6 +1071,51 @@ MonoBehaviour:
       - m_Target: {fileID: 1373481077}
         m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
         m_MethodName: OnServerConnectionResponse
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  server_config_received_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: OnServerConfigReceived
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  reset_episode_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: EpisodeReset
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  rov_initialised_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: OnROVInitialised
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1231,6 +1202,21 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 1
+        m_CallState: 2
+  end_simulation_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: EndSimulation
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1373481080
 MonoBehaviour:

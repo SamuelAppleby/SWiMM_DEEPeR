@@ -9,7 +9,7 @@ public class GameUI : MonoBehaviour
     private FishSpawner spawner;
 
     [SerializeField]
-    private ThirdPersonMovement third_person_movement;
+    private ROVController third_person_movement;
 
     [SerializeField]
     private TextMeshProUGUI fps_value_text;
@@ -21,7 +21,19 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI actions_received;
 
     [SerializeField]
-    private TextMeshProUGUI depth_hold_mode_text;
+    private TextMeshProUGUI resets_received;
+
+    [SerializeField]
+    private TextMeshProUGUI position_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI orienation_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI linear_velocity_value_text;
+
+    [SerializeField]
+    private TextMeshProUGUI angular_velocity_value_text;
 
     [SerializeField]
     private TextMeshProUGUI movement_input_value_text;
@@ -30,16 +42,13 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI rotation_input_value_text;
 
     [SerializeField]
+    private TextMeshProUGUI depth_hold_mode_text;
+
+    [SerializeField]
     private TextMeshProUGUI movement_value_text;
 
     [SerializeField]
     private TextMeshProUGUI rotation_value_text;
-
-    [SerializeField]
-    private TextMeshProUGUI position_value_text;
-
-    [SerializeField]
-    private TextMeshProUGUI orienation_value_text;
 
     [SerializeField]
     private TextMeshProUGUI water_shader_text;
@@ -61,15 +70,18 @@ public class GameUI : MonoBehaviour
         {
             observations_sent.text = SimulationManager._instance.server.observations_sent.ToString();
             actions_received.text = SimulationManager._instance.server.actions_received.ToString();
+            resets_received.text = SimulationManager._instance.server.resets_received.ToString();
         }
 
-        depth_hold_mode_text.text = third_person_movement.m_depth_hold_mode.ToString();
-        movement_input_value_text.text = third_person_movement.linear_force_to_be_applied.ToString();
-        rotation_input_value_text.text = third_person_movement.angular_force_to_be_applied.ToString();
-        movement_value_text.text = third_person_movement.desiredMove.ToString();
-        rotation_value_text.text = third_person_movement.desiredRotation.ToString();
         position_value_text.text = third_person_movement.transform.position.ToString();
         orienation_value_text.text = third_person_movement.transform.rotation.eulerAngles.ToString();
+        linear_velocity_value_text.text = third_person_movement.m_RigidBody.velocity.ToString();
+        angular_velocity_value_text.text = third_person_movement.m_RigidBody.angularVelocity.ToString();
+        movement_input_value_text.text = third_person_movement.linear_force_to_be_applied.ToString();
+        rotation_input_value_text.text = third_person_movement.angular_force_to_be_applied.ToString();
+        depth_hold_mode_text.text = third_person_movement.m_depth_hold_mode.ToString();
+        movement_value_text.text = third_person_movement.desiredMove.ToString();
+        rotation_value_text.text = third_person_movement.desiredRotation.ToString();
 
         if (SimulationManager._instance.water_objs.Length > 0)
         {

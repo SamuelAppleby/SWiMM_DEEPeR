@@ -18,7 +18,7 @@ public class LoadingAnimation : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        start_time += Time.deltaTime;
+        start_time += Time.unscaledDeltaTime;
 
         if(start_time >= time_step)
         {

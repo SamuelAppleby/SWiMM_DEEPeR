@@ -2,15 +2,11 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
 using static Server;
-using static ThirdPersonMovement;
 using AsyncOperation = UnityEngine.AsyncOperation;
 using Cursor = UnityEngine.Cursor;
 using Image = UnityEngine.UI.Image;
@@ -142,6 +138,8 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void EpisodeReset(bool in_manual)
     {
+        _instance.server.resets_received++;
+
         switch (current_scene_index)
         {
             case SceneIndices.MAIN_MENU:

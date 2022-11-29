@@ -131,7 +131,7 @@ class PythonServer():
             while self.msg is None:
                 time.sleep(1.0 / 120.0)
 
-            print('Sending: {}'.format(self.msg.encode('utf-8')))
+            print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
             self.conn.sendall(self.msg.encode('utf-8'))
 
             self.msg = None

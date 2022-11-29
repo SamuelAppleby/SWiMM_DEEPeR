@@ -28,7 +28,7 @@ class SACWrap(SAC):
         train_start = time.time()
         mb_infos_vals = []
 
-        if step >= self.batch_size and step >= self.learning_starts:
+        if step+1 >= self.batch_size and step+1 >= self.learning_starts:
             print('We are now optimizing')
 
             for grad_step in range(self.gradient_steps):

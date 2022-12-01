@@ -1,6 +1,7 @@
 {
+    "protocol" : "udp",
     "host" : "127.0.0.1",
-    "port" : 60260,
+    "port" : 60261,
 
     "buffers": {
         "server_send_buffer_size_kb" : 128,

@@ -38,4 +38,8 @@ sysinfo.txt
 
 *.jpeg
 
-gym_underwater/Logs/sac
+gym_underwater/Logs/
+RLSimulation/Logs/
+RLSimulation/Logs/Builds/Logs/
+RLSimulation/Builds/Windows/Logs
+RLSimulation/Builds/Linux/Logs

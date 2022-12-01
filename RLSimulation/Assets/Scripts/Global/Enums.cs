@@ -15,3 +15,9 @@ public enum InitialisationStage
     INITIALISING_NPCS = 0, 
     SPAWNING_NPCS = 1
 }
+
+public enum Protocol
+{
+    UDP = 0,
+    TCP = 1
+}

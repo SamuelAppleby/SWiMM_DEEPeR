@@ -1,17 +1,16 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using static Server;
 using AsyncOperation = UnityEngine.AsyncOperation;
-using Cursor = UnityEngine.Cursor;
-using Image = UnityEngine.UI.Image;
 using Random = UnityEngine.Random;
-using Slider = UnityEngine.UI.Slider;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
@@ -82,9 +81,17 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public DebugConfig debug_config;
 
+    Dictionary<string, Protocol> protocol_mapping = new Dictionary<string, Protocol>
+    {
+        { "udp", Protocol.UDP },
+        { "tcp", Protocol.TCP }
+    };
+
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct NetworkConfig
     {
+        public Protocol e_protocol;
+        public string protocol;
         public string host;
         public int port;
         public Buffers buffers;
@@ -176,6 +183,9 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.ProcessConfig(ref _instance.debug_config, _instance.debug_config_dir);
         _instance.ProcessConfig(ref _instance.network_config, _instance.network_config_dir);
+
+        _instance.network_config.e_protocol = protocol_mapping[_instance.network_config.protocol];
+
         _instance.PurgeAndCreateDirectory(_instance.debug_config.packet_sent_dir);
         _instance.PurgeAndCreateDirectory(_instance.debug_config.image_dir);
 

@@ -18,10 +18,9 @@ class UnitySimCommunicator:
     def __init__(self):
         logger.setLevel(logging.INFO)
         self.handler = UnitySimHandler()
-        self.server = PythonServer(self.handler)
 
     def wait_until_loaded(self):
-        while self.handler.server is None:
+        while not self.handler.server_connected:
             logger.warning("waiting for sim ..")
             time.sleep(1.0)
 
@@ -35,7 +34,7 @@ class UnitySimCommunicator:
         return self.handler.observe()
 
     def quit(self):
-        self.server.stop()
+        self.handler.server.stop()
 
     def render(self):
         pass
@@ -47,7 +46,8 @@ class UnitySimCommunicator:
 class UnitySimHandler:
 
     def __init__(self):
-        self.server = None
+        self.server_connected = False
+        self.server = PythonServer(self)
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
         self.hit = []
@@ -59,6 +59,7 @@ class UnitySimHandler:
         self.a = 0.0
 
         self.fns = {
+            "connection_request": self.connection_request,
             'server_config_received': self.server_config_confirmation,
             "on_telemetry": self.on_telemetry
         }
@@ -129,9 +130,9 @@ class UnitySimHandler:
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-    def on_connect(self, server):
+    def on_connect(self):
         logger.debug("socket connected")
-        self.server = server
+        self.server_connected = True
 
     def on_disconnect(self):
         logger.debug("socket disconnected")
@@ -151,6 +152,12 @@ class UnitySimHandler:
             self.fns[msg_type](payload)
         else:
             logger.warning(f"unknown message type {msg_type}")
+
+    def connection_request(self, payload):
+        # let handler know when connection has been made
+        self.on_connect()
+        self.send_server_config()
+        return
 
     def server_config_confirmation(self, payload):
         return

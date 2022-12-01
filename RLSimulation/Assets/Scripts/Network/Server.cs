@@ -1,12 +1,11 @@
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using static Server;
-using static SimulationManager;
 using Task = System.Threading.Tasks.Task;
 
 public class Server
@@ -25,7 +24,10 @@ public class Server
 
     public NetworkStream stream = null;
 
-    public TcpClient client;
+    public TcpClient tcp_client = null;
+
+    public UdpClient udp_client = null;
+
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct ServerConfig
@@ -171,37 +173,63 @@ public class Server
 
     public bool IsTcpGood()
     {
-        return (client != null) && (stream != null);
+        return udp_client != null ? true : stream != null;
     }
 
     public void Disconnect()
     {
-        client.Close();
+        if(udp_client != null)
+        {
+            udp_client.Close();
+        }
+        else
+        {
+            tcp_client.Close();
+        }
+
         stream = null;
         server_crash = true;
         return;
     }
 
-    public async Task<Exception> Connect(NetworkConfig network_config, string ip, int port)
+    public async Task<Exception> Connect(SimulationManager.NetworkConfig network_config, string ip, int port)
     {
-        client = new TcpClient
+        if(network_config.e_protocol == Protocol.UDP)
         {
-            ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
-            SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024
-        };
+            udp_client = new UdpClient();
 
-        receive_buffer = new byte[client.ReceiveBufferSize];
-
-        try
-        {
-            await client.ConnectAsync(ip, port);
-            stream = client.GetStream();
-            return null;
+            try
+            {
+                udp_client.Connect(ip, port);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return ex;
+            }
         }
-        catch (Exception ex)
+        else
         {
-            Debug.LogException(ex);
-            return ex;
+            tcp_client = new TcpClient
+            {
+                ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
+                SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024
+            };
+
+            receive_buffer = new byte[tcp_client.ReceiveBufferSize];
+
+            try
+            {
+                await tcp_client.ConnectAsync(ip, port);
+                stream = tcp_client.GetStream();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return ex;
+            }
         }
     }
 
@@ -228,19 +256,69 @@ public class Server
     {
         try
         {
+            obsv = new DataToSend
+            {
+                msg_type = "connection_request",
+                payload = new Telemetary_Data { }
+            };
+
             while (IsTcpGood())
             {
-                /* Reading */
-                int bytes_read = await stream.ReadAsync(receive_buffer, 0, receive_buffer.Length);
+                /* Writing */
+                await WaitUntilAsync(DataReadyToSend);
 
-                if (bytes_read == 0)
+                string json_str_data_to_send = JsonConvert.SerializeObject(obsv.Value);
+
+                try
                 {
-                    await Task.Yield();
-                    break;
+                    if (SimulationManager._instance.debug_config.save_sent_packets)
+                    {
+                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packet_sent_dir + "sent_data_" + observations_sent.ToString() + ".json", json_str_data_to_send);
+                    }
+
+                    Debug.Log("Sending: " + json_str_data_to_send);
+                    byte[] _data = Encoding.UTF8.GetBytes(json_str_data_to_send);
+
+                    if(udp_client != null)
+                    {
+                        await udp_client.SendAsync(_data, _data.Length);
+                    }
+                    else
+                    {
+                        await stream.WriteAsync(_data, 0, _data.Length);
+                    }
+
+                    last_obsv = obsv;
+                    obsv = null;
                 }
 
-                string jsonStr = Encoding.Default.GetString(receive_buffer);
-                Array.Clear(receive_buffer, 0, receive_buffer.Length);
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+
+                /* Reading */
+                string jsonStr = "";
+
+                if (udp_client != null)
+                {
+                    UdpReceiveResult result = await udp_client.ReceiveAsync();
+                    jsonStr = Encoding.ASCII.GetString(result.Buffer, 0, result.Buffer.Length);
+                    IPEndPoint sender = result.RemoteEndPoint;
+                }
+                else
+                {
+                    int bytes_read = await stream.ReadAsync(receive_buffer, 0, receive_buffer.Length);
+
+                    if (bytes_read == 0)
+                    {
+                        await Task.Yield();
+                        break;
+                    }
+
+                    jsonStr = Encoding.Default.GetString(receive_buffer);
+                    Array.Clear(receive_buffer, 0, receive_buffer.Length);
+                }
 
                 if (jsonStr != null)
                 {
@@ -252,7 +330,6 @@ public class Server
                         switch (message.msgType)
                         {
                             case "process_server_config":
-                                //CastAndOverride(message, ref json_server_config);
                                 json_server_config = message;
                                 json_server_config.is_overriden = true;
                                 break;
@@ -277,31 +354,6 @@ public class Server
                     {
                         Debug.LogException(e);
                     }
-                }
-
-                /* Writing */
-                await WaitUntilAsync(DataReadyToSend);
-
-                string json_str_data_to_send = JsonConvert.SerializeObject(obsv.Value);
-
-                try
-                {
-                    if (SimulationManager._instance.debug_config.save_sent_packets)
-                    {
-                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packet_sent_dir + "sent_data_" + observations_sent.ToString() + ".json", json_str_data_to_send);
-                    }
-
-                    Debug.Log("Sending: " + json_str_data_to_send);
-                    byte[] _packet = Encoding.UTF8.GetBytes(json_str_data_to_send);
-                    await stream.WriteAsync(_packet, 0, _packet.Length);
-
-                    last_obsv = obsv;
-                    obsv = null;
-                }
-
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
                 }
             }
 

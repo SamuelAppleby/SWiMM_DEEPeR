@@ -58,7 +58,6 @@ public class SimulationManager : Singleton<SimulationManager>
         public string ip;
         public int port;
         public bool save_packet_data;
-        public bool server_set;
     }
 
     public struct CommandLineArguemnts
@@ -181,6 +180,8 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.network_config_dir = "../../../Configs/data/network_config.json";
 #endif
 
+        _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
+
         _instance.ProcessConfig(ref _instance.debug_config, _instance.debug_config_dir);
         _instance.ProcessConfig(ref _instance.network_config, _instance.network_config_dir);
 
@@ -194,8 +195,6 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.server = null;
         _instance.in_manual_mode = true;
-
-        _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
         _instance.IsInitialized = true;
     }
@@ -511,17 +510,20 @@ public class SimulationManager : Singleton<SimulationManager>
             switch (args[i])
             {
                 case "server":
-                    if (i < args.Length)
-                    {
-                        string[] parts = args[++i].Split(':');
+                    string[] parts = args[++i].Split(':');
 
-                        if (parts.Length == 2)
-                        {
-                            command_args.server_info.ip = parts[0];
-                            command_args.server_info.port = Int32.Parse(parts[1]);
-                            command_args.server_info.server_set = true;
-                        }
+                    if (parts.Length == 2)
+                    {
+                        _instance.command_args.server_info.ip = parts[0];
+                        _instance.command_args.server_info.port = Int32.Parse(parts[1]);
                     }
+                    break;
+                case "debug_conf_dir":
+                    _instance.debug_config_dir = args[++i];
+                    break;
+
+                case "network_conf_dir":
+                    _instance.network_config_dir = args[++i];
                     break;
             }
         }

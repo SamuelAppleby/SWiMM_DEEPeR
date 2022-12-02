@@ -57,6 +57,9 @@
                         "envConfig": {
                             "type": "object",
                             "properties": {
+                                "freezeOnTelemetry":{
+                                    "type": "boolean"
+                                },
                                 "faunaConfig": {
                                     "type": "object",
                                     "properties": {
@@ -180,6 +183,7 @@
                                 }
                             },
                             "required": [
+                                "freezeOnTelemetry",
                                 "faunaConfig"
                             ]
                         }

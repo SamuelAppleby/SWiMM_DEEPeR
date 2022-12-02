@@ -16,6 +16,7 @@
         }
       },
       "envConfig": {
+        "freezeOnTelemetry" : false,
         "faunaConfig": {
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,

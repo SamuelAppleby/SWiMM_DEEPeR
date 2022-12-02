@@ -37,7 +37,7 @@ public class GlobalControlSettings
 
         if (Input.GetKeyDown(GlobalControlMap.CursorLock))
         {
-            SimulationManager._instance.IndexWindow();
+            SimulationManager._instance.IndexCursor();
         }
 
         if (Input.GetKeyDown(GlobalControlMap.WaterToggle))

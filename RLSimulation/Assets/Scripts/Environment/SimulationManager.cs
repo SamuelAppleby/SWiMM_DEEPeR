@@ -110,13 +110,21 @@ public class SimulationManager : Singleton<SimulationManager>
     public void OnObservationSent()
     {
         _instance.server.observations_sent++;
-        Time.timeScale = 0;
+
+        if (_instance.server.json_server_config.payload.serverConfig.envConfig.freezeOnTelemetry)
+        {
+            Time.timeScale = 0;
+        }
     }
 
     public void OnActionReceived(JsonMessage param)
     {
         _instance.server.actions_received++;
-        Time.timeScale = 1;
+
+        if (_instance.server.json_server_config.payload.serverConfig.envConfig.freezeOnTelemetry)
+        {
+            Time.timeScale = 1;
+        }
     }
 
     public async void OnServerConnectionResponse(Exception e)
@@ -153,7 +161,6 @@ public class SimulationManager : Singleton<SimulationManager>
                 break;
             case SceneIndices.SIMULATION:
                 MoveToScene(SceneIndices.SIMULATION, in_manual);       // In this case will unload and reload as intended
-                Time.timeScale = 1;
                 break;
         }
     }

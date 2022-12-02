@@ -39,7 +39,7 @@ public class FishMovement : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.L))
+        if (Input.GetKeyDown(KeyCode.O))
         {
             transform.position = new Vector3(50, 50, 50);
         }

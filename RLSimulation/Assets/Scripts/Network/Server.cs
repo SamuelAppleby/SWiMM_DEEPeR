@@ -89,6 +89,7 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct EnvironmentConfig
     {
+        public bool freezeOnTelemetry;
         public FaunaConfig faunaConfig;
     }
 
@@ -146,11 +147,6 @@ public class Server
         public float yawThrust;
         public float rollThrust;
         public float depthHoldMode;
-    }
-
-    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
-    public struct DatalessMessage
-    {
     }
 
     /* Configs/Messages from server */
@@ -265,7 +261,6 @@ public class Server
             while (IsTcpGood())
             {
                 /* Writing */
-                Debug.Log("waiting to write");
                 await WaitUntilAsync(DataReadyToSend);
 
                 string json_str_data_to_send = JsonConvert.SerializeObject(obsv.Value);
@@ -303,7 +298,6 @@ public class Server
 
                 if (udp_client != null)
                 {
-                    Debug.Log("I AM WAITING");
                     UdpReceiveResult result = await udp_client.ReceiveAsync();
                     jsonStr = Encoding.ASCII.GetString(result.Buffer, 0, result.Buffer.Length);
                     IPEndPoint sender = result.RemoteEndPoint;

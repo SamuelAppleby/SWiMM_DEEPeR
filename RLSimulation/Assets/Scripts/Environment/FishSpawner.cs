@@ -118,6 +118,7 @@ public class FishSpawner : MonoBehaviour
 
     public void OnROVInitialised(GameObject rov)
     {
+        Debug.Log("ai spawner being initis");
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
             TakeServerOverrides();
@@ -128,7 +129,7 @@ public class FishSpawner : MonoBehaviour
 
         GetWaypoints();
         InitialiseGroups();
-        StartCoroutine(SpawnAllNPCs());
+        SpawnAllNPCs();
     }
 
     private void Update()
@@ -184,8 +185,9 @@ public class FishSpawner : MonoBehaviour
         }
     }
 
-    private IEnumerator SpawnAllNPCs()
+    private void SpawnAllNPCs()
     {
+        Debug.Log("i should be spawning");
         current_stage = InitialisationStage.SPAWNING_NPCS;
         current_progress = 0;
 
@@ -225,8 +227,7 @@ public class FishSpawner : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(.5f);
-
+        Debug.Log("raising the event");
         EventMaster._instance.ai_groups_complete_event.Raise();
 
         is_done = true;

@@ -9,6 +9,7 @@ public class AIGroupsCompleteEvent : GameEvent
     {
         foreach (PlayerGameEventListener l in listeners)
         {
+            Debug.Log("raising the event right now");
             l.OnAIGroupsCompleteEventRaised();
         }
     }

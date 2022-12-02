@@ -265,6 +265,7 @@ public class Server
             while (IsTcpGood())
             {
                 /* Writing */
+                Debug.Log("waiting to write");
                 await WaitUntilAsync(DataReadyToSend);
 
                 string json_str_data_to_send = JsonConvert.SerializeObject(obsv.Value);
@@ -302,6 +303,7 @@ public class Server
 
                 if (udp_client != null)
                 {
+                    Debug.Log("I AM WAITING");
                     UdpReceiveResult result = await udp_client.ReceiveAsync();
                     jsonStr = Encoding.ASCII.GetString(result.Buffer, 0, result.Buffer.Length);
                     IPEndPoint sender = result.RemoteEndPoint;

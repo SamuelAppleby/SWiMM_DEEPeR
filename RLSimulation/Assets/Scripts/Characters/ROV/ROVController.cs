@@ -94,6 +94,7 @@ public class ROVController : MonoBehaviour
             ToggleDepthHoldMode();
         }
 
+        Debug.Log("allocating because json");
         StartCoroutine(SendImageData());
     }
 
@@ -261,6 +262,7 @@ public class ROVController : MonoBehaviour
 
     public void OnAIGroupsComplete()
     {
+        Debug.Log("allocating because ai");
         StartCoroutine(SendImageData());
     }
 

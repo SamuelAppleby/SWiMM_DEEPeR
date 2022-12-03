@@ -7,6 +7,7 @@ import numpy as np
 import math
 from io import BytesIO
 from PIL import Image
+from skimage.transform import resize
 
 from gym_underwater.python_server import PythonServer
 from config import *
@@ -175,10 +176,16 @@ class UnitySimHandler:
 
         image = bytearray(base64.b64decode(payload["jpg_image"]))
 
-        self.image_array = np.array(Image.open(BytesIO(image)))
-
         if self.server.debug_config["save_images"]:
             self.write_image_to_file_incrementally(image)
+
+        image = np.array(Image.open(BytesIO(image)))
+
+        # scale image otherwise model optimisation takes approx 15 minutes
+        image = resize(image, IMG_SCALE, 0)
+
+        self.image_array = image
+
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -228,3 +235,7 @@ class UnitySimHandler:
             i += 1
         with open(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg"), "wb") as f:
             f.write(image)
+
+    
+
+

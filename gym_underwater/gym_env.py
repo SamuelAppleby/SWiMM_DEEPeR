@@ -7,6 +7,7 @@ from gym import spaces
 from gym.utils import seeding
 
 from gym_underwater.sim_comms import UnitySimCommunicator
+from config import IMG_SCALE
 
 warnings.filterwarnings("ignore", category=UserWarning, module='gym')
 
@@ -38,7 +39,7 @@ class UnderwaterEnv(gym.Env):
 
         # observation space declaration
         print("Declaring observation space")
-        self.observation_space = spaces.Box(low=0, high=255, shape=(256, 256, 3), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=IMG_SCALE, dtype=np.uint8)
 
         #     # seed environment
         #     #self.seed()

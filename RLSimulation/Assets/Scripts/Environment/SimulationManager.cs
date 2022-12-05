@@ -130,9 +130,6 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public async void OnServerConnectionResponse(Exception e)
     {
-        processing_obj.SetActive(e == null);
-        processing_obj.GetComponentInChildren<TextMeshProUGUI>().text = "Model initialising...";
-
         await Task.Run(() => server.ContinueReadWrite());
         // TODO Clean up server caches
     }
@@ -158,13 +155,14 @@ public class SimulationManager : Singleton<SimulationManager>
         switch (current_scene_index)
         {
             case SceneIndices.MAIN_MENU:
-                processing_obj.SetActive(false);
+                _instance.processing_obj.SetActive(false);
                 break;
             case SceneIndices.SIMULATION:
-                MoveToScene(SceneIndices.SIMULATION, in_manual);       // In this case will unload and reload as intended
                 Time.timeScale = 0;
                 break;
         }
+
+        _instance.MoveToScene(SceneIndices.SIMULATION, in_manual);
     }
 
     public void ExitCurrentScene()
@@ -325,7 +323,7 @@ public class SimulationManager : Singleton<SimulationManager>
             yield return null;
         }
 
-        while (FishSpawner.current != null && !FishSpawner.current.is_done)
+        while (FishSpawner.current != null)
         {
             _instance.total_spawn_progress = Mathf.Round(FishSpawner.current.current_progress * 100f);
             switch (FishSpawner.current.current_stage)
@@ -413,6 +411,12 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             EventMaster._instance.server_config_received_event.Raise(_instance.server.json_server_config);
             _instance.server.json_server_config.is_overriden = false;
+        }
+
+        if (_instance.server.json_awaiting_training.is_overriden)
+        {
+            EventMaster._instance.server_awaiting_training_event.Raise();
+            _instance.server.json_awaiting_training.is_overriden = false;
         }
 
         if (_instance.server.json_reset_episode.is_overriden)

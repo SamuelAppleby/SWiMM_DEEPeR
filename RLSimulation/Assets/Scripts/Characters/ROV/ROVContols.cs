@@ -25,7 +25,7 @@ public static class MovementControlMap
 [Serializable]
 public class ROVControls
 {
-    public Vector3 LinearThurstStrength = new Vector3(10,10,10);
+    public Vector3 LinearThurstStrength = new Vector3(10, 10, 10);
     public Vector3 AngularThurstStrength = new Vector3(10, 10, 10);
 
     public AnimationCurve SlopeCurveModifier = new AnimationCurve(new Keyframe(-90.0f, 1.0f), new Keyframe(0.0f, 1.0f), new Keyframe(90.0f, 0.0f));

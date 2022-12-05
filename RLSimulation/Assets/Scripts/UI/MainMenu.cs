@@ -1,17 +1,23 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Audio;
-using System.Security.Cryptography;
-using Unity.VisualScripting;
+using static Server;
+
+[Serializable]
+public enum LevelType
+{
+    MANUAL = 0,
+    TRAINING = 1,
+    INFERENCE = 2
+}
 
 public class MainMenu : MonoBehaviour
 {
+    public LevelType level_type;
+
     public AudioMixer audio_mixer;
 
     [SerializeField]
@@ -58,6 +64,18 @@ public class MainMenu : MonoBehaviour
 
     public Slider volume_slider;
 
+    public GraphicRaycaster ui_ray;
+
+    public void OnAwaitingTraining()
+    {
+        training_button_text.color = Color.white;
+        training_button.interactable = true;
+        training_button.image.enabled = true;
+        nn_button_text.color = Color.white;
+        nn_button.interactable = true;
+        nn_button.image.enabled = true;
+    }
+
     void OnEnable()
     {
         connect_button.onClick.AddListener(() => Connect(ip_addr.text, int.Parse(port.text)));
@@ -81,7 +99,7 @@ public class MainMenu : MonoBehaviour
         training_button_text = training_button.GetComponentInChildren<TextMeshProUGUI>();
         nn_button_text = nn_button.GetComponentInChildren<TextMeshProUGUI>();
         working_directory_text.text = System.IO.Directory.GetCurrentDirectory();
-        OnServerModelInitialized(false);
+        ui_ray.enabled = true;
     }
 
     private void Awake()
@@ -91,9 +109,25 @@ public class MainMenu : MonoBehaviour
         volume_slider.value = volume;
     }
 
-    public void PlayGame(bool manual_controls)
+    public void PlayGame(int level)
     {
-        SimulationManager._instance.MoveToScene(SceneIndices.SIMULATION, manual_controls);
+        if ((LevelType)level != LevelType.MANUAL)
+        {
+            SimulationManager._instance.server.obsv = new DataToSend
+            {
+                msg_type = "training_ready",
+                payload = { }
+            };
+
+            SimulationManager._instance.processing_obj.SetActive(true);
+            SimulationManager._instance.processing_obj.GetComponentInChildren<TextMeshProUGUI>().text = "Model initialising...";
+            ui_ray.enabled = false;
+        }
+
+        else
+        {
+            SimulationManager._instance.MoveToScene(SceneIndices.SIMULATION, true);
+        }
     }
 
     public void TerminateApplication()
@@ -107,11 +141,11 @@ public class MainMenu : MonoBehaviour
 
     public void OnServerConnectionResponse(Exception e)
     {
-        network_message.text = e == null ? "Succcessfully connected to: " + ip_addr.text + ":" + port.text : "Failed to connect to: " + ip_addr.text + ":" + port.text + ":";
-        network_image.sprite = e == null ? healthy_network : unhealthy_network;
+        network_message.text = e != null ? "Failed to connect to: " + ip_addr.text + ":" + port.text : "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
+        network_image.sprite = e != null ? unhealthy_network : healthy_network;
         ip_addr.interactable = e != null;
         port.interactable = e != null;
-        connect_button.image.color = e == null ? Color.green : Color.white;
+        connect_button.image.color = e != null ? Color.white : Color.green;
         connect_text.text = e != null ? "Connect" : "Connected";
         connect_button.interactable = e != null;
         ip_addr.interactable = e != null;
@@ -121,16 +155,6 @@ public class MainMenu : MonoBehaviour
     public void Connect(string ip, int port)
     {
         EventMaster._instance.server_connecting_event.Raise(ip, port);
-    }
-
-    public void OnServerModelInitialized(bool init)
-    {
-        training_button_text.color = init ? Color.white : Color.red;
-        training_button.interactable = init;
-        training_button.image.enabled = init;
-        nn_button_text.color = init ? Color.white : Color.red;
-        nn_button.interactable = init;
-        nn_button.image.enabled = init;
     }
 
     public void ChangeToOptions(bool to_options)

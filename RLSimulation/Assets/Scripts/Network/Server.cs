@@ -67,8 +67,16 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct RoverConfig
     {
+        public MotorConfig motorConfig;
         public CameraConfig camConfig;
         public StructureConfig structureConfig;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct MotorConfig
+    {
+        public float[] linearThrustPower;
+        public float[] angularThrustPower;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
@@ -152,9 +160,11 @@ public class Server
     /* Configs/Messages from server */
     public JsonMessage json_server_config;
 
-    public JsonMessage json_rover_controls;
+    public JsonMessage json_awaiting_training;
 
     public JsonMessage json_reset_episode;
+
+    public JsonMessage json_rover_controls;
 
     public JsonMessage json_end_simulation;
 
@@ -328,6 +338,10 @@ public class Server
                             case "process_server_config":
                                 json_server_config = message;
                                 json_server_config.is_overriden = true;
+                                break;
+                            case "awaiting_training":
+                                json_awaiting_training = message;
+                                json_awaiting_training.is_overriden = true;
                                 break;
                             case "reset_episode":
                                 json_reset_episode = message;

@@ -20,6 +20,7 @@ public class ROVController : MonoBehaviour
     public float water_drag;
     public float angular_water_drag;
 
+    [HideInInspector]
     public Rigidbody m_RigidBody;
     [HideInInspector]
     public bool m_depth_hold_mode = true;
@@ -94,7 +95,6 @@ public class ROVController : MonoBehaviour
             ToggleDepthHoldMode();
         }
 
-        Debug.Log("allocating because json");
         StartCoroutine(SendImageData());
     }
 
@@ -128,6 +128,8 @@ public class ROVController : MonoBehaviour
             resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0],
                 SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]);
             m_RigidBody.mass += SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.ballastMass;
+            movement_controls.LinearThurstStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
+            movement_controls.AngularThurstStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
         }
 
         yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
@@ -232,6 +234,11 @@ public class ROVController : MonoBehaviour
 
             desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThurstStrength) * Time.fixedDeltaTime;
 
+            if(desiredMove.magnitude < 1)
+            {
+                Debug.Log("well, we arent applying much");
+            }
+
             if (m_depth_hold_mode)
             {
                 desiredMove.y = -hover_force_equilibrium;       // apply a constant equilibrium force irrespective of delta time and inputs
@@ -259,7 +266,6 @@ public class ROVController : MonoBehaviour
 
     public void OnAIGroupsComplete()
     {
-        Debug.Log("allocating because ai");
         StartCoroutine(SendImageData());
     }
 
@@ -289,7 +295,7 @@ public class ROVController : MonoBehaviour
 
     private IEnumerator SendImageData()
     {
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood())
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood() && !SimulationManager._instance.in_manual_mode)
         {
             yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.save_images));
 

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class EventMaster : Singleton<EventMaster>
@@ -30,6 +28,9 @@ public class EventMaster : Singleton<EventMaster>
 
     [SerializeField]
     public ObservationSentEvent observation_sent_event;
+
+    [SerializeField]
+    public ServerAwaitingTrainingEvent server_awaiting_training_event;
 
     protected override void Awake()
     {

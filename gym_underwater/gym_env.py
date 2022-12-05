@@ -46,6 +46,8 @@ class UnderwaterEnv(gym.Env):
 
         # wait until connection established 
         self.communicator.wait_until_loaded()
+        self.communicator.send_server_config()
+        self.communicator.wait_until_training_ready()
 
     def close(self):
         self.communicator.quit()

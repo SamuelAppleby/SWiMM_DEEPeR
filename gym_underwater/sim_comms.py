@@ -25,6 +25,14 @@ class UnitySimCommunicator:
             logger.warning("waiting for sim ..")
             time.sleep(1.0)
 
+    def wait_until_training_ready(self):
+        while not self.handler.sim_training_ready:
+            logger.warning("waiting for sim trainig message ..")
+            time.sleep(1.0)
+
+    def send_server_config(self):
+        self.handler.send_server_config()
+
     def reset(self):
         self.handler.reset()
 
@@ -47,6 +55,7 @@ class UnitySimCommunicator:
 class UnitySimHandler:
 
     def __init__(self):
+        self.sim_training_ready = False
         self.server_connected = False
         self.server = PythonServer(self)
         self.image_array = np.zeros((256, 256, 3))
@@ -62,6 +71,7 @@ class UnitySimHandler:
         self.fns = {
             "connection_request": self.connection_request,
             'server_config_received': self.server_config_confirmation,
+            'training_ready': self.sim_training_ready_request,
             "on_telemetry": self.on_telemetry
         }
 
@@ -157,11 +167,15 @@ class UnitySimHandler:
     def connection_request(self, payload):
         # let handler know when connection has been made
         self.on_connect()
-        self.send_server_config()
         return
 
     def server_config_confirmation(self, payload):
+        self.send_awaiting_training()
         return
+
+    def sim_training_ready_request(self, payload):
+        logger.debug("sim ready to train")
+        self.sim_training_ready = True
 
     def on_telemetry(self, payload):
         self.rover_pos = np.array([payload["position"][0], payload["position"][1], payload["position"][2]])
@@ -186,7 +200,6 @@ class UnitySimHandler:
 
         self.image_array = image
 
-
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def take_action(self, action):
@@ -206,6 +219,7 @@ class UnitySimHandler:
                 }
             }
         }
+
         self.server.msg = json.dumps(action_msg)
 
     def send_server_config(self):
@@ -217,6 +231,14 @@ class UnitySimHandler:
     def send_reset(self):
         msg = {
             "msgType": "reset_episode",
+            "payload": {}
+        }
+
+        self.server.msg = json.dumps(msg)
+
+    def send_awaiting_training(self):
+        msg = {
+            "msgType": "awaiting_training",
             "payload": {}
         }
 
@@ -235,7 +257,3 @@ class UnitySimHandler:
             i += 1
         with open(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg"), "wb") as f:
             f.write(image)
-
-    
-
-

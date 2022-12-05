@@ -3,6 +3,18 @@
   "payload": {
     "serverConfig": {
       "roverConfig": {
+        "motorConfig": {
+          "linearThrustPower": [
+            10000,
+            40000,
+            10000
+          ],
+          "angularThrustPower" : [
+            1000,
+            1000,
+            1000
+          ]
+        },
         "camConfig": {
           "resolution": [
             256,

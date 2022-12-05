@@ -8,19 +8,19 @@ using UnityEngine.UIElements;
 public class MainMenuGameEventListener : GameEventListener
 {
     [SerializeField]
-    public UnityEvent reset_episode_unity_event;
-
-    [SerializeField]
     public ServerConnectingUnityEvent server_connecting_unity_event;
 
     [SerializeField]
     public ExceptionUnityEvent server_connection_attempted_unity_event;
 
+    [SerializeField]
+    public UnityEvent awaiting_training_unity_event;
+
     public override void OnEnable()
     {
-        game_events.Add(EventMaster._instance.reset_episode_event);
         game_events.Add(EventMaster._instance.server_connecting_event);
         game_events.Add(EventMaster._instance.server_connection_attempt_event);
+        game_events.Add(EventMaster._instance.server_awaiting_training_event);
         base.OnEnable();
     }
 
@@ -29,9 +29,9 @@ public class MainMenuGameEventListener : GameEventListener
         base.OnDisable();
     }
 
-    public void OnEpisodeResetEventRaised()
+    public void OnServerAwaitingTrainingEventRaised()
     {
-        reset_episode_unity_event.Invoke();
+        awaiting_training_unity_event.Invoke();
     }
 
     public void OnServerConnectingEventRaised(string ip, int port)

@@ -47,9 +47,34 @@
                                         "ballastMass",
                                         "totalBuoyantForce"
                                     ]
+                                },
+                                "motorConfig": {
+                                    "type": "object",
+                                    "properties": {
+                                        "linearThrustPower": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number"
+                                            },
+                                            "minItems": 3,
+                                            "maxItems": 3
+                                        },
+                                        "angularThrustPower": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number"
+                                            },
+                                            "minItems": 3,
+                                            "maxItems": 3
+                                        }
+                                    },
+                                    "required": [
+                                        "thrustPower"
+                                    ]
                                 }
                             },
                             "required": [
+                                "motorConfig",
                                 "camConfig",
                                 "structureConfig"
                             ]

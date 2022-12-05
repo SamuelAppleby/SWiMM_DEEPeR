@@ -43,6 +43,7 @@ parser.add_argument('--print-freq', help='Print number of steps to terminal at t
 parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
 args = parser.parse_args()
 
+
 # --------------------------- Utils ------------------------#
 
 def make_env(log_d, seed=None):
@@ -66,6 +67,7 @@ def make_env(log_d, seed=None):
 
     return _init
 
+
 def linear_schedule(initial_value):
     """
     Linear learning rate schedule.
@@ -85,6 +87,7 @@ def linear_schedule(initial_value):
         return progress * initial_value
 
     return func
+
 
 def middle_drop(initial_value):
     """
@@ -110,6 +113,7 @@ def middle_drop(initial_value):
 
     return func
 
+
 def accelerated_schedule(initial_value):
     """
     Custom schedule, starts as linear schedule but once mean_reward (episodic reward averaged over the last 100 episodes)
@@ -134,6 +138,7 @@ def accelerated_schedule(initial_value):
         return progress * initial_value
 
     return func
+
 
 # ---------------------------- Main script ----------------------------------#
 
@@ -209,7 +214,6 @@ if 'normalize' in hyperparams.keys():
         normalize_kwargs = eval(normalize)
         normalize = True
     del hyperparams['normalize']
-
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
 env = DummyVecEnv([make_env(log_dir, seed=hyperparams.get('seed', 0))])

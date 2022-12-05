@@ -43,6 +43,100 @@ parser.add_argument('--print-freq', help='Print number of steps to terminal at t
 parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
 args = parser.parse_args()
 
+# --------------------------- Utils ------------------------#
+
+def make_env(log_d, seed=None):
+    """
+    Makes instance of environment, seeds and wraps with Monitor
+    """
+
+    def _init():
+        # TODO: is below needed again?
+        set_global_seeds(seed)
+        # create instance of environment
+        env_inst = UnderwaterEnv()
+        print("Environment ready")
+        # environment seeded with randomly generated seed on initialisation but overwrite if seed provided in yaml 
+        if seed > 0:
+            # TODO: what is this doing and how is it different to set_global_seeds
+            env_inst.seed(seed)
+        # wrap environment with SB's Monitor wrapper
+        wrapped_env = Monitor(env_inst, log_d, allow_early_resets=True)
+        return wrapped_env
+
+    return _init
+
+def linear_schedule(initial_value):
+    """
+    Linear learning rate schedule.
+
+    :param initial_value: (float or str)
+    :return: (function)
+    """
+    if isinstance(initial_value, str):
+        initial_value = float(initial_value)
+
+    def func(progress, _):
+        """
+        Progress will decrease from 1 (beginning) to 0
+        :param progress: (float)
+        :return: (float)
+        """
+        return progress * initial_value
+
+    return func
+
+def middle_drop(initial_value):
+    """
+    Similar to stable_baselines.common.schedules middle_drop, but func returns actual LR value not multiplier.
+    Produces linear schedule but with a drop half way through training to a constant schedule at 1/10th initial value.
+
+    :param initial_value: (float or str)
+    :return: (function)
+    """
+    if isinstance(initial_value, str):
+        initial_value = float(initial_value)
+
+    def func(progress, _):
+        """
+        Progress will decrease from 1 (beginning) to 0
+        :param progress: (float)
+        :return: (float)
+        """
+        eps = 0.5
+        if progress < eps:
+            return initial_value * 0.1
+        return progress * initial_value
+
+    return func
+
+def accelerated_schedule(initial_value):
+    """
+    Custom schedule, starts as linear schedule but once mean_reward (episodic reward averaged over the last 100 episodes)
+    surpasses a threshold, schedule remains annealing but at the tail end toward an LR of zero, by taking
+    1/10th of the progress before multiplying.
+
+    :param initial_value: (float or str)
+    :return: (function)
+    """
+    if isinstance(initial_value, str):
+        initial_value = float(initial_value)
+
+    def func(progress, mean_reward):
+        """
+        Progress will decrease from 1 (beginning) to 0
+        :param progress: (float)
+        :return: (float)
+        """
+        rew_threshold = 1000
+        if mean_reward >= rew_threshold:
+            return (progress * 0.1) * initial_value
+        return progress * initial_value
+
+    return func
+
+# ---------------------------- Main script ----------------------------------#
+
 # early check on path to trained model if -i arg passed
 if args.trained_agent != "":
     assert args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent), \
@@ -87,35 +181,15 @@ else:
     log_dir = os.path.join(run_specific_path, 'monitor_logs')
 os.makedirs(log_dir, exist_ok=True)
 
-
-def linear_schedule(init_value):
-    """
-    Linear learning rate schedule.
-
-    :param initial_value: (float or str)
-    :return: (function)
-    """
-    if isinstance(initial_value, str):
-        init_value = float(init_value)
-
-    def func(progress, _):
-        """
-        Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
-        :return: (float)
-        """
-        return progress * init_value
-
-    return func
-
-
 if isinstance(hyperparams['learning_rate'], str):
     schedule, initial_value = hyperparams['learning_rate'].split('_')
     initial_value = float(initial_value)
-    if schedule == 'lin':
-        hyperparams['learning_rate'] = linear_schedule(initial_value)
+    if schedule == 'md':
+        hyperparams['learning_rate'] = middle_drop(initial_value)
+    elif schedule == 'acc':
+        hyperparams['learning_rate'] = accelerated_schedule(initial_value)
     else:
-        raise ValueError('Schedule not implemented')
+        hyperparams['learning_rate'] = linear_schedule(initial_value)
 elif isinstance(hyperparams['learning_rate'], float):
     hyperparams['learning_rate'] = constfn(hyperparams['learning_rate'])
 else:
@@ -135,30 +209,6 @@ if 'normalize' in hyperparams.keys():
         normalize_kwargs = eval(normalize)
         normalize = True
     del hyperparams['normalize']
-
-# DummyVecEnv below expects callable as argument so defining function for creating environment instance
-
-
-def make_env(log_d, seed=None):
-    """
-    Makes instance of environment, seeds and wraps with Monitor
-    """
-
-    def _init():
-        # TODO: is below needed again?
-        set_global_seeds(seed)
-        # create instance of environment
-        env_inst = UnderwaterEnv()
-        print("Environment ready")
-        # environment seeded with randomly generated seed on initialisation but overwrite if seed provided in yaml 
-        if seed > 0:
-            # TODO: what is this doing and how is it different to set_global_seeds
-            env_inst.seed(seed)
-        # wrap environment with SB's Monitor wrapper
-        wrapped_env = Monitor(env_inst, log_d, allow_early_resets=True)
-        return wrapped_env
-
-    return _init
 
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error

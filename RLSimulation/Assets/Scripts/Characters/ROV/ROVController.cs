@@ -159,7 +159,14 @@ public class ROVController : MonoBehaviour
 
     public void OnChangeCamera()
     {
-        SwitchActiveCamera(active_cam, inactive_cam);
+        inactive_cam.depth = 0;
+        inactive_cam.rect = new Rect(0, 0, 1, 1);
+        active_cam.depth = 1;
+        active_cam.rect = new Rect(0.7f, 0, 0.3f, 0.3f);
+        Camera temp = active_cam;
+        active_cam = inactive_cam;
+        inactive_cam = temp;
+        gameObject.GetComponentInChildren<CinemachineFreeLook>().enabled = active_cam == thirdPersonCam;
     }
 
     public void ChangeFarPlane(float val)
@@ -177,16 +184,6 @@ public class ROVController : MonoBehaviour
         CheckCameraEffects();
         movement_controls.Update(SimulationManager._instance.in_manual_mode, this);
         PlayAudioEffects();
-    }
-
-    private void SwitchActiveCamera(Camera active, Camera inactive)
-    {
-        inactive.depth = 0;
-        inactive.rect = new Rect(0, 0, 1, 1);
-        active.depth = 1;
-        active.rect = new Rect(0.7f, 0, 0.3f, 0.3f);
-        active_cam = inactive;
-        inactive_cam = active;
     }
 
     private void FixedUpdate()

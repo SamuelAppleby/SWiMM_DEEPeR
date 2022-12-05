@@ -1,3 +1,4 @@
+using Cinemachine;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -121,7 +122,7 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         _instance.server.actions_received++;
 
-        if (_instance.server.json_server_config.payload.serverConfig.envConfig.freezeOnTelemetry)
+        if (Time.timeScale == 0)
         {
             Time.timeScale = 1;
         }
@@ -161,6 +162,7 @@ public class SimulationManager : Singleton<SimulationManager>
                 break;
             case SceneIndices.SIMULATION:
                 MoveToScene(SceneIndices.SIMULATION, in_manual);       // In this case will unload and reload as intended
+                Time.timeScale = 0;
                 break;
         }
     }
@@ -368,6 +370,7 @@ public class SimulationManager : Singleton<SimulationManager>
     public void IndexCursor()
     {
         Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
+        _instance.rover.GetComponentInChildren<CinemachineFreeLook>().enabled = Cursor.lockState == CursorLockMode.Locked;
         Cursor.visible = !Cursor.visible;
     }
 

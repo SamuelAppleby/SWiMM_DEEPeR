@@ -10,8 +10,6 @@ using static Server;
 [RequireComponent(typeof(Rigidbody))][RequireComponent(typeof(FloaterContainer))]
 public class ROVController : MonoBehaviour
 {
-    private float hover_force_equilibrium;
-
     [HideInInspector]
     public List<Transform> target_transforms = new List<Transform>();
 
@@ -132,13 +130,13 @@ public class ROVController : MonoBehaviour
             resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0],
                 SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]);
             m_RigidBody.mass += SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.ballastMass;
-            movement_controls.LinearThurstStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
-            movement_controls.AngularThurstStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
+            movement_controls.LinearThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
+            movement_controls.AngularThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
         }
 
         yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
-        hover_force_equilibrium = GetComponent<FloaterContainer>().total_buoyant_strength - (m_RigidBody.mass * -Physics.gravity.y);
         EventMaster._instance.rov_initialised_event.Raise(gameObject);
+        yield return null;
     }
 
     public void PlayAudioEffects()
@@ -196,18 +194,21 @@ public class ROVController : MonoBehaviour
     {
         desiredMove = new Vector3();
         desiredRotation = new Vector3();
-
         m_RigidBody.drag = m_IsUnderwater ? water_drag : air_drag;
         m_RigidBody.angularDrag = m_IsUnderwater ? angular_water_drag : angular_air_drag;
 
-        if (Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
-            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
+        if (SimulationManager._instance.server != null)
         {
-            linear_force_to_be_applied = last_action_linear_force;
-            angular_force_to_be_applied = last_action_angular_force;
-        }
-
-        if (m_IsUnderwater)
+            if(Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
+            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
+            {
+                linear_force_to_be_applied = last_action_linear_force;
+                angular_force_to_be_applied = last_action_angular_force;
+            }
+        } 
+            
+        /* N.B. Before internal physics engine does oncollisions, provide the check anyway otherwise we skip a frame */
+        if (m_IsUnderwater || m_depth_hold_mode)
         {
             /* Movement */
             if (linear_force_to_be_applied.magnitude > float.Epsilon)
@@ -243,14 +244,16 @@ public class ROVController : MonoBehaviour
                 }
             }
 
-            desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThurstStrength) * Time.fixedDeltaTime;
+            desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThrustStrength) * Time.fixedDeltaTime;
 
+            /* Counteract the forces due to gravity + buoyancy */
             if (m_depth_hold_mode)
             {
-                desiredMove.y = -hover_force_equilibrium;       // apply a constant equilibrium force irrespective of delta time and inputs
+                m_RigidBody.AddForce(-Physics.gravity, ForceMode.Acceleration);
+                desiredMove.y -= GetComponent<FloaterContainer>().total_buoyant_strength * Time.fixedDeltaTime;
             }
 
-            desiredRotation = Vector3.Scale(desiredRotation, movement_controls.AngularThurstStrength) * Time.fixedDeltaTime;
+            desiredRotation = Vector3.Scale(desiredRotation, movement_controls.AngularThrustStrength) * Time.fixedDeltaTime;
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);
             m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Force);

@@ -147,16 +147,19 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void EpisodeReset(bool in_manual)
     {
-        _instance.server.resets_received++;
-
-        switch (current_scene_index)
+        if(_instance.server != null)
         {
-            case Enums.E_SceneIndices.MAIN_MENU:
-                _instance.processing_obj.SetActive(false);
-                break;
-            case Enums.E_SceneIndices.SIMULATION:
-                Time.timeScale = 0;
-                break;
+            _instance.server.resets_received++;
+
+            switch (current_scene_index)
+            {
+                case Enums.E_SceneIndices.MAIN_MENU:
+                    _instance.processing_obj.SetActive(false);
+                    break;
+                case Enums.E_SceneIndices.SIMULATION:
+                    Time.timeScale = 0;
+                    break;
+            }
         }
 
         _instance.MoveToScene(Enums.E_SceneIndices.SIMULATION, in_manual);
@@ -218,8 +221,8 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void ConnectToServer(string ip, int port)
     {
-        server = new Server();
-        Exception e = server.Connect(network_config, ip, port);
+        _instance.server = new Server();
+        Exception e = _instance.server.Connect(network_config, ip, port);
         EventMaster._instance.server_connection_attempt_event.Raise(e);
     }
 

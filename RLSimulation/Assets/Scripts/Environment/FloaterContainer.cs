@@ -12,6 +12,7 @@ public class FloaterContainer : MonoBehaviour
     private List<GameObject> floaters = new List<GameObject>();
     [HideInInspector]
     public bool is_initialized = false;
+    private const int NUM_FLOATERS = 4;
 
     void Start()
     {
@@ -34,7 +35,7 @@ public class FloaterContainer : MonoBehaviour
 
         if (extents != Vector2.zero)
         {
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < NUM_FLOATERS; ++i)
             {
                 GameObject new_floater = new GameObject("Floater_" + i.ToString());
                 new_floater.tag = "Floater";
@@ -58,7 +59,7 @@ public class FloaterContainer : MonoBehaviour
                 }
 
                 new_floater.AddComponent<SphereCollider>();
-                new_floater.AddComponent<Floater>().buoyant_strength = total_buoyant_strength / 4;
+                new_floater.AddComponent<Floater>().buoyant_strength = total_buoyant_strength / NUM_FLOATERS;
                 floaters.Add(new_floater);
             }
         }

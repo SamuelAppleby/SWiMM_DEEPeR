@@ -6097,8 +6097,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   movement_controls:
-    LinearThurstStrength: {x: 2500, y: 10000, z: 2500}
-    AngularThurstStrength: {x: 250, y: 250, z: 250}
+    LinearThrustStrength: {x: 2500, y: 10000, z: 2500}
+    AngularThrustStrength: {x: 250, y: 250, z: 250}
     SlopeCurveModifier:
       serializedVersion: 2
       m_Curve:
@@ -6148,7 +6148,9 @@ MonoBehaviour:
   volume: {fileID: 50173731}
   water_collider: {fileID: 50173724}
   linear_force_to_be_applied: {x: 0, y: 0, z: 0}
+  last_action_linear_force: {x: 0, y: 0, z: 0}
   angular_force_to_be_applied: {x: 0, y: 0, z: 0}
+  last_action_angular_force: {x: 0, y: 0, z: 0}
   audios:
     audio_motor: {fileID: 971931243}
     hover_noise: {fileID: 563266353}

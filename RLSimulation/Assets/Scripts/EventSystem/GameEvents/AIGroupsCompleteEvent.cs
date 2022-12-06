@@ -7,7 +7,7 @@ public class AIGroupsCompleteEvent : GameEvent
 {
     public void Raise()
     {
-        foreach (PlayerGameEventListener l in listeners)
+        foreach (GameEventListener l in listeners)
         {
             l.OnAIGroupsCompleteEventRaised();
         }

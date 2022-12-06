@@ -1232,7 +1232,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 568657486}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a62368ed70f298c448568fd5745f2903, type: 3}
+  m_Script: {fileID: 11500000, guid: 452a0e9ae6ee88a478a66e809723951e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   game_events: []
@@ -1278,6 +1278,24 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  server_config_received_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  reset_episode_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  rov_initialised_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  json_control_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  observation_sent_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  end_simulation_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
   awaiting_training_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -1293,6 +1311,9 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  ai_groups_complete_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &575312710
 GameObject:
   m_ObjectHideFlags: 0

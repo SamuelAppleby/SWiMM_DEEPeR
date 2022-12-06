@@ -35,6 +35,6 @@ public class EventMaster : Singleton<EventMaster>
     protected override void Awake()
     {
         base.Awake();
-        GetComponent<SimulationGameEventListener>().enabled = true;
+        GetComponent<GameEventListener>().enabled = true;
     }
 }

@@ -937,7 +937,7 @@ GameObject:
   - component: {fileID: 1373481078}
   - component: {fileID: 1373481077}
   - component: {fileID: 1373481080}
-  - component: {fileID: 1373481079}
+  - component: {fileID: 1373481081}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1001,7 +1001,29 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1373481079
+--- !u!114 &1373481080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373481076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1609b0b373077994caa89e438e63625f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rov_initialised_event: {fileID: 11400000, guid: 41843b116b426e344ad4e99ad633451e, type: 2}
+  end_simulation_event: {fileID: 11400000, guid: 6fd0906aa8d5a1642a45cd31b68ddee6, type: 2}
+  reset_episode_event: {fileID: 11400000, guid: 01592ad09c1d18247aff71088ca37e0c, type: 2}
+  json_control_event: {fileID: 11400000, guid: 8fd3533b8b14d374484632a1fa9c880e, type: 2}
+  ai_groups_complete_event: {fileID: 11400000, guid: 0a30bd4564573c54191dda2f3ab0cb31, type: 2}
+  server_config_received_event: {fileID: 11400000, guid: 9c012ab95e79b9049b6689907180b035, type: 2}
+  server_connecting_event: {fileID: 11400000, guid: bb8fa7b60e4c5bf42967d34f8b805395, type: 2}
+  server_connection_attempt_event: {fileID: 11400000, guid: 9809168dca526d7428cc8d7faafc028d, type: 2}
+  observation_sent_event: {fileID: 11400000, guid: fb580ff4bcd398e4fad369220ee5df7c, type: 2}
+  server_awaiting_training_event: {fileID: 11400000, guid: b5f7216a668a6bb48b6b583d30103fc7, type: 2}
+--- !u!114 &1373481081
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1010,7 +1032,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1373481076}
   m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59e29382abe22b440b6b6f3274f8f574, type: 3}
+  m_Script: {fileID: 11500000, guid: 452a0e9ae6ee88a478a66e809723951e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   game_events: []
@@ -1218,28 +1240,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &1373481080
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1373481076}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1609b0b373077994caa89e438e63625f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rov_initialised_event: {fileID: 11400000, guid: 41843b116b426e344ad4e99ad633451e, type: 2}
-  end_simulation_event: {fileID: 11400000, guid: 6fd0906aa8d5a1642a45cd31b68ddee6, type: 2}
-  reset_episode_event: {fileID: 11400000, guid: 01592ad09c1d18247aff71088ca37e0c, type: 2}
-  json_control_event: {fileID: 11400000, guid: 8fd3533b8b14d374484632a1fa9c880e, type: 2}
-  ai_groups_complete_event: {fileID: 11400000, guid: 0a30bd4564573c54191dda2f3ab0cb31, type: 2}
-  server_config_received_event: {fileID: 11400000, guid: 9c012ab95e79b9049b6689907180b035, type: 2}
-  server_connecting_event: {fileID: 11400000, guid: bb8fa7b60e4c5bf42967d34f8b805395, type: 2}
-  server_connection_attempt_event: {fileID: 11400000, guid: 9809168dca526d7428cc8d7faafc028d, type: 2}
-  observation_sent_event: {fileID: 11400000, guid: fb580ff4bcd398e4fad369220ee5df7c, type: 2}
-  server_awaiting_training_event: {fileID: 11400000, guid: b5f7216a668a6bb48b6b583d30103fc7, type: 2}
 --- !u!1 &1395858807
 GameObject:
   m_ObjectHideFlags: 0

@@ -28,7 +28,7 @@
         }
       },
       "envConfig": {
-        "actionInference" : "maintainFreeze",
+        "actionInference" : "maintain",
         "faunaConfig": {
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,

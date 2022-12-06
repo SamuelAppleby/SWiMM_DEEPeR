@@ -7,7 +7,7 @@ public class ResetEpisodeEvent : GameEvent
 {
     public void Raise()
     {
-        foreach (SimulationGameEventListener l in listeners)
+        foreach (GameEventListener l in listeners)
         {
             l.OnEpisodeResetEventRaised();
         }

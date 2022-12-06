@@ -1579,10 +1579,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 432339667}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0835c830d6f693d44984f005fa1e90ab, type: 3}
+  m_Script: {fileID: 11500000, guid: 452a0e9ae6ee88a478a66e809723951e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   game_events: []
+  server_connecting_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  server_connection_attempted_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  server_config_received_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  reset_episode_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
   rov_initialised_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -1598,6 +1610,21 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  json_control_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  observation_sent_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  end_simulation_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  awaiting_training_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  ai_groups_complete_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &443377722
 GameObject:
   m_ObjectHideFlags: 0
@@ -2594,7 +2621,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: -0.000000031822907, z: 0.0000000022376434, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: 0.000000031822907, z: -0.0000000022376434, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3869,7 +3896,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: -0.000000008582, z: 6.034475e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: 0.000000008582001, z: -6.0344757e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5047,7 +5074,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290624799}
-  m_LocalRotation: {x: 0.053078998, y: 0.0000000021477657, z: -1.14162194e-10, w: 0.99859035}
+  m_LocalRotation: {x: 0.053078998, y: -0.0000000021477657, z: 1.14162194e-10, w: 0.99859035}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6206,10 +6233,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 1498372150}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e91a13a7bad506d44ab2ddc7bf8a2e0d, type: 3}
+  m_Script: {fileID: 11500000, guid: 452a0e9ae6ee88a478a66e809723951e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   game_events: []
+  server_connecting_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  server_connection_attempted_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  server_config_received_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  reset_episode_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  rov_initialised_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
   json_control_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -6225,6 +6267,15 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  observation_sent_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  end_simulation_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  awaiting_training_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
   ai_groups_complete_unity_event:
     m_PersistentCalls:
       m_Calls:

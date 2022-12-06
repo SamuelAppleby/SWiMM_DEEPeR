@@ -136,12 +136,14 @@ public class ROVController : MonoBehaviour
 
         yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
         EventMaster._instance.rov_initialised_event.Raise(gameObject);
-        yield return null;
     }
 
     public void PlayAudioEffects()
     {
-        if (linear_force_to_be_applied.magnitude > 0 || angular_force_to_be_applied.magnitude > 0)
+        if (linear_force_to_be_applied.magnitude > 0 || angular_force_to_be_applied.magnitude > 0 || (SimulationManager._instance.server != null && (
+            (Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
+            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE) && 
+            last_action_linear_force.magnitude > 0 || last_action_angular_force.magnitude > 0)))
         {
             if (!audios.audio_motor.isPlaying)
             {

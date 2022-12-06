@@ -8,7 +8,7 @@ public class ServerConfigReceivedEvent : GameEvent
 {
     public void Raise(JsonMessage param)
     {
-        foreach (SimulationGameEventListener l in listeners)
+        foreach (GameEventListener l in listeners)
         {
             l.OnServerConfigReceivedEventRasied(param);
         }

@@ -7,7 +7,7 @@ public class ServerAwaitingTrainingEvent : GameEvent
 {
     public void Raise()
     {
-        foreach (MainMenuGameEventListener l in listeners)
+        foreach (GameEventListener l in listeners)
         {
             l.OnServerAwaitingTrainingEventRaised();
         }

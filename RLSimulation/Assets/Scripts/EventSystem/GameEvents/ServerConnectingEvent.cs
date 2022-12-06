@@ -9,16 +9,7 @@ public class ServerConnectingEvent : GameEvent
     {
         foreach (GameEventListener l in listeners)
         {
-            if (l is SimulationGameEventListener)
-            {
-                SimulationGameEventListener l1 = l as SimulationGameEventListener;
-                l1.OnServerConnectingEventRaised(ip, port);
-            }
-            else if (l is MainMenuGameEventListener)
-            {
-                MainMenuGameEventListener l1 = l as MainMenuGameEventListener;
-                l1.OnServerConnectingEventRaised(ip, port);
-            }
+            l.OnServerConnectingEventRaised(ip, port);
         }
     }
 }

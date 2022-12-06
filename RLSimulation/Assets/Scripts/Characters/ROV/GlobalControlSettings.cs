@@ -27,7 +27,7 @@ public class GlobalControlSettings
 
         if (Input.GetKeyUp(GlobalControlMap.QuitKey))
         {
-            SimulationManager._instance.MoveToScene(SimulationManager._instance.current_scene_index == SceneIndices.MAIN_MENU ? SceneIndices.EXIT : SceneIndices.MAIN_MENU);
+            SimulationManager._instance.MoveToScene(SimulationManager._instance.current_scene_index == Enums.E_SceneIndices.MAIN_MENU ? Enums.E_SceneIndices.EXIT : Enums.E_SceneIndices.MAIN_MENU);
         }
 
         if (Input.GetKeyDown(GlobalControlMap.ChangeWindowKey))

@@ -5,19 +5,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Audio;
 using static Server;
-
-[Serializable]
-public enum LevelType
-{
-    MANUAL = 0,
-    TRAINING = 1,
-    INFERENCE = 2
-}
+using Unity.VisualScripting;
+using UnityEngine.EventSystems;
 
 public class MainMenu : MonoBehaviour
 {
-    public LevelType level_type;
-
     public AudioMixer audio_mixer;
 
     [SerializeField]
@@ -111,7 +103,7 @@ public class MainMenu : MonoBehaviour
 
     public void PlayGame(int level)
     {
-        if ((LevelType)level != LevelType.MANUAL)
+        if ((Enums.E_LevelType)level != Enums.E_LevelType.MANUAL)
         {
             SimulationManager._instance.server.obsv = new DataToSend
             {
@@ -126,7 +118,7 @@ public class MainMenu : MonoBehaviour
 
         else
         {
-            SimulationManager._instance.MoveToScene(SceneIndices.SIMULATION, true);
+            SimulationManager._instance.MoveToScene(Enums.E_SceneIndices.SIMULATION, true);
         }
     }
 
@@ -139,6 +131,17 @@ public class MainMenu : MonoBehaviour
 #endif
     }
 
+    //public void OnServerConfigReceived(JsonMessage param)
+    //{
+    //    network_message.text = "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
+    //    network_image.sprite = healthy_network;
+    //    ip_addr.interactable = false;
+    //    port.interactable = false;
+    //    connect_button.image.color = Color.green;
+    //    connect_text.text = "Connected";
+    //    connect_button.interactable = false;
+    //}
+
     public void OnServerConnectionResponse(Exception e)
     {
         network_message.text = e != null ? "Failed to connect to: " + ip_addr.text + ":" + port.text : "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
@@ -148,8 +151,7 @@ public class MainMenu : MonoBehaviour
         connect_button.image.color = e != null ? Color.white : Color.green;
         connect_text.text = e != null ? "Connect" : "Connected";
         connect_button.interactable = e != null;
-        ip_addr.interactable = e != null;
-        port.interactable = e != null;
+        EventSystem.current.SetSelectedGameObject(null);
     }
 
     public void Connect(string ip, int port)

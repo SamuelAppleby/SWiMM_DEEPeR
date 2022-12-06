@@ -63,7 +63,9 @@ public class ROVController : MonoBehaviour
     private float m_distance_undewater;
 
     public Vector3 linear_force_to_be_applied;
+    public Vector3 last_action_linear_force;
     public Vector3 angular_force_to_be_applied;
+    public Vector3 last_action_angular_force;
 
     private int manual_screenshot_count = 0;
 
@@ -95,6 +97,8 @@ public class ROVController : MonoBehaviour
             ToggleDepthHoldMode();
         }
 
+        last_action_linear_force = linear_force_to_be_applied;
+        last_action_angular_force = angular_force_to_be_applied;
         StartCoroutine(SendImageData());
     }
 
@@ -196,6 +200,13 @@ public class ROVController : MonoBehaviour
         m_RigidBody.drag = m_IsUnderwater ? water_drag : air_drag;
         m_RigidBody.angularDrag = m_IsUnderwater ? angular_water_drag : angular_air_drag;
 
+        if (Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
+            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
+        {
+            linear_force_to_be_applied = last_action_linear_force;
+            angular_force_to_be_applied = last_action_angular_force;
+        }
+
         if (m_IsUnderwater)
         {
             /* Movement */
@@ -233,11 +244,6 @@ public class ROVController : MonoBehaviour
             }
 
             desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThurstStrength) * Time.fixedDeltaTime;
-
-            if(desiredMove.magnitude < 1)
-            {
-                Debug.Log("well, we arent applying much");
-            }
 
             if (m_depth_hold_mode)
             {
@@ -295,7 +301,7 @@ public class ROVController : MonoBehaviour
 
     private IEnumerator SendImageData()
     {
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsTcpGood() && !SimulationManager._instance.in_manual_mode)
+        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsConnectionValid() && !SimulationManager._instance.in_manual_mode)
         {
             yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.save_images));
 

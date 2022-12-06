@@ -82,8 +82,8 @@
                         "envConfig": {
                             "type": "object",
                             "properties": {
-                                "freezeOnTelemetry":{
-                                    "type": "boolean"
+                                "actionInference":{
+                                    "type": "string"
                                 },
                                 "faunaConfig": {
                                     "type": "object",

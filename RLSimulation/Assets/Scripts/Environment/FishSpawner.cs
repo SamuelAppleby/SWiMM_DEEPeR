@@ -79,7 +79,7 @@ public class AIGroup
 public class FishSpawner : MonoBehaviour
 {
     [HideInInspector]
-    public InitialisationStage current_stage;
+    public Enums.E_InitialisationStage current_stage;
 
     public static FishSpawner current;
 
@@ -159,7 +159,7 @@ public class FishSpawner : MonoBehaviour
 
     private void InitialiseGroups()
     {
-        current_stage = InitialisationStage.INITIALISING_NPCS;
+        current_stage = Enums.E_InitialisationStage.INITIALISING_NPCS;
         current_progress = 0;
 
         float current_intiialized = 0;
@@ -186,7 +186,7 @@ public class FishSpawner : MonoBehaviour
 
     private void SpawnAllNPCs()
     {
-        current_stage = InitialisationStage.SPAWNING_NPCS;
+        current_stage = Enums.E_InitialisationStage.SPAWNING_NPCS;
         current_progress = 0;
 
         float current_ai_count = 0;

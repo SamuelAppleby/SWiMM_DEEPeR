@@ -16,7 +16,7 @@ using Random = UnityEngine.Random;
 public class SimulationManager : Singleton<SimulationManager>
 {
     [HideInInspector]
-    public SceneIndices current_scene_index;
+    public Enums.E_SceneIndices current_scene_index;
     public TextMeshProUGUI tips_text;
     public CanvasGroup alpha_canvas;
     public string[] tips;
@@ -81,16 +81,9 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public DebugConfig debug_config;
 
-    Dictionary<string, Protocol> protocol_mapping = new Dictionary<string, Protocol>
-    {
-        { "udp", Protocol.UDP },
-        { "tcp", Protocol.TCP }
-    };
-
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct NetworkConfig
     {
-        public Protocol e_protocol;
         public string protocol;
         public string host;
         public int port;
@@ -112,7 +105,8 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         _instance.server.observations_sent++;
 
-        if (_instance.server.json_server_config.payload.serverConfig.envConfig.freezeOnTelemetry)
+        if (Enums.action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.FREEZE ||
+            Enums.action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
         {
             Time.timeScale = 0;
         }
@@ -130,7 +124,10 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public async void OnServerConnectionResponse(Exception e)
     {
-        await Task.Run(() => server.ContinueReadWrite());
+        if(e == null)
+        {
+            await Task.Run(() => server.ContinueReadWrite());
+        }
         // TODO Clean up server caches
     }
 
@@ -138,7 +135,7 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         _instance.server.json_server_config = param;
 
-        if (_instance.server != null && _instance.server.IsTcpGood())
+        if (_instance.server != null && _instance.server.IsConnectionValid())
         {
             _instance.server.obsv = new DataToSend
             {
@@ -154,25 +151,25 @@ public class SimulationManager : Singleton<SimulationManager>
 
         switch (current_scene_index)
         {
-            case SceneIndices.MAIN_MENU:
+            case Enums.E_SceneIndices.MAIN_MENU:
                 _instance.processing_obj.SetActive(false);
                 break;
-            case SceneIndices.SIMULATION:
+            case Enums.E_SceneIndices.SIMULATION:
                 Time.timeScale = 0;
                 break;
         }
 
-        _instance.MoveToScene(SceneIndices.SIMULATION, in_manual);
+        _instance.MoveToScene(Enums.E_SceneIndices.SIMULATION, in_manual);
     }
 
     public void ExitCurrentScene()
     {
-        MoveToScene(SceneIndices.SIMULATION);       // In this case will unload and reload as intended
+        MoveToScene(Enums.E_SceneIndices.SIMULATION);       // In this case will unload and reload as intended
     }
 
     public void EndSimulation()
     {
-        MoveToScene(SceneIndices.EXIT);       // As above
+        MoveToScene(Enums.E_SceneIndices.EXIT);       // As above
     }
 
     private void Start()
@@ -191,8 +188,6 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.ProcessConfig(ref _instance.debug_config, _instance.debug_config_dir);
         _instance.ProcessConfig(ref _instance.network_config, _instance.network_config_dir);
-
-        _instance.network_config.e_protocol = protocol_mapping[_instance.network_config.protocol];
 
         _instance.PurgeAndCreateDirectory(_instance.debug_config.packet_sent_dir);
         _instance.PurgeAndCreateDirectory(_instance.debug_config.image_dir);
@@ -221,30 +216,30 @@ public class SimulationManager : Singleton<SimulationManager>
         rover = rov;
     }
 
-    public async void ConnectToServer(string ip, int port)
+    public void ConnectToServer(string ip, int port)
     {
         server = new Server();
-        Exception e = await server.Connect(network_config, ip, port);
+        Exception e = server.Connect(network_config, ip, port);
         EventMaster._instance.server_connection_attempt_event.Raise(e);
     }
 
     public void OnServerDisconnected()
     {
         Debug.Log("No server response");
-        SceneManager.LoadScene((int)SceneIndices.MAIN_MENU);
+        SceneManager.LoadScene((int)Enums.E_SceneIndices.MAIN_MENU);
     }
 
     protected override void Awake()
     {
         base.Awake();
-        _instance.MoveToScene(SceneIndices.MAIN_MENU);
+        _instance.MoveToScene(Enums.E_SceneIndices.MAIN_MENU);
         _instance.water_objs = GameObject.FindGameObjectsWithTag("Water");
         _instance.lighting_objs = GameObject.FindGameObjectsWithTag("Lighting");
     }
 
-    public void MoveToScene(SceneIndices to, bool in_manual = false)
+    public void MoveToScene(Enums.E_SceneIndices to, bool in_manual = false)
     {
-        if (to == SceneIndices.EXIT)
+        if (to == Enums.E_SceneIndices.EXIT)
         {
             _instance.QuitApplication();
             return;
@@ -256,7 +251,7 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.in_manual_mode = in_manual;
 
         /* We don't want to unload the persistent scene */
-        if (_instance.current_scene_index == SceneIndices.PERSISTENT_SCENE)
+        if (_instance.current_scene_index == Enums.E_SceneIndices.PERSISTENT_SCENE)
         {
             StartCoroutine(GenerateTips());
             StartCoroutine(GetSceneLoadProgress());
@@ -328,10 +323,10 @@ public class SimulationManager : Singleton<SimulationManager>
             _instance.total_spawn_progress = Mathf.Round(FishSpawner.current.current_progress * 100f);
             switch (FishSpawner.current.current_stage)
             {
-                case InitialisationStage.INITIALISING_NPCS:
+                case Enums.E_InitialisationStage.INITIALISING_NPCS:
                     _instance.text_field.text = string.Format("Initialising NPCs {0}%", _instance.total_spawn_progress);
                     break;
-                case InitialisationStage.SPAWNING_NPCS:
+                case Enums.E_InitialisationStage.SPAWNING_NPCS:
                     _instance.text_field.text = string.Format("Spawning NPCs {0}%", _instance.total_spawn_progress);
                     break;
             }
@@ -343,7 +338,7 @@ public class SimulationManager : Singleton<SimulationManager>
         yield break;
     }
 
-    protected override void OnSceneChanged(AsyncOperation handle, SceneIndices to)
+    protected override void OnSceneChanged(AsyncOperation handle, Enums.E_SceneIndices to)
     {
         base.OnSceneChanged(handle, to);
         _instance.scene_loading = null;
@@ -460,7 +455,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
         if (_instance.server != null && _instance.server.server_crash)
         {
-            SceneIndices moving_to = current_scene_index == SceneIndices.MAIN_MENU ? SceneIndices.EXIT : SceneIndices.MAIN_MENU;
+            Enums.E_SceneIndices moving_to = current_scene_index == Enums.E_SceneIndices.MAIN_MENU ? Enums.E_SceneIndices.EXIT : Enums.E_SceneIndices.MAIN_MENU;
             MoveToScene(moving_to);
 
             if (_instance.server.server_crash)

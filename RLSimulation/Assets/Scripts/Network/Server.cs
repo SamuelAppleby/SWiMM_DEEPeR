@@ -97,7 +97,7 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct EnvironmentConfig
     {
-        public bool freezeOnTelemetry;
+        public string actionInference;
         public FaunaConfig faunaConfig;
     }
 
@@ -177,7 +177,7 @@ public class Server
         obsv = null;
     }
 
-    public bool IsTcpGood()
+    public bool IsConnectionValid()
     {
         return udp_client != null ? true : stream != null;
     }
@@ -198,45 +198,39 @@ public class Server
         return;
     }
 
-    public async Task<Exception> Connect(SimulationManager.NetworkConfig network_config, string ip, int port)
+    public Exception Connect(SimulationManager.NetworkConfig network_config, string ip, int port)
     {
-        if(network_config.e_protocol == Protocol.UDP)
-        {
-            udp_client = new UdpClient();
+        IPAddress ipAddress = IPAddress.Parse(ip);
+        IPEndPoint ipEndPoint = new IPEndPoint(ipAddress, port);
 
-            try
+        try
+        {
+            if (Enums.protocol_mapping[network_config.protocol] == Enums.E_Protocol.UDP)
             {
-                udp_client.Connect(ip, port);
+                udp_client = new UdpClient(ipEndPoint);
+                udp_client.Connect(ipEndPoint);
                 return null;
             }
-            catch (Exception ex)
+            else
             {
-                Debug.LogException(ex);
-                return ex;
-            }
-        }
-        else
-        {
-            tcp_client = new TcpClient
-            {
-                ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
-                SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024
-            };
+                tcp_client = new TcpClient
+                {
+                    ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
+                    SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024,
+                };
 
-            receive_buffer = new byte[tcp_client.ReceiveBufferSize];
-
-            try
-            {
-                await tcp_client.ConnectAsync(ip, port);
+                receive_buffer = new byte[tcp_client.ReceiveBufferSize];
+                tcp_client.Connect(ipEndPoint);
                 stream = tcp_client.GetStream();
                 return null;
             }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return ex;
-            }
         }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+            return ex;
+        }
+
     }
 
     public static async Task WaitUntilAsync(Func<bool> predicate, int sleep = 1 / 120)
@@ -268,7 +262,7 @@ public class Server
                 payload = new Telemetary_Data { }
             };
 
-            while (IsTcpGood())
+            while (IsConnectionValid())
             {
                 /* Writing */
                 await WaitUntilAsync(DataReadyToSend);

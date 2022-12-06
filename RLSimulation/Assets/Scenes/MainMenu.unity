@@ -1111,7 +1111,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd1622c5816707440ba8d2977fb89936, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  level_type: 0
   audio_mixer: {fileID: 24100000, guid: 99ad05366bc473348b4540ac19146389, type: 2}
   simulation_name: UnderwaterScene
   options_menu: {fileID: 1956598227}

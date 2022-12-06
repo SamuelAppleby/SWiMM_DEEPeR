@@ -19,7 +19,7 @@ public class Singleton<T> : MonoBehaviour where T : Component
         }
     }
 
-    protected virtual void OnSceneChanged(AsyncOperation obj, SceneIndices to)
+    protected virtual void OnSceneChanged(AsyncOperation obj, Enums.E_SceneIndices to)
     {
     }
 }

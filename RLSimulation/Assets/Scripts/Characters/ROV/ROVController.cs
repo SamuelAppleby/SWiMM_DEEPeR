@@ -350,7 +350,8 @@ public class ROVController : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
-        collision_objects_list.Remove(collision.gameObject.tag);
+        /* Physics ticks may happen before message is sent, so persist reset on collion */
+        //collision_objects_list.Remove(collision.gameObject.tag);
     }
 
     private void OnTriggerEnter(Collider other)

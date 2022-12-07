@@ -44,3 +44,7 @@ RLSimulation/Logs/Builds/Logs/
 RLSimulation/Builds/Windows/Logs
 RLSimulation/Builds/Linux/Logs
 .venv/
+*.pyc
+.idea/
+.vscode/
+.vsconfig

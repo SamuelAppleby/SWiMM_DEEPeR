@@ -234,7 +234,7 @@ if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
     exp_folder = args.trained_agent.split('.pkl')[0]
     if normalize:
         print("Loading saved running average ...")
-        env.load_running_average(exp_folder)
+        env.load(exp_folder, env)
 
 else:
     # Train an agent from scratch
@@ -267,7 +267,7 @@ with open(os.path.join(run_specific_path, 'config.yml'), 'w') as f:
 
 if normalize:
     # Important: save the running average, for testing the agent we need that normalization
-    env.save_running_average(run_specific_path)
+    env.save(run_specific_path)
 
 # close sim or command line hangs - indexing is to unwrap wrapper
 env.envs[0].close()

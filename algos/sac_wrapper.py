@@ -79,7 +79,7 @@ class SACWrap(SAC):
 
             for step in range(total_timesteps):
 
-                print('Step {} (total):'.format(step))
+                #print('Step {} (total):'.format(step))
                 # Compute current learning_rate
                 frac = 1.0 - step / total_timesteps
                 current_lr = self.learning_rate(frac, mean_reward)

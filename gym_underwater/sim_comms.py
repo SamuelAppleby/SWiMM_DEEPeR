@@ -135,9 +135,10 @@ class UnitySimHandler:
             logger.debug(f"game over: distance {self.d}")
             return True
         if "Fish" in self.hit:
+            print("Episode terminated due to collision")
             logger.debug(f"game over: hit {self.hit}")
             return True
-            print("Episode terminated due to collision")
+            
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
 

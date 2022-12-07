@@ -56,7 +56,7 @@ class SACWrap(SAC):
         return mb_infos_vals
 
     def learn(self, total_timesteps, callback=None,
-              log_interval=1, tb_log_name="SAC", print_freq=1):
+              log_interval=1, tb_log_name="SAC", print_freq=100):
         with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name) as writer:
 
             self._setup_learn()

@@ -134,7 +134,7 @@ class PythonServer:
 
             # unpack and send json message onto handler
             my_json = data.decode('UTF-8')
-            print('Received: {}'.format(my_json))
+            #print('Received: {}'.format(my_json))
             json_dict = json.loads(my_json)
             self.handler.on_recv_message(json_dict)
 
@@ -144,7 +144,7 @@ class PythonServer:
             while self.msg is None:
                 time.sleep(1.0 / 120.0)
 
-            print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
+            #print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
 
             if self.protocol == Protocol.UDP:
                 self.sock.sendto(self.msg.encode('utf-8'), self.addr)

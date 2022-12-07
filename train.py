@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
 parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
 parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default='gym_underwater/Logs', type=str)
-parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=False, type=bool)
+parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=True, type=bool)
 parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
 parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
 parser.add_argument('--print-freq', help='Print number of steps to terminal at this interval', default=10, type=int)
@@ -235,7 +235,7 @@ if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
     exp_folder = args.trained_agent.split('.pkl')[0]
     if normalize:
         print("Loading saved running average ...")
-        env.load_running_average(exp_folder)
+        env.load(exp_folder, env)
 
 else:
     # Train an agent from scratch
@@ -268,7 +268,7 @@ with open(os.path.join(run_specific_path, 'config.yml'), 'w') as f:
 
 if normalize:
     # Important: save the running average, for testing the agent we need that normalization
-    env.save_running_average(run_specific_path)
+    env.save(run_specific_path)
 
 # close sim or command line hangs - indexing is to unwrap wrapper
 env.envs[0].close()

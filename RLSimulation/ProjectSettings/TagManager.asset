@@ -11,6 +11,7 @@ TagManager:
   - Water
   - Floater
   - WaterSurface
+  - Dolphin
   layers:
   - Default
   - TransparentFX

@@ -454,7 +454,7 @@ GameObject:
   - component: {fileID: -9165831653017169828}
   m_Layer: 0
   m_Name: dolphin
-  m_TagString: Untagged
+  m_TagString: Dolphin
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

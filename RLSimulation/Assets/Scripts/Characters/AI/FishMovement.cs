@@ -39,9 +39,14 @@ public class FishMovement : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.O))
+        if (Input.GetKeyDown(KeyCode.Minus))
         {
-            transform.position = new Vector3(50, 50, 50);
+            transform.position = new Vector3(0, 100, 0);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Equals))
+        {
+            transform.position = SimulationManager._instance.rover.transform.position;
         }
 
         if ((transform.position - SimulationManager._instance.rover.transform.position).magnitude > distance_threshold)

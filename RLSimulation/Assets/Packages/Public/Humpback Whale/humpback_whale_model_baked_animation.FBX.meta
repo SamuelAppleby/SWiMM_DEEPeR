@@ -1,26 +1,11 @@
 fileFormatVersion: 2
 guid: 035a8130f4329504aaa80f75dc72628d
 ModelImporter:
-  serializedVersion: 21202
+  serializedVersion: 21300
   internalIDToNameTable:
   - first:
       43: 4300000
     second: humpback_whale_exp1_0
-  - first:
-      74: 7330622477707321032
-    second: swim
-  - first:
-      74: 8450349730359761091
-    second: fastswim
-  - first:
-      74: -6758483313513240000
-    second: death
-  - first:
-      74: 126394351356900262
-    second: fastswim2
-  - first:
-      74: 868654973677676517
-    second: dive
   externalObjects: {}
   materials:
     materialImportMode: 1
@@ -262,6 +247,7 @@ ModelImporter:
   humanoidOversampling: 1
   avatarSetup: 0
   addHumanoidExtraRootOnlyWhenUsingAvatar: 0
+  remapMaterialsIfMaterialImportModeIsNone: 1
   additionalBone: 0
   userData: 
   assetBundleName: 

@@ -81,8 +81,8 @@ public class ROVController : MonoBehaviour
 
     public void OnJsonControls(JsonMessage param)
     {
-        linear_force_to_be_applied = new Vector3(param.payload.jsonControls.lateralThrust, 
-            param.payload.jsonControls.verticalThrust, param.payload.jsonControls.forwardThrust);
+        linear_force_to_be_applied = new Vector3(param.payload.jsonControls.swayThrust, 
+            param.payload.jsonControls.heaveThrust, param.payload.jsonControls.surgeThrust);
         angular_force_to_be_applied = new Vector3(param.payload.jsonControls.pitchThrust, 
             param.payload.jsonControls.yawThrust, param.payload.jsonControls.rollThrust);
 

@@ -148,9 +148,9 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct JsonControls
     {
-        public float lateralThrust;
-        public float forwardThrust;
-        public float verticalThrust;
+        public float swayThrust;
+        public float heaveThrust;
+        public float surgeThrust;
         public float pitchThrust;
         public float yawThrust;
         public float rollThrust;

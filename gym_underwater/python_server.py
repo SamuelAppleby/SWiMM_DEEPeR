@@ -120,7 +120,7 @@ class PythonServer:
                 raise (Exception("Could not connect to server.")) from refuse_error
 
         while self.do_process_msgs:
-            #print('Waiting to receive message')
+            # print('Waiting to receive message')
             # receive packets/datagrams
             if self.protocol == Protocol.UDP:
                 data, self.addr = self.sock.recvfrom(1024 * self.receive_buffer_size)
@@ -134,17 +134,17 @@ class PythonServer:
 
             # unpack and send json message onto handler
             my_json = data.decode('UTF-8')
-            #print('Received: {}'.format(my_json))
+            # print('Received: {}'.format(my_json))
             json_dict = json.loads(my_json)
             self.handler.on_recv_message(json_dict)
 
             # wait for handler to point something to self.msg variable dedicated to outgoing messages
-            #print('Waiting to send message')
+            # print('Waiting to send message')
 
             while self.msg is None:
                 time.sleep(1.0 / 120.0)
 
-            #print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
+            # print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
 
             if self.protocol == Protocol.UDP:
                 self.sock.sendto(self.msg.encode('utf-8'), self.addr)

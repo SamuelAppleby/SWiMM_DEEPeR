@@ -79,7 +79,7 @@ class SACWrap(SAC):
 
             for step in range(total_timesteps):
 
-                #print('Step {} (total):'.format(step))
+                # print('Step {} (total):'.format(step))
                 # Compute current learning_rate
                 frac = 1.0 - step / total_timesteps
                 current_lr = self.learning_rate(frac, mean_reward)
@@ -107,8 +107,8 @@ class SACWrap(SAC):
                 new_obs, reward, done, info = self.env.step(rescaled_action)
                 ep_len += 1
 
-                if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
-                    print("{} steps".format(ep_len))
+                # if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
+                #     print("{} steps".format(ep_len))
 
                 # Store transition in the replay buffer.
                 self.replay_buffer.add(obs, rescaled_action, reward, new_obs, float(done))

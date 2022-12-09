@@ -209,9 +209,9 @@ class UnitySimHandler:
             "msgType": "receive_json_controls",
             "payload": {
                 "jsonControls": {
-                    "lateralThrust": '0',
-                    "verticalThrust": '0',
-                    "forwardThrust": action[0].__str__(),
+                    "swayThrust": '0',
+                    "heaveThrust": '0',
+                    "surgeThrust": action[0].__str__(),
                     "pitchThurst": '0',
                     "yawThrust": action[1].__str__(),
                     "rollThrust": '0',

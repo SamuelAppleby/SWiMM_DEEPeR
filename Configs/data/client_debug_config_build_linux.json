@@ -1,6 +1,6 @@
 {
-    "save_images" : true,
+    "save_images" : false,
     "image_dir" : "RLSimulation/Builds/Linux/Logs/sent_images/",
-    "save_sent_packets" : true,
+    "save_sent_packets" : false,
     "packet_sent_dir" : "RLSimulation/Builds/Linux/Logs/sent_packets/"
 }

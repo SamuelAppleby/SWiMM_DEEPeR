@@ -98,7 +98,7 @@ class UnitySimHandler:
         observation = self.image_array
         reward = self.calc_reward()
         done = self.determine_episode_over()
-        info = {"dummy": "can add variables here"}
+        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
 
         return observation, reward, done, info
 

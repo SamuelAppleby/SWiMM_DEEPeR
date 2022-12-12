@@ -38,14 +38,10 @@
                                     "properties": {
                                         "ballastMass": {
                                             "type": "number"
-                                        },
-                                        "totalBuoyantForce": {
-                                            "type": "number"
                                         }
                                     },
                                     "required": [
-                                        "ballastMass",
-                                        "totalBuoyantForce"
+                                        "ballastMass"
                                     ]
                                 },
                                 "motorConfig": {
@@ -154,7 +150,7 @@
                                                     "randomMovement": {
                                                         "type": "boolean"
                                                     },
-                                                    "movementDirections" : {
+                                                    "waypointAxes" : {
                                                         "type": "array",
                                                         "items": {
                                                             "type": "boolean"
@@ -190,7 +186,7 @@
                                                     "randomizeStats",
                                                     "enableSpawner",
                                                     "randomMovement",
-                                                    "movementDirections",
+                                                    "waypointAxes",
                                                     "spawnInfront",
                                                     "rotationOffset",
                                                     "scale",

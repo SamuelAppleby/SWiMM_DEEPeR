@@ -110,7 +110,7 @@ public class FishMovement : MonoBehaviour
         //q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
         //transform.rotation = q;
 
-        transform.position += correct_forward * Time.fixedDeltaTime * m_speed;
+        transform.position += correct_forward * m_speed;
 
         if ((m_waypoint - transform.position).magnitude < 10)
         {

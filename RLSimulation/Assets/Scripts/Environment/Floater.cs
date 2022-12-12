@@ -59,7 +59,7 @@ public class Floater : MonoBehaviour
             float bottom_of_collider = GetComponent<Collider>().transform.position.y - m_collider.radius;
             float diff = Math.Clamp(top_of_water - bottom_of_collider, 0, (2 * m_collider.radius));
             float floater_ratio_underwater = diff / (2 * m_collider.radius);
-            rb.AddForceAtPosition(Vector3.up * floater_ratio_underwater * buoyant_strength * Time.fixedDeltaTime, transform.position, ForceMode.Force);
+            rb.AddForceAtPosition(Vector3.up * floater_ratio_underwater * buoyant_strength, transform.position, ForceMode.Force);
         }
     }
 }

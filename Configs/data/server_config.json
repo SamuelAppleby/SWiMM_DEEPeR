@@ -5,14 +5,14 @@
       "roverConfig": {
         "motorConfig": {
           "linearThrustPower": [
-            10000,
-            40000,
-            10000
+            30,
+            180,
+            30
           ],
           "angularThrustPower" : [
-            1000,
-            1000,
-            1000
+            0.5,
+            0.5,
+            0.5
           ]
         },
         "camConfig": {
@@ -23,8 +23,7 @@
           "fov": 100
         },
         "structureConfig": {
-          "ballastMass": 1.2,
-          "totalBuoyantForce": 400
+          "ballastMass": 1.2
         }
       },
       "envConfig": {
@@ -39,9 +38,9 @@
               "maxAmount": 1,
               "maxSpawn": 1,
               "enableSpawner": true,
-              "randomMovement": true,
+              "randomMovement": false,
               "randomizeStats": false,
-              "movementDirections": [
+              "waypointAxes": [
                 true,
                 false,
                 true
@@ -52,9 +51,9 @@
                 0,
                 0
               ],
-              "scale": 4,
-              "minSpeed": 3,
-              "maxSpeed": 5
+              "scale": 1,
+              "minSpeed": 0.02,
+              "maxSpeed": 0.04
             },
             {
               "prefabName": "whale",
@@ -63,7 +62,7 @@
               "enableSpawner": false,
               "randomMovement": true,
               "randomizeStats": false,
-              "movementDirections": [
+              "waypointAxes": [
                 true,
                 false,
                 true

@@ -28,20 +28,20 @@ public class AIGroup
     public bool randomizeStats;
     [SerializeField]
     [HideInInspector]
-    public bool[] movementDirections;
+    public bool[] waypointAxes;
     [SerializeField]
-    public Vector3 movementDirectionsVector;
+    public Vector3 waypointAxesVector;
     [SerializeField]
     [HideInInspector]
-    public int[] rotationOffset;
+    public float[] rotationOffset;
     [SerializeField]
     public Vector3 rotationOffsetVector;
     [SerializeField]
-    public int scale;
+    public float scale = 1;
     [SerializeField]
-    public int minSpeed = 1;
+    public float minSpeed = 1;
     [SerializeField]
-    public int maxSpeed = 7;
+    public float maxSpeed = 7;
     [SerializeField]
     public bool spawnInfront = false;
     public GameObject objectPrefab { get; set; }
@@ -71,7 +71,7 @@ public class AIGroup
     public void IntArrayToVector3()
     {
         rotationOffsetVector = new Vector3(rotationOffset[0], rotationOffset[1], rotationOffset[2]);
-        movementDirectionsVector = new Vector3(Convert.ToInt32(movementDirections[0]), Convert.ToInt32(movementDirections[1]), Convert.ToInt32(movementDirections[2]));
+        waypointAxesVector = new Vector3(Convert.ToInt32(waypointAxes[0]), Convert.ToInt32(waypointAxes[1]), Convert.ToInt32(waypointAxes[2]));
     }
 }
 
@@ -205,15 +205,15 @@ public class FishSpawner : MonoBehaviour
                         temp_spawn.transform.parent = fixed_rotation.transform;
                         fixed_rotation.transform.parent = temp_group.transform;
                         fixed_rotation.transform.position = group.spawnInfront ? SimulationManager._instance.rover.transform.position +
-                            (SimulationManager._instance.rover.transform.forward * 20)
-                            : GetRandomValidPosition(group.movementDirectionsVector);
+                            (SimulationManager._instance.rover.transform.forward * 10)
+                            : GetRandomValidPosition(group.waypointAxesVector);
                         fixed_rotation.transform.rotation = Quaternion.Euler(group.rotationOffsetVector);
                         fixed_rotation.AddComponent<FishMovement>();
                         fixed_rotation.GetComponent<FishMovement>().random_movement = group.randomMovement;
                         fixed_rotation.GetComponent<FishMovement>().ai_manager = this;
                         fixed_rotation.GetComponent<FishMovement>().rotation_offset = fixed_rotation.transform.rotation.eulerAngles;
-                        fixed_rotation.GetComponent<FishMovement>().m_mix_max_speed = new System.Tuple<float, float>(group.minSpeed, group.maxSpeed);
-                        fixed_rotation.GetComponent<FishMovement>().valid_movements = group.movementDirectionsVector;
+                        fixed_rotation.GetComponent<FishMovement>().m_mix_max_speed = new Tuple<float, float>(group.minSpeed, group.maxSpeed);
+                        fixed_rotation.GetComponent<FishMovement>().valid_movements = group.waypointAxesVector;
                         temp_spawn.transform.localScale *= (group.scale * Random.Range(0.75f, 1.25f));
 
                         SimulationManager._instance.rover.GetComponent<ROVController>().target_transforms.Add(fixed_rotation.transform);

@@ -91,7 +91,6 @@ public class Server
     {
         [Range(0f, 1.2f)]
         public float ballastMass;   // rover spec, 6x200g masses
-        public float totalBuoyantForce;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]

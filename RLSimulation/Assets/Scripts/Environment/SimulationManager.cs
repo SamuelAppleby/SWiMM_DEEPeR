@@ -157,7 +157,10 @@ public class SimulationManager : Singleton<SimulationManager>
                     _instance.processing_obj.SetActive(false);
                     break;
                 case Enums.E_SceneIndices.SIMULATION:
-                    Time.timeScale = 0;
+                    if (!in_manual)
+                    {
+                        Time.timeScale = 0;
+                    }
                     break;
             }
         }

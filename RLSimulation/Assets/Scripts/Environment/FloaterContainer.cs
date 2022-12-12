@@ -16,11 +16,8 @@ public class FloaterContainer : MonoBehaviour
 
     void Start()
     {
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
-        {
-            total_buoyant_strength = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.totalBuoyantForce;
-        }
-
+        /* Fb = pgV, approximation of box */
+        total_buoyant_strength = Utils.RHO_WATER * -Physics.gravity.y * Utils.VolumeOfBoxCollider(GetComponent<BoxCollider>());
         m_collider = GetComponent<Collider>();
         InitialiseFloaters();
         is_initialized = true;

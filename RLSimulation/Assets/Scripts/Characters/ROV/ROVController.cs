@@ -199,7 +199,7 @@ public class ROVController : MonoBehaviour
         m_RigidBody.drag = m_IsUnderwater ? water_drag : air_drag;
         m_RigidBody.angularDrag = m_IsUnderwater ? angular_water_drag : angular_air_drag;
 
-        if (SimulationManager._instance.server != null)
+        if (SimulationManager._instance.server != null && !SimulationManager._instance.in_manual_mode)
         {
             if(Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
             Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
@@ -246,16 +246,19 @@ public class ROVController : MonoBehaviour
                 }
             }
 
-            desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThrustStrength) * Time.fixedDeltaTime;
+            desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThrustStrength);
+            desiredRotation = Vector3.Scale(desiredRotation, movement_controls.AngularThrustStrength);
 
-            /* Counteract the forces due to gravity + buoyancy */
+            //m_RigidBody.AddForce(Vector3.up * GetComponent<FloaterContainer>().total_buoyant_strength * Time.fixedDeltaTime, ForceMode.Acceleration);
+
+            /* Counteract the forces due to gravity irrelevant of fixed dt */
             if (m_depth_hold_mode)
             {
+                //m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().total_buoyant_strength * Time.fixedDeltaTime, ForceMode.Acceleration);
                 m_RigidBody.AddForce(-Physics.gravity, ForceMode.Acceleration);
-                desiredMove.y -= GetComponent<FloaterContainer>().total_buoyant_strength * Time.fixedDeltaTime;
+                m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().total_buoyant_strength, ForceMode.Force);
+                //desiredMove.y -= GetComponent<FloaterContainer>().total_buoyant_strength;
             }
-
-            desiredRotation = Vector3.Scale(desiredRotation, movement_controls.AngularThrustStrength) * Time.fixedDeltaTime;
 
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);
             m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Force);

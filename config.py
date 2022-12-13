@@ -6,5 +6,5 @@ chosen algorithm, in the 'hyperparams' folder.
 """
 
 IMG_SCALE = (84,84,3)
-OPT_D = 0
-MAX_D = 30
+OPT_D = 20
+MAX_D = 17

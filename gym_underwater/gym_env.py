@@ -39,7 +39,8 @@ class UnderwaterEnv(gym.Env):
 
         # observation space declaration
         print("Declaring observation space")
-        self.observation_space = spaces.Box(low=0, high=255, shape=IMG_SCALE, dtype=np.uint8)
+        #self.observation_space = spaces.Box(low=0, high=255, shape=IMG_SCALE, dtype=np.uint8)
+        self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1,12), dtype=np.float32)
 
         #     # seed environment
         #     #self.seed()
@@ -57,6 +58,7 @@ class UnderwaterEnv(gym.Env):
     #     #return [seed]
 
     def step(self, action):
+
         # send action decision to communicator to send off to sim
         self.communicator.take_action(action)
 

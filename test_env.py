@@ -1,5 +1,6 @@
 import numpy as np
 import csv
+import datetime
 
 from gym_underwater.gym_env import UnderwaterEnv
 
@@ -7,10 +8,10 @@ from gym_underwater.gym_env import UnderwaterEnv
 env = UnderwaterEnv()
 
 # path to csv file if using
-csv_path = './test_backward.csv'
+#csv_path = './test_backward.csv'
 
 # length of dummy run
-run_length = 30
+run_length = 200
 
 # list to store total episodic reward per episode
 episode_rewards = [0.0]
@@ -24,12 +25,15 @@ max_ep_length = 10
 # collect initial observation 
 obs = env.reset()
 
+# timer for any testing involving time spent comparisons
+begin_time = datetime.datetime.now()
+
 # mock run - instead of querying model for action, randomly sample or use hardcoded action
 for i in range(run_length):
 
     # sample action or set hardcoded action
     # action = env.action_space.sample()
-    action = [-1.0, 0]
+    action = [1.0, 0]
 
     # step through environment 
     obs, reward, done, info = env.step(action)
@@ -44,13 +48,13 @@ for i in range(run_length):
         info["rov_fwd"][0], info["rov_fwd"][1], info["rov_fwd"][2], info["targ_fwd"][0], info["targ_fwd"][1], info["targ_fwd"][2]))
     
     # or alternatively log to csv
-    row = [ep_len, reward, info["dist"], info["ang_error"], info["rov_pos"][0], info["rov_pos"][1], info["rov_pos"][2], 
-            info["targ_pos"][0], info["targ_pos"][1], info["targ_pos"][2], info["rov_fwd"][0], info["rov_fwd"][1], info["rov_fwd"][2], 
-            info["targ_fwd"][0], info["targ_fwd"][1], info["targ_fwd"][2]]
-    with open(csv_path, 'a') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(row)
-        csv_file.close()
+    # row = [ep_len, reward, info["dist"], info["ang_error"], info["rov_pos"][0], info["rov_pos"][1], info["rov_pos"][2], 
+    #         info["targ_pos"][0], info["targ_pos"][1], info["targ_pos"][2], info["rov_fwd"][0], info["rov_fwd"][1], info["rov_fwd"][2], 
+    #         info["targ_fwd"][0], info["targ_fwd"][1], info["targ_fwd"][2]]
+    # with open(csv_path, 'a') as csv_file:
+    #     writer = csv.writer(csv_file)
+    #     writer.writerow(row)
+    #     csv_file.close()
 
     # add reward for this step onto the cumulative sum for the current episode
     episode_rewards[-1] += reward
@@ -63,6 +67,7 @@ for i in range(run_length):
             episode_rewards.append(0.0)
             ep_len = 0
 
+print("TIME TAKEN: ", datetime.datetime.now() - begin_time)
 
 env.close()
 print("Finished Run")

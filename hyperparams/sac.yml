@@ -1,6 +1,7 @@
 UnderwaterEnv:
-  n_timesteps: !!float 300000
-  policy: 'CnnPolicy' 
+  n_timesteps: !!float 1000000
+  #policy: 'CnnPolicy'
+  policy: 'LnMlpPolicy' 
   learning_rate: acc_3e-4
   buffer_size: 30000
   batch_size: 64

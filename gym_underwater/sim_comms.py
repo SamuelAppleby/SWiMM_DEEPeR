@@ -65,6 +65,7 @@ class UnitySimHandler:
         self.target_pos = np.zeros(3)
         self.rover_fwd = np.zeros(3)
         self.target_fwd = np.zeros(3)
+        self.raw_d = 0.0
         self.d = 0.0
         self.a = 0.0
 
@@ -89,6 +90,9 @@ class UnitySimHandler:
         self.target_pos = np.zeros(3)
         self.rover_fwd = np.zeros(3)
         self.target_fwd = np.zeros(3)
+        self.raw_d = 0.0
+        self.d = 0.0
+        self.a = 0.0
 
     def observe(self):
         while self.last_obs is self.image_array:
@@ -96,11 +100,19 @@ class UnitySimHandler:
 
         self.last_obs = self.image_array
         observation = self.image_array
+
+        # for vector obs training run, uncomment below and overwrite observation variable
+        observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2], 
+                        self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
+
         reward = self.calc_reward()
+
         done = self.determine_episode_over()
+
         info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
 
         return observation, reward, done, info
+
 
     def calc_reward(self):
         # heading vector from rover to target
@@ -116,6 +128,8 @@ class UnitySimHandler:
             heading[2] = math.fabs(heading[2])
         else:
             heading[2] = -math.fabs(heading[2])
+
+        self.raw_d = math.sqrt(math.pow(heading[0], 2) + math.pow(heading[2], 2))
 
         # calculate distance i.e. magnitude of heading vector
         # NOTE THAT THIS IS DISTANCE FROM ROVER TO OPTIMAL TRACKING POSITION, NOT ROVER TO TARGET

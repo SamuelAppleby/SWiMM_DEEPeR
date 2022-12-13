@@ -2427,7 +2427,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.070142314, y: 0.000000031822907, z: -0.0000000022376434, w: 0.997537}
+  m_LocalRotation: {x: 0.070142314, y: -0.000000031822907, z: 0.0000000022376434, w: 0.997537}
   m_LocalPosition: {x: 0, y: 3, z: -17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3598,7 +3598,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859233691}
-  m_LocalRotation: {x: 0.07014231, y: 0.000000008582001, z: -6.0344757e-10, w: 0.997537}
+  m_LocalRotation: {x: 0.07014231, y: -0.000000008582, z: 6.034475e-10, w: 0.997537}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5829,6 +5829,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   total_buoyant_strength: 400
   is_initialized: 0
+  ocean_collider: {fileID: 50173730}
 --- !u!114 &1498372160
 MonoBehaviour:
   m_ObjectHideFlags: 0

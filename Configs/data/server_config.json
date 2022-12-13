@@ -38,7 +38,7 @@
               "maxAmount": 1,
               "maxSpawn": 1,
               "enableSpawner": true,
-              "randomMovement": false,
+              "randomMovement": true,
               "randomizeStats": false,
               "waypointAxes": [
                 true,

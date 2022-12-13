@@ -102,8 +102,8 @@ class UnitySimHandler:
         observation = self.image_array
 
         # for vector obs training run, uncomment below and overwrite observation variable
-        observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2], 
-                        self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
+        observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2],
+                       self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
 
         reward = self.calc_reward()
 
@@ -112,7 +112,6 @@ class UnitySimHandler:
         info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
 
         return observation, reward, done, info
-
 
     def calc_reward(self):
         # heading vector from rover to target
@@ -152,7 +151,6 @@ class UnitySimHandler:
             print("Episode terminated due to collision")
             logger.debug(f"game over: hit {self.hit}")
             return True
-            
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
 

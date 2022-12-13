@@ -5,10 +5,10 @@ using UnityEngine;
 
 public class Floater : MonoBehaviour
 {
-    public float buoyant_strength = 10;
+    public float buoyant_strength;
     private Rigidbody rb;
     private SphereCollider m_collider;
-    private Collider other_collier;
+    public Collider water_collider;      // Can be overriden onCollision, but default to avoid skipping physics ticks
 
     void Start()
     {
@@ -22,7 +22,7 @@ public class Floater : MonoBehaviour
     {
         if (other.gameObject.tag.Equals("Water"))
         {
-            other_collier = other.collider;
+            water_collider = other.collider;
         }
     }
 
@@ -30,7 +30,7 @@ public class Floater : MonoBehaviour
     {
         if (other.gameObject.tag.Equals("Water"))
         {
-            other_collier = null;
+            water_collider = null;
         }
     }
 
@@ -38,7 +38,7 @@ public class Floater : MonoBehaviour
     {
         if (other.gameObject.tag.Equals("Water"))
         {
-            other_collier = other;
+            water_collider = other;
         }
     }
 
@@ -46,16 +46,15 @@ public class Floater : MonoBehaviour
     {
         if (other.gameObject.tag.Equals("Water"))
         {
-            other_collier = null;
+            water_collider = null;
         }
     }
 
     private void FixedUpdate()
     {
-        if (other_collier != null)
+        if (water_collider != null)
         {
-            BoxCollider other_as_box = other_collier as BoxCollider;
-            float top_of_water = other_collier.transform.position.y + (other_as_box.size.y / 2);
+            float top_of_water = water_collider.transform.position.y + water_collider.bounds.extents.y;
             float bottom_of_collider = GetComponent<Collider>().transform.position.y - m_collider.radius;
             float diff = Math.Clamp(top_of_water - bottom_of_collider, 0, (2 * m_collider.radius));
             float floater_ratio_underwater = diff / (2 * m_collider.radius);

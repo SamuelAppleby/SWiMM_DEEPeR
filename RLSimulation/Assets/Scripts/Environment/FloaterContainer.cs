@@ -6,13 +6,14 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class FloaterContainer : MonoBehaviour
 {
-    [Header("Total buoyant strength (N) of ALL colliders, distrubted evenly")]
+    [HideInInspector]
     public float total_buoyant_strength;
     private Collider m_collider;
     private List<GameObject> floaters = new List<GameObject>();
     [HideInInspector]
     public bool is_initialized = false;
     private const int NUM_FLOATERS = 4;
+    public Collider ocean_collider;
 
     void Start()
     {
@@ -57,6 +58,7 @@ public class FloaterContainer : MonoBehaviour
 
                 new_floater.AddComponent<SphereCollider>();
                 new_floater.AddComponent<Floater>().buoyant_strength = total_buoyant_strength / NUM_FLOATERS;
+                new_floater.GetComponent<Floater>().water_collider = ocean_collider;
                 floaters.Add(new_floater);
             }
         }

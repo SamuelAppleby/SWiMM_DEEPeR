@@ -16,9 +16,16 @@ public static class Utils
         return new Vector3(arr[0], arr[1], arr[2]);
     }
 
-    public static float VolumeOfBoxCollider(BoxCollider box)
+    public static float VolumeOfBoxCollider(Collider collider)
     {
-        return box.size.x * box.size.y * box.size.z;
+        BoxCollider b_col = collider as BoxCollider;
+
+        if(b_col != null)
+        {
+            return b_col.size.x * b_col.size.y * b_col.size.z;
+        }
+
+        return 0;
     }
 
     public static float SignedVolumeOfTriangle(Vector3 p1, Vector3 p2, Vector3 p3)

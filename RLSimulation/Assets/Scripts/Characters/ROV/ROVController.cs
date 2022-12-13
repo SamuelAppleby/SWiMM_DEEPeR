@@ -255,8 +255,8 @@ public class ROVController : MonoBehaviour
             if (m_depth_hold_mode)
             {
                 //m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().total_buoyant_strength * Time.fixedDeltaTime, ForceMode.Acceleration);
-                m_RigidBody.AddForce(-Physics.gravity, ForceMode.Acceleration);
                 m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().total_buoyant_strength, ForceMode.Force);
+                m_RigidBody.AddForce(-Physics.gravity, ForceMode.Acceleration);
                 //desiredMove.y -= GetComponent<FloaterContainer>().total_buoyant_strength;
             }
 

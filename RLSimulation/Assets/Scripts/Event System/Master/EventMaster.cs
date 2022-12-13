@@ -32,6 +32,9 @@ public class EventMaster : Singleton<EventMaster>
     [SerializeField]
     public ServerAwaitingTrainingEvent server_awaiting_training_event;
 
+    [SerializeField]
+    public SceneChangedEvent scene_changed_event;
+
     protected override void Awake()
     {
         base.Awake();

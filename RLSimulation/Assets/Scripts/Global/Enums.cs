@@ -51,4 +51,12 @@ public static class Enums
         { "freeze", E_Action_Inference.FREEZE },
         { "maintainFreeze", E_Action_Inference.MAINTAIN_FREEZE },
     };
+
+    public enum E_Automation_Actions
+    {
+        TO_OPTIONS = 0,
+        SERVER_CONNECT = 1,
+        TO_MENU = 2,
+        START_TRAINING = 3
+    }
 }

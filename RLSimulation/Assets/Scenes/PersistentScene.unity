@@ -320,6 +320,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 228737033}
   m_CullTransparentMesh: 1
+--- !u!1 &422953604
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 422953606}
+  - component: {fileID: 422953605}
+  m_Layer: 0
+  m_Name: Automation
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &422953605
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 422953604}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a8c48550f2d61245bd063951cda10ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &422953606
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 422953604}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.45507276, y: -7.6459584, z: 8.69764}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &486455063
 GameObject:
   m_ObjectHideFlags: 0
@@ -957,6 +1001,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 032c2d7b78f0ab0498cc6c1d20bef718, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  automation_training_obj: {fileID: 422953604}
   current_scene_index: 0
   tips_text: {fileID: 1395858809}
   alpha_canvas: {fileID: 1395858811}
@@ -1023,6 +1068,7 @@ MonoBehaviour:
   server_connection_attempt_event: {fileID: 11400000, guid: 9809168dca526d7428cc8d7faafc028d, type: 2}
   observation_sent_event: {fileID: 11400000, guid: fb580ff4bcd398e4fad369220ee5df7c, type: 2}
   server_awaiting_training_event: {fileID: 11400000, guid: b5f7216a668a6bb48b6b583d30103fc7, type: 2}
+  scene_changed_event: {fileID: 11400000, guid: ec0efe08f347f724fa7230fa5076fdeb, type: 2}
 --- !u!114 &1373481081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1092,6 +1138,18 @@ MonoBehaviour:
         m_CallState: 2
       - m_Target: {fileID: 1373481077}
         m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: OnServerConnectionResponse
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 422953605}
+        m_TargetAssemblyTypeName: Automation_Training, Assembly-CSharp
         m_MethodName: OnServerConnectionResponse
         m_Mode: 0
         m_Arguments:
@@ -1246,6 +1304,33 @@ MonoBehaviour:
   ai_groups_complete_unity_event:
     m_PersistentCalls:
       m_Calls: []
+  scene_changed_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: OnSceneChanged
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 422953605}
+        m_TargetAssemblyTypeName: Automation_Training, Assembly-CSharp
+        m_MethodName: OnSceneChanged
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1395858807
 GameObject:
   m_ObjectHideFlags: 0

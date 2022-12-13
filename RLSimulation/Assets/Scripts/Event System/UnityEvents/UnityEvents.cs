@@ -26,3 +26,8 @@ public class ExceptionUnityEvent : UnityEvent<Exception>
 public class ServerConnectingUnityEvent : UnityEvent<string, int>
 {
 }
+
+[Serializable]
+public class SceneChangedUnityEvent : UnityEvent<Enums.E_SceneIndices>
+{
+}

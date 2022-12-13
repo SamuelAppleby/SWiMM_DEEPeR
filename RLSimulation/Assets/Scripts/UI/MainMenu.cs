@@ -5,7 +5,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Audio;
 using static Server;
-using Unity.VisualScripting;
 using UnityEngine.EventSystems;
 
 public class MainMenu : MonoBehaviour
@@ -57,6 +56,10 @@ public class MainMenu : MonoBehaviour
     public Slider volume_slider;
 
     public GraphicRaycaster ui_ray;
+
+    public Button options_button;
+
+    public Button back_button;
 
     public void OnAwaitingTraining()
     {
@@ -130,17 +133,6 @@ public class MainMenu : MonoBehaviour
          Application.Quit();
 #endif
     }
-
-    //public void OnServerConfigReceived(JsonMessage param)
-    //{
-    //    network_message.text = "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
-    //    network_image.sprite = healthy_network;
-    //    ip_addr.interactable = false;
-    //    port.interactable = false;
-    //    connect_button.image.color = Color.green;
-    //    connect_text.text = "Connected";
-    //    connect_button.interactable = false;
-    //}
 
     public void OnServerConnectionResponse(Exception e)
     {

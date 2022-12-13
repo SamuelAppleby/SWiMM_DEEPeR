@@ -2,19 +2,22 @@ using Cinemachine;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static Server;
+using static UnityEngine.Rendering.VirtualTexturing.Debugging;
 using AsyncOperation = UnityEngine.AsyncOperation;
 using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
+    public GameObject automation_training_obj;
+
     [HideInInspector]
     public Enums.E_SceneIndices current_scene_index;
     public TextMeshProUGUI tips_text;
@@ -60,13 +63,6 @@ public class SimulationManager : Singleton<SimulationManager>
         public int port;
         public bool save_packet_data;
     }
-
-    public struct CommandLineArguemnts
-    {
-        public ServerInfo server_info;
-    }
-
-    private CommandLineArguemnts command_args;
 
     [Serializable]
     public struct DebugConfig
@@ -170,12 +166,12 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void ExitCurrentScene()
     {
-        MoveToScene(Enums.E_SceneIndices.SIMULATION);       // In this case will unload and reload as intended
+        _instance.MoveToScene(Enums.E_SceneIndices.SIMULATION);       // In this case will unload and reload as intended
     }
 
     public void EndSimulation()
     {
-        MoveToScene(Enums.E_SceneIndices.EXIT);       // As above
+        _instance.MoveToScene(Enums.E_SceneIndices.EXIT);       // As above
     }
 
     private void Start()
@@ -243,6 +239,11 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.lighting_objs = GameObject.FindGameObjectsWithTag("Lighting");
     }
 
+    public void Quit()
+    {
+        _instance.MoveToScene(SimulationManager._instance.current_scene_index == Enums.E_SceneIndices.MAIN_MENU ? Enums.E_SceneIndices.EXIT : Enums.E_SceneIndices.MAIN_MENU);
+    }
+
     public void MoveToScene(Enums.E_SceneIndices to, bool in_manual = false)
     {
         if (to == Enums.E_SceneIndices.EXIT)
@@ -257,35 +258,29 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.in_manual_mode = in_manual;
 
         /* We don't want to unload the persistent scene */
-        if (_instance.current_scene_index == Enums.E_SceneIndices.PERSISTENT_SCENE)
-        {
-            StartCoroutine(GenerateTips());
-            StartCoroutine(GetSceneLoadProgress());
-
-            _instance.scene_loading = SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive);
-
-            _instance.scene_loading.completed += handle =>
-            {
-                OnSceneChanged(handle, to);
-            };
-        }
-
-        else
+        if (_instance.current_scene_index != Enums.E_SceneIndices.PERSISTENT_SCENE)
         {
             SceneManager.UnloadSceneAsync((int)_instance.current_scene_index).completed += handle =>
             {
-                StartCoroutine(GenerateTips());
-                StartCoroutine(GetSceneLoadProgress());
-
-                _instance.scene_loading = SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive);
-
-                _instance.scene_loading.completed += handle =>
-                {
-                    OnSceneChanged(handle, to);
-                };
-
+                LoadScene(to, handle);
             };
         }
+        else
+        {
+            LoadScene(to, null);
+        }
+
+    }
+
+    private void LoadScene(Enums.E_SceneIndices to, AsyncOperation op)
+    {
+        StartCoroutine(GenerateTips());
+        StartCoroutine(GetSceneLoadProgress());
+
+        SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive).completed += handle =>
+        {
+            EventMaster._instance.scene_changed_event.Raise(to);
+        };
     }
 
     public IEnumerator GenerateTips()
@@ -344,9 +339,8 @@ public class SimulationManager : Singleton<SimulationManager>
         yield break;
     }
 
-    protected override void OnSceneChanged(AsyncOperation handle, Enums.E_SceneIndices to)
+    public void OnSceneChanged(Enums.E_SceneIndices to)
     {
-        base.OnSceneChanged(handle, to);
         _instance.scene_loading = null;
         _instance.current_scene_index = to;
     }
@@ -462,7 +456,7 @@ public class SimulationManager : Singleton<SimulationManager>
         if (_instance.server != null && _instance.server.server_crash)
         {
             Enums.E_SceneIndices moving_to = current_scene_index == Enums.E_SceneIndices.MAIN_MENU ? Enums.E_SceneIndices.EXIT : Enums.E_SceneIndices.MAIN_MENU;
-            MoveToScene(moving_to);
+            _instance.MoveToScene(moving_to);
 
             if (_instance.server.server_crash)
             {
@@ -524,21 +518,14 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             switch (args[i])
             {
-                case "server":
-                    string[] parts = args[++i].Split(':');
-
-                    if (parts.Length == 2)
-                    {
-                        _instance.command_args.server_info.ip = parts[0];
-                        _instance.command_args.server_info.port = Int32.Parse(parts[1]);
-                    }
-                    break;
                 case "debug_conf_dir":
                     _instance.debug_config_dir = args[++i];
                     break;
-
                 case "network_conf_dir":
                     _instance.network_config_dir = args[++i];
+                    break;
+                case "automation_training":
+                    _instance.automation_training_obj.SetActive(true);
                     break;
             }
         }

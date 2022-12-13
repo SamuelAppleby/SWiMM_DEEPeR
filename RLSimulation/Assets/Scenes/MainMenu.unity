@@ -1127,6 +1127,8 @@ MonoBehaviour:
   working_directory_text: {fileID: 214343208}
   volume_slider: {fileID: 1137773416}
   ui_ray: {fileID: 568657487}
+  options_button: {fileID: 1279857716}
+  back_button: {fileID: 1351085541}
 --- !u!82 &568657492
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1238,19 +1240,7 @@ MonoBehaviour:
   game_events: []
   server_connecting_unity_event:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 177732612}
-        m_TargetAssemblyTypeName: UnityEngine.UI.Selectable, UnityEngine.UI
-        m_MethodName: set_interactable
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   server_connection_attempted_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -1300,6 +1290,9 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   ai_groups_complete_unity_event:
+    m_PersistentCalls:
+      m_Calls: []
+  scene_changed_unity_event:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &575312710

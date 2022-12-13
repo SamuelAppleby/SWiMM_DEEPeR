@@ -40,6 +40,9 @@ public class GameEventListener : MonoBehaviour
     [SerializeField]
     public UnityEvent ai_groups_complete_unity_event;
 
+    [SerializeField]
+    public SceneChangedUnityEvent scene_changed_unity_event;
+
     public virtual void OnEnable()
     {
         EventMaster._instance.reset_episode_event.RegisterListener(this);
@@ -52,6 +55,7 @@ public class GameEventListener : MonoBehaviour
         EventMaster._instance.observation_sent_event.RegisterListener(this);
         EventMaster._instance.server_awaiting_training_event.RegisterListener(this);
         EventMaster._instance.ai_groups_complete_event.RegisterListener(this);
+        EventMaster._instance.scene_changed_event.RegisterListener(this);
     }
 
     protected virtual void OnDisable()
@@ -66,6 +70,7 @@ public class GameEventListener : MonoBehaviour
         EventMaster._instance.observation_sent_event.UnregisterListener(this);
         EventMaster._instance.server_awaiting_training_event.UnregisterListener(this);
         EventMaster._instance.ai_groups_complete_event.UnregisterListener(this);
+        EventMaster._instance.scene_changed_event.UnregisterListener(this);
     }
 
     public void OnEpisodeResetEventRaised()
@@ -116,5 +121,10 @@ public class GameEventListener : MonoBehaviour
     public void OnAIGroupsCompleteEventRaised()
     {
         ai_groups_complete_unity_event.Invoke();
+    }
+
+    public void OnSceneChangedEventRaised(Enums.E_SceneIndices to)
+    {
+        scene_changed_unity_event.Invoke(to);
     }
 }

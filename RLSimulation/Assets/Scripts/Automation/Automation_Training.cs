@@ -27,7 +27,6 @@ public class Automation_Training : Singleton<Automation_Training>
 
             if (_instance.action_timer < 0.0f)
             {
-                Debug.Log((_instance.current_actions[0]));
                 switch (_instance.current_actions[0])
                 {
                     case Enums.E_Automation_Actions.TO_OPTIONS:

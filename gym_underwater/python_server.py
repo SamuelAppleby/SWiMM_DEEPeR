@@ -90,6 +90,8 @@ class PythonServer:
         """
 
         # create socket and associate the socket with local address
+        print('Protocol' + str(self.protocol))
+
         if self.protocol == Protocol.UDP:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         else:

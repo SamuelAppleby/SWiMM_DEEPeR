@@ -525,7 +525,7 @@ public class SimulationManager : Singleton<SimulationManager>
                     _instance.network_config_dir = args[++i];
                     break;
                 case "automation_training":
-                    _instance.automation_training_obj.SetActive(true);
+                    _instance.automation_training_obj.GetComponent<Automation_Training>().enabled = true;
                     break;
             }
         }

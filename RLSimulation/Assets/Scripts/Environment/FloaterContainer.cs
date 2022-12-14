@@ -7,18 +7,25 @@ using UnityEngine;
 public class FloaterContainer : MonoBehaviour
 {
     [HideInInspector]
-    public float total_buoyant_strength;
+    public float submerged_buoyant_strength;
     private Collider m_collider;
     private List<GameObject> floaters = new List<GameObject>();
     [HideInInspector]
     public bool is_initialized = false;
     private const int NUM_FLOATERS = 4;
     public Collider ocean_collider;
+    private const float displacement_volume = 375;      // cubic inches
+    private float net_buoyancy;      // cubic inches
 
     void Start()
     {
-        /* Fb = pgV, approximation of box */
-        total_buoyant_strength = Utils.RHO_WATER * -Physics.gravity.y * Utils.VolumeOfBoxCollider(GetComponent<BoxCollider>());
+        /* Fb = pgV, volume of rover from https://discuss.bluerobotics.com/t/volume-of-bluerov/245/5  NEED TO TEST VOLUME IN REAL */
+        //submerged_buoyant_strength = Utils.RHO_SALT_WATER * -Physics.gravity.y * (displacement_volume * Utils.metric_conversion_constant);
+
+        /* Default net buoyancy from https://bluerobotics.com/wp-content/uploads/2020/02/br_bluerov2_datasheet_rev6.pdf */
+        net_buoyancy = GetComponent<Rigidbody>().mass > 11 ? 0.2f : 1.4f;
+        submerged_buoyant_strength = (net_buoyancy * -Physics.gravity.y) + (GetComponent<Rigidbody>().mass * -Physics.gravity.y);
+
         m_collider = GetComponent<Collider>();
         InitialiseFloaters();
         is_initialized = true;
@@ -57,7 +64,7 @@ public class FloaterContainer : MonoBehaviour
                 }
 
                 new_floater.AddComponent<SphereCollider>();
-                new_floater.AddComponent<Floater>().buoyant_strength = total_buoyant_strength / NUM_FLOATERS;
+                new_floater.AddComponent<Floater>().buoyant_strength = submerged_buoyant_strength / NUM_FLOATERS;
                 new_floater.GetComponent<Floater>().water_collider = ocean_collider;
                 floaters.Add(new_floater);
             }

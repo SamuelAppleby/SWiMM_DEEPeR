@@ -25,6 +25,9 @@ public static class MovementControlMap
 [Serializable]
 public class ROVControls
 {
+    public float stabilityForce = 0.2f;
+    public float stabilityThreshold = 1f;
+
     public Vector3 LinearThrustStrength = new Vector3(10, 10, 10);
     public Vector3 AngularThrustStrength = new Vector3(10, 10, 10);
 

@@ -4,6 +4,8 @@
     "serverConfig": {
       "roverConfig": {
         "motorConfig": {
+          "stabilityForce": 0.2,
+          "stabilityThreshold": 1
           "linearThrustPower": [
             30,
             180,

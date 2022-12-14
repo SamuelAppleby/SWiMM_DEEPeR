@@ -47,6 +47,12 @@
                                 "motorConfig": {
                                     "type": "object",
                                     "properties": {
+                                        "stabilityThreshold": {
+                                            "type": "number"
+                                        },
+                                        "stabilityForce": {
+                                            "type": "number"
+                                        },
                                         "linearThrustPower": {
                                             "type": "array",
                                             "items": {
@@ -65,6 +71,8 @@
                                         }
                                     },
                                     "required": [
+                                        "stabilityThreshold",
+                                        "stabilityForce",
                                         "thrustPower"
                                     ]
                                 }

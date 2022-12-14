@@ -22,6 +22,8 @@ public class ROVController : MonoBehaviour
     public Rigidbody m_RigidBody;
     [HideInInspector]
     public bool m_depth_hold_mode = true;
+    [HideInInspector]
+    public bool m_stabilise_mode = true;
 
     public LayerMask water_mask;
     public LayerMask ground_mask;
@@ -130,6 +132,8 @@ public class ROVController : MonoBehaviour
             resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0],
                 SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]);
             m_RigidBody.mass += SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.ballastMass;
+            movement_controls.stabilityThreshold = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityThreshold;
+            movement_controls.stabilityForce = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityForce;
             movement_controls.LinearThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
             movement_controls.AngularThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
         }
@@ -246,20 +250,54 @@ public class ROVController : MonoBehaviour
                 }
             }
 
-            desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThrustStrength);
-            desiredRotation = Vector3.Scale(desiredRotation, movement_controls.AngularThrustStrength);
-
-            //m_RigidBody.AddForce(Vector3.up * GetComponent<FloaterContainer>().total_buoyant_strength * Time.fixedDeltaTime, ForceMode.Acceleration);
+            /*
+             * 
+             * The modes below are for the different settings the rover can be in, don't consider the thrust strength here
+             * 
+             */
 
             /* Counteract the forces due to gravity irrelevant of fixed dt */
             if (m_depth_hold_mode)
             {
-                //m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().total_buoyant_strength * Time.fixedDeltaTime, ForceMode.Acceleration);
-                m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().total_buoyant_strength, ForceMode.Force);
-                m_RigidBody.AddForce(-Physics.gravity, ForceMode.Acceleration);
-                //desiredMove.y -= GetComponent<FloaterContainer>().total_buoyant_strength;
+                m_RigidBody.AddForce(-Physics.gravity, ForceMode.Acceleration);     // ACCELERATION IS A CONSTANT ACCELERATION, TREAT DIFFERENTLY
+
+                //if (m_RigidBody.velocity.y < -movement_controls.stabilityThreshold)
+                //{
+                //    desiredMove += Vector3.up;
+                //}
+                //else if (m_RigidBody.velocity.y > movement_controls.stabilityThreshold)
+                //{
+                //    desiredMove += -Vector3.up;
+                //}
+
+                m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().submerged_buoyant_strength, ForceMode.Force);
+                //desiredMove += Vector3.up * -GetComponent<FloaterContainer>().submerged_buoyant_strength;
             }
 
+            /* Stabilise roll and pitch, NOT sway */
+            if (m_stabilise_mode)
+            {
+                if(90 - gameObject.transform.rotation.eulerAngles.x < -movement_controls.stabilityThreshold)     // Pitch is too far up so force down
+                {
+                    desiredRotation += Vector3.right;
+                }
+                else if (90 - gameObject.transform.rotation.eulerAngles.x > movement_controls.stabilityThreshold)     // Pitch is too far down so force up
+                {
+                    desiredRotation += -Vector3.right;
+                }
+
+                if (90 - gameObject.transform.rotation.eulerAngles.z < -movement_controls.stabilityThreshold)     // Pitch is too far up so force down
+                {
+                    desiredRotation += Vector3.forward;
+                }
+                else if (90 - gameObject.transform.rotation.eulerAngles.z > movement_controls.stabilityThreshold)     // Pitch is too far down so force down
+                {
+                    desiredRotation += -Vector3.forward;
+                }
+            }
+
+            desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThrustStrength);
+            desiredRotation = Vector3.Scale(desiredRotation, movement_controls.AngularThrustStrength);
             m_RigidBody.AddForce(desiredMove, ForceMode.Force);
             m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Force);
         }

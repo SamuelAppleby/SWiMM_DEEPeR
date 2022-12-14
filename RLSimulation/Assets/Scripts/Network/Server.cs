@@ -75,6 +75,8 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct MotorConfig
     {
+        public float stabilityThreshold;
+        public float stabilityForce;
         public float[] linearThrustPower;
         public float[] angularThrustPower;
     }
@@ -171,6 +173,9 @@ public class Server
 
     public DataToSend? obsv;
 
+    IPAddress ipAddress;
+    IPEndPoint ipEndPoint;
+
     public Server()
     {
         obsv = null;
@@ -199,14 +204,16 @@ public class Server
 
     public Exception Connect(SimulationManager.NetworkConfig network_config, string ip, int port)
     {
-        IPAddress ipAddress = IPAddress.Parse(ip);
-        IPEndPoint ipEndPoint = new IPEndPoint(ipAddress, port);
+        ipAddress = IPAddress.Parse(ip);
+        ipEndPoint = new IPEndPoint(ipAddress, port);
 
         try
         {
             if (Enums.protocol_mapping[network_config.protocol] == Enums.E_Protocol.UDP)
             {
-                udp_client = new UdpClient(ipEndPoint);
+                udp_client = new UdpClient();
+                udp_client.Client.ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024;
+                udp_client.Client.SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024;
                 udp_client.Connect(ipEndPoint);
                 return null;
             }
@@ -280,7 +287,7 @@ public class Server
 
                     if(udp_client != null)
                     {
-                        await udp_client.SendAsync(_data, _data.Length);
+                        await udp_client.SendAsync(_data, _data.Length);        // Have to send connectionless, don't know who's listening
                     }
                     else
                     {
@@ -301,9 +308,8 @@ public class Server
 
                 if (udp_client != null)
                 {
-                    UdpReceiveResult result = await udp_client.ReceiveAsync();
-                    jsonStr = Encoding.ASCII.GetString(result.Buffer, 0, result.Buffer.Length);
-                    IPEndPoint sender = result.RemoteEndPoint;
+                    byte[] receiveBytes = udp_client.Receive(ref ipEndPoint);
+                    jsonStr = Encoding.Default.GetString(receiveBytes);
                 }
                 else
                 {

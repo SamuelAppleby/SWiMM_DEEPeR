@@ -10,7 +10,7 @@ from PIL import Image
 from skimage.transform import resize
 
 from gym_underwater.python_server import PythonServer
-from config import *
+from Configs.config import *
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ class UnitySimCommunicator:
     def take_action(self, action):
         self.handler.take_action(action)
 
-    def observe(self):
-        return self.handler.observe()
+    def observe(self, obs):
+        return self.handler.observe(obs)
 
     def quit(self):
         self.handler.server.stop()
@@ -94,22 +94,24 @@ class UnitySimHandler:
         self.d = 0.0
         self.a = 0.0
 
-    def observe(self):
+    def observe(self, obs):
         while self.last_obs is self.image_array:
             time.sleep(1.0 / 120.0)
 
         self.last_obs = self.image_array
         observation = self.image_array
 
-        # for vector obs training run, uncomment below and overwrite observation variable
-        observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2],
-                       self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
+        # for vector obs training run, overwrite image observation with vector obs 
+        # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
+        if obs == 'vector':
+            observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2],
+                            self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
 
         reward = self.calc_reward()
 
         done = self.determine_episode_over()
 
-        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
+        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "raw_dist": self.raw_d, "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
 
         return observation, reward, done, info
 

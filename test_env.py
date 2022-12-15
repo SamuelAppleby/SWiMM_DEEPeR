@@ -5,13 +5,13 @@ import datetime
 from gym_underwater.gym_env import UnderwaterEnv
 
 # construct environment
-env = UnderwaterEnv()
+env = UnderwaterEnv(obs='image')
 
 # path to csv file if using
-#csv_path = './test_backward.csv'
+csv_path = './test_reward.csv'
 
 # length of dummy run
-run_length = 200
+run_length = 20
 
 # list to store total episodic reward per episode
 episode_rewards = [0.0]
@@ -20,7 +20,11 @@ episode_rewards = [0.0]
 ep_len = 0
 
 # decide on max episode length 
-max_ep_length = 10
+max_ep_length = 100
+
+# hardcoded action series 
+action = [[1.0, 0], [1.0, 0], [1.0, 0], [1.0, 0], [1.0, 0], [1.0, 0], [1.0, 0], [1.0, 0], [1.0, 0], [1.0, 0],
+            [1.0, 0.5], [1.0, 0.5], [1.0, 0.5], [1.0, 0.5], [1.0, 0.5], [1.0, 0.5], [1.0, 0.5], [1.0, 0.5], [1.0, 0.5], [1.0, 0.5]]
 
 # collect initial observation 
 obs = env.reset()
@@ -33,22 +37,22 @@ for i in range(run_length):
 
     # sample action or set hardcoded action
     # action = env.action_space.sample()
-    action = [1.0, 0]
+    #action = [0.7, 0]
 
     # step through environment 
-    obs, reward, done, info = env.step(action)
+    obs, reward, done, info = env.step(action[i])
 
     # increment episode length counter
     ep_len += 1
 
     # print to terminal lots of info for checking correctness of reward function
-    print("Step: {}, Reward: {:.2f}, Dist: {:.2f}, AngError: {:.2f}".format(ep_len, reward, info["dist"], info["ang_error"]))
-    print("RovPos: [{:.2f}, {:.2f}, {:.2f}], TargPos [{:.2f}, {:.2f}, {:.2f}], RovFwd: [{:.2f}, {:.2f}, {:.2f}], TargFwd [{:.2f}, {:.2f}, {:.2f}]"
-        .format(info["rov_pos"][0], info["rov_pos"][1], info["rov_pos"][2], info["targ_pos"][0], info["targ_pos"][1], info["targ_pos"][2], 
-        info["rov_fwd"][0], info["rov_fwd"][1], info["rov_fwd"][2], info["targ_fwd"][0], info["targ_fwd"][1], info["targ_fwd"][2]))
+    # print("Step: {}, Reward: {:.2f}, RawDist: {:.2f}, Dist: {:.2f}, AngError: {:.2f}".format(ep_len, reward, info["raw_dist"], info["dist"], info["ang_error"]))
+    # print("RovPos: [{:.2f}, {:.2f}, {:.2f}], TargPos [{:.2f}, {:.2f}, {:.2f}], RovFwd: [{:.2f}, {:.2f}, {:.2f}], TargFwd [{:.2f}, {:.2f}, {:.2f}]"
+    #     .format(info["rov_pos"][0], info["rov_pos"][1], info["rov_pos"][2], info["targ_pos"][0], info["targ_pos"][1], info["targ_pos"][2], 
+    #     info["rov_fwd"][0], info["rov_fwd"][1], info["rov_fwd"][2], info["targ_fwd"][0], info["targ_fwd"][1], info["targ_fwd"][2]))
     
     # or alternatively log to csv
-    # row = [ep_len, reward, info["dist"], info["ang_error"], info["rov_pos"][0], info["rov_pos"][1], info["rov_pos"][2], 
+    # row = [ep_len, reward, info["raw_dist"], info["dist"], info["ang_error"], info["rov_pos"][0], info["rov_pos"][1], info["rov_pos"][2], 
     #         info["targ_pos"][0], info["targ_pos"][1], info["targ_pos"][2], info["rov_fwd"][0], info["rov_fwd"][1], info["rov_fwd"][2], 
     #         info["targ_fwd"][0], info["targ_fwd"][1], info["targ_fwd"][2]]
     # with open(csv_path, 'a') as csv_file:

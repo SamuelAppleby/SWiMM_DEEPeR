@@ -5,11 +5,11 @@
       "roverConfig": {
         "motorConfig": {
           "stabilityForce": 0.2,
-          "stabilityThreshold": 1
+          "stabilityThreshold": 1,
           "linearThrustPower": [
-            30,
+            70,
             180,
-            30
+            70
           ],
           "angularThrustPower" : [
             0.5,

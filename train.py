@@ -20,6 +20,7 @@ from stable_baselines.common.vec_env import VecNormalize, DummyVecEnv
 # local imports
 from algos import SAC
 from gym_underwater.gym_env import UnderwaterEnv
+from Configs.config import *
 
 # remove warnings
 # TODO: terminal still flooded with warnings, try and remove
@@ -32,20 +33,21 @@ ALGOS = {
     'sac': SAC,
 }
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
-parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
-parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default='gym_underwater/Logs', type=str)
-parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=True, type=bool)
-parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
-parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
-parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
+# parser.add_argument('--obs', help='Observation type', default='image', type=str, required=False, choices=list(OBS))
+# parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
+# parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default='gym_underwater/Logs', type=str)
+# parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=True, type=bool)
+# parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
+# parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
+# parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
+# args = parser.parse_args()
 
 
 # --------------------------- Utils ------------------------#
 
-def make_env(log_d, seed=None):
+def make_env(obs, log_d, seed=None):
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
@@ -54,7 +56,7 @@ def make_env(log_d, seed=None):
         # TODO: is below needed again?
         set_global_seeds(seed)
         # create instance of environment
-        env_inst = UnderwaterEnv()
+        env_inst = UnderwaterEnv(obs)
         print("Environment ready")
         # environment seeded with randomly generated seed on initialisation but overwrite if seed provided in yaml 
         if seed > 0:
@@ -142,13 +144,13 @@ def accelerated_schedule(initial_value):
 # ---------------------------- Main script ----------------------------------#
 
 # early check on path to trained model if -i arg passed
-if args.trained_agent != "":
-    assert args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent), \
+if MODEL != "":
+    assert MODEL.endswith('.pkl') and os.path.isfile(MODEL), \
         "The argument trained_agent must be a valid path to a .pkl file"
 
 # load hyperparameters from yaml file into dict 
 print("Loading hyperparameters ...")
-with open('hyperparams/{}.yml'.format(args.algo), 'r') as f:
+with open('hyperparams/{}.yml'.format(ALGO), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
 # this ordered (alphabetical) dict will be saved out alongside model so know which hyperparams were used for training
@@ -161,9 +163,9 @@ set_global_seeds(hyperparams.get('seed', 0))
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.join(args.base_filepath, args.algo)
+algo_specific_path = os.path.join(BASE_FILEPATH, ALGO)
 run_id = 0
-# if run is first run for args.algo, this for loop won't execute
+# if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
     run_num = path.split("/")[-1]
     if run_num.isdigit() and int(run_num) > run_id:
@@ -173,13 +175,13 @@ os.makedirs(run_specific_path, exist_ok=True)
 print("Outputs and logs will be saved to {}/... ".format(run_specific_path))
 
 # generate path for TB files
-if not args.tensorboard:
+if not TB:
     tb_path = None
 else:
     tb_path = os.path.join(run_specific_path, 'tb_logs')
 
 # generate path for Monitor logs
-if not args.logging:
+if not MONITOR:
     log_dir = "/tmp/gym/{}/".format(int(time.time()))
 else:
     log_dir = os.path.join(run_specific_path, 'monitor_logs')
@@ -215,23 +217,22 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(log_dir, seed=hyperparams.get('seed', 0))])
+env = DummyVecEnv([make_env(OBS, log_dir, seed=hyperparams.get('seed', 0))])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:
     env = VecNormalize(env, **normalize_kwargs)
 
 # if training on top of trained model, load trained model
-if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
+if MODEL.endswith('.pkl') and os.path.isfile(MODEL):
     # Continue training
     print("Loading pretrained agent ...")
     # Policy should not be changed
     del hyperparams['policy']  # network architecture already set so don't need
 
-    model = ALGOS[args.algo].load(args.trained_agent, env=env,
-                                  tensorboard_log=tb_path, verbose=1, **hyperparams)
+    model = ALGOS[ALGO].load(MODEL, env=env, tensorboard_log=tb_path, verbose=1, **hyperparams)
 
-    exp_folder = args.trained_agent.split('.pkl')[0]
+    exp_folder = MODEL.split('.pkl')[0]
     if normalize:
         print("Loading saved running average ...")
         env.load(exp_folder, env)
@@ -239,11 +240,11 @@ if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
 else:
     # Train an agent from scratch
     print("Training from scratch: initialising new model ...")
-    model = ALGOS[args.algo](env=env, tensorboard_log=tb_path, verbose=1, **hyperparams)
+    model = ALGOS[ALGO](env=env, tensorboard_log=tb_path, verbose=1, **hyperparams)
 
 kwargs = {}
-if args.log_interval > -1:
-    kwargs = {'log_interval': args.log_interval}
+if LOG_INTERVAL > -1:
+    kwargs = {'log_interval': LOG_INTERVAL}
 
 # TODO: implement callbacks
 

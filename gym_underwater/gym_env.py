@@ -1,5 +1,4 @@
 import logging
-import time
 import warnings
 import gym
 import numpy as np
@@ -7,7 +6,7 @@ from gym import spaces
 from gym.utils import seeding
 
 from gym_underwater.sim_comms import UnitySimCommunicator
-from config import IMG_SCALE
+from Configs.config import IMG_SCALE
 
 warnings.filterwarnings("ignore", category=UserWarning, module='gym')
 
@@ -19,12 +18,15 @@ class UnderwaterEnv(gym.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self):
+    def __init__(self, obs):
         print("Starting underwater environment ..")
 
         # set logging level
         logging.basicConfig(level=logging.INFO)
         logger.debug("DEBUG ON")
+
+        # make obs arg instance variable
+        self.obs = obs
 
         # create instance of class that deals with Unity comms
         self.communicator = UnitySimCommunicator()
@@ -39,8 +41,12 @@ class UnderwaterEnv(gym.Env):
 
         # observation space declaration
         print("Declaring observation space")
-        #self.observation_space = spaces.Box(low=0, high=255, shape=IMG_SCALE, dtype=np.uint8)
-        self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1,12), dtype=np.float32)
+        if self.obs == 'image':
+            self.observation_space = spaces.Box(low=0, high=255, shape=IMG_SCALE, dtype=np.uint8)
+        elif self.obs == 'vector':
+            self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1,12), dtype=np.float32)
+        else:
+            raise ValueError('Invalid observation type: {}'.format(obs))
 
         #     # seed environment
         #     #self.seed()
@@ -63,7 +69,7 @@ class UnderwaterEnv(gym.Env):
         self.communicator.take_action(action)
 
         # retrieve results of action implementation
-        observation, reward, done, info = self.communicator.observe()
+        observation, reward, done, info = self.communicator.observe(self.obs)
 
         return observation, reward, done, info
 
@@ -72,7 +78,7 @@ class UnderwaterEnv(gym.Env):
         self.communicator.reset()
 
         # fetch initial observation
-        observation, reward, done, info = self.communicator.observe()
+        observation, reward, done, info = self.communicator.observe(self.obs)
 
         return observation
 

@@ -33,7 +33,7 @@ VERBOSE = 1
 # The following are environment parameters
 
 # Observation type. CHOICES: 'image', 'vector'
-OBS = 'image'
+OBS = 'vector'
 
 # If using image obs, declare desired output size of scaling function
 IMG_SCALE = (84,84,3)

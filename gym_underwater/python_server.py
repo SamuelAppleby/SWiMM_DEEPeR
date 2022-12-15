@@ -159,7 +159,14 @@ class PythonServer:
             while self.msg is None:
                 time.sleep(1.0 / 120.0)
 
-            #print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
+            # print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
+            self.msg['payload']['seq_num'] = self.packets_sent
+            json_str = json.dumps(self.msg)
+            # print('Sending: {}'.format(json_str))
+
+            if 'packets_sent_dir' in self.debug_config:
+                with open(self.debug_config['packets_sent_dir'] + 'packet_' + str(self.packets_sent) + '.json', 'w', encoding='utf-8') as f:
+                    json.dump(self.msg, f, ensure_ascii=False, indent=4)
 
             if self.protocol == Protocol.UDP:
                 self.sock.sendto(bytes(json_str, encoding="utf-8"), self.addr)

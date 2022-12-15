@@ -5,13 +5,13 @@
       "roverConfig": {
         "motorConfig": {
           "stabilityForce": 0.2,
-          "stabilityThreshold": 1
+          "stabilityThreshold": 1,
           "linearThrustPower": [
             30,
             180,
             30
           ],
-          "angularThrustPower" : [
+          "angularThrustPower": [
             0.5,
             0.5,
             0.5
@@ -29,7 +29,7 @@
         }
       },
       "envConfig": {
-        "actionInference" : "maintain",
+        "actionInference": "maintain",
         "faunaConfig": {
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,

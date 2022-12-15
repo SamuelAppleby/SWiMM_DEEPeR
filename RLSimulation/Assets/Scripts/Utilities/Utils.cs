@@ -7,7 +7,7 @@ public static class Utils
     public const int RHO_SALT_WATER = 1025;
     public const float metric_conversion_constant = 0.000016387f;      // 1 inch ^ 3 = 1.6387 * 10 ^ -5
 
-    public static float[] Vector3ToFloatArray(ref Vector3 vec)
+    public static float[] Vector3ToFloatArray(Vector3 vec)
     {
         return new float[] { vec.x, vec.y, vec.z };
     }

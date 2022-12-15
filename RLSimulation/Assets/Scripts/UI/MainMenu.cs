@@ -127,23 +127,38 @@ public class MainMenu : MonoBehaviour
 
     public void TerminateApplication()
     {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
-#endif
+        SimulationManager._instance.QuitApplication();
     }
 
     public void OnServerConnectionResponse(Exception e)
     {
-        network_message.text = e != null ? "Failed to connect to: " + ip_addr.text + ":" + port.text : "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
-        network_image.sprite = e != null ? unhealthy_network : healthy_network;
-        ip_addr.interactable = e != null;
-        port.interactable = e != null;
-        connect_button.image.color = e != null ? Color.white : Color.green;
-        connect_text.text = e != null ? "Connect" : "Connected";
-        connect_button.interactable = e != null;
+        if(Enums.protocol_mapping[SimulationManager._instance.network_config.protocol] == Enums.E_Protocol.TCP)
+        {
+            network_message.text = e != null ? "Failed to connect to: " + ip_addr.text + ":" + port.text : "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
+            network_image.sprite = e != null ? unhealthy_network : healthy_network;
+            ip_addr.interactable = e != null;
+            port.interactable = e != null;
+            connect_button.image.color = e != null ? Color.white : Color.green;
+            connect_text.text = e != null ? "Connect" : "Connected";
+            connect_button.interactable = e != null;
+        }
+
         EventSystem.current.SetSelectedGameObject(null);
+    }
+
+    public void OnServerConfigReceived(JsonMessage param)
+    {
+        if (Enums.protocol_mapping[SimulationManager._instance.network_config.protocol] == Enums.E_Protocol.UDP)
+        {
+            network_message.text = "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
+            network_image.sprite = healthy_network;
+            ip_addr.interactable = false;
+            port.interactable = false;
+            connect_button.image.color = Color.green;
+            connect_text.text = "Connected";
+            connect_button.interactable = false;
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
     public void Connect(string ip, int port)

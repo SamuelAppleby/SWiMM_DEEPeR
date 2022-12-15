@@ -24,6 +24,24 @@ protocol_mapping = {
 }
 
 
+def process_and_validate_config(conf_dir, schema_dir):
+    with open(conf_dir) as json_file_server_config:
+        conf_json = json.load(json_file_server_config)
+
+        with open(schema_dir) as json_file_server_config_schema:
+            schema_json = json.load(json_file_server_config_schema)
+            validate(instance=conf_json, schema=schema_json)
+
+            return conf_json
+
+
+def clean_and_create_directory(path):
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+
+    os.makedirs(path)
+
+
 class PythonServer:
     """
     Handles message passing with a single TCP client.
@@ -47,12 +65,13 @@ class PythonServer:
         self.protocol = None
         self.server_config = None
         self.receive_buffer_size = None
+        self.packets_sent = 0
 
         # process the debug config
-        self.debug_config = self.process_and_validate_config('Configs/data/server_debug_config.json', 'Configs/schemas/server_debug_config_schema.json')
+        self.debug_config = process_and_validate_config('Configs/data/debug_config.json', 'Configs/schemas/debug_config_schema.json')
 
         # process the network config
-        self.network_config = self.process_and_validate_config('Configs/data/network_config.json', 'Configs/schemas/network_config_schema.json')
+        self.network_config = process_and_validate_config('Configs/data/network_config.json', 'Configs/schemas/network_config_schema.json')
 
         self.protocol = protocol_mapping[self.network_config["protocol"]]
 
@@ -61,28 +80,19 @@ class PythonServer:
         self.receive_buffer_size = self.network_config["buffers"]["server_receive_buffer_size_kb"]
 
         # process the server config
-        self.server_config = self.process_and_validate_config('Configs/data/server_config.json', 'Configs/schemas/server_config_schema.json')
+        self.server_config = process_and_validate_config('Configs/data/server_config.json', 'Configs/schemas/server_config_schema.json')
 
         # clean cache (old images, logs etc)
-        self.clean_cache()
+        if 'image_dir' in self.debug_config:
+            clean_and_create_directory(self.debug_config['image_dir'])
+
+        if 'packets_sent_dir' in self.debug_config:
+            clean_and_create_directory(self.debug_config['packets_sent_dir'])
+
+        if 'packets_received_dir' in self.debug_config:
+            clean_and_create_directory(self.debug_config['packets_received_dir'])
 
         self.connect(*self.address)
-
-    def clean_cache(self):
-        dirpath = self.debug_config["image_dir"]
-        if os.path.isdir(dirpath):
-            shutil.rmtree(dirpath)
-
-    def process_and_validate_config(self, conf_dir, schema_dir):
-        f = open(conf_dir, "r")
-        conf_json = json.load(f)
-
-        f = open(schema_dir, "r")
-        schema_json = json.load(f)
-
-        validate(instance=conf_json, schema=schema_json)
-
-        return conf_json
 
     def connect(self, host='127.0.0.1', port=60260):
         """
@@ -135,24 +145,35 @@ class PythonServer:
                 break
 
             # unpack and send json message onto handler
-            my_json = data.decode('UTF-8')
-            print('Received: {}'.format(my_json))
-            json_dict = json.loads(my_json)
+            json_str = data.decode('UTF-8')
+            # print('Received: {}'.format(json_str))
+            json_dict = json.loads(json_str)
+
+            if 'packets_received_dir' in self.debug_config:
+                with open(self.debug_config['packets_received_dir'] + 'packet_' + str(json_dict['payload']['seq_num']) + '.json', 'w', encoding='utf-8') as f:
+                    json.dump(json_dict, f, ensure_ascii=False, indent=4)
+
             self.handler.on_recv_message(json_dict)
 
             # wait for handler to point something to self.msg variable dedicated to outgoing messages
             # print('Waiting to send message')
-
             while self.msg is None:
                 time.sleep(1.0 / 120.0)
 
-            print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
+            self.msg['payload']['seq_num'] = self.packets_sent
+            json_str = json.dumps(self.msg)
+            # print('Sending: {}'.format(json_str))
+
+            if 'packets_sent_dir' in self.debug_config:
+                with open(self.debug_config['packets_sent_dir'] + 'packet_' + str(self.packets_sent) + '.json', 'w', encoding='utf-8') as f:
+                    json.dump(self.msg, f, ensure_ascii=False, indent=4)
 
             if self.protocol == Protocol.UDP:
-                self.sock.sendto(self.msg.encode('utf-8'), self.addr)
+                self.sock.sendto(bytes(json_str, encoding="utf-8"), self.addr)
             else:
-                self.conn.sendall(self.msg.encode('utf-8'))
+                self.conn.sendall(bytes(json_str, encoding="utf-8"))
 
+            self.packets_sent += 1
             self.msg = None
 
     def stop(self):
@@ -161,11 +182,11 @@ class PythonServer:
         """
         self.do_process_msgs = False
 
-        self.msg = json.dumps({
-            "msgType": "end_simulation",
-            "payload": {
+        self.msg = {
+            'msgType': 'end_simulation',
+            'payload': {
             }
-        })
+        }
 
         if self.th is not None:
             self.th.join()

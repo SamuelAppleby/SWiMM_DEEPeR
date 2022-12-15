@@ -48,3 +48,5 @@ RLSimulation/Builds/Linux/Logs
 .idea/
 .vscode/
 .vsconfig
+
+Logs/

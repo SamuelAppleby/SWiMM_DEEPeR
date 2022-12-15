@@ -187,23 +187,23 @@ class UnitySimHandler:
         return
 
     def sim_training_ready_request(self, payload):
-        logger.debug("sim ready to train")
+        logger.debug('sim ready to train')
         self.sim_training_ready = True
 
     def on_telemetry(self, payload):
-        self.rover_pos = np.array([payload["position"][0], payload["position"][1], payload["position"][2]])
-        self.hit = payload["collision_objects"]
-        self.rover_fwd = np.array([payload["fwd"][0], payload["fwd"][1], payload["fwd"][2]])
+        self.rover_pos = np.array([payload['position'][0], payload['position'][1], payload['position'][2]])
+        self.hit = payload['collision_objects']
+        self.rover_fwd = np.array([payload["fwd"][0], payload['fwd'][1], payload['fwd'][2]])
 
         # TODO: implement receiving data on multiple targets
         # Sam.A, targets are now an array, use the last element of it for targeting
-        for target in payload["targets"]:
-            self.target_pos = np.array([target["position"][0], target["position"][1], target["position"][2]])
-            self.target_fwd = np.array([target["fwd"][0], target["fwd"][1], target["fwd"][2]])
+        for target in payload['targets']:
+            self.target_pos = np.array([target['position'][0], target['position'][1], target['position'][2]])
+            self.target_fwd = np.array([target['fwd'][0], target['fwd'][1], target['fwd'][2]])
 
-        image = bytearray(base64.b64decode(payload["jpg_image"]))
+        image = bytearray(base64.b64decode(payload['jpg_image']))
 
-        if self.server.debug_config["save_images"]:
+        if 'image_dir' in self.server.debug_config:
             self.write_image_to_file_incrementally(image)
 
         image = np.array(Image.open(BytesIO(image)))
@@ -218,44 +218,39 @@ class UnitySimHandler:
     def take_action(self, action):
         if self.server is None:
             return
-        action_msg = {
-            "msgType": "receive_json_controls",
-            "payload": {
-                "jsonControls": {
-                    "swayThrust": '0',
-                    "heaveThrust": '0',
-                    "surgeThrust": action[0].__str__(),
-                    "pitchThurst": '0',
-                    "yawThrust": action[1].__str__(),
-                    "rollThrust": '0',
-                    "depthHoldMode": '1'
+
+        self.server.msg = {
+            'msgType': 'receive_json_controls',
+            'payload': {
+                'jsonControls': {
+                    'swayThrust': '0',
+                    'heaveThrust': '0',
+                    'surgeThrust': action[0].__str__(),
+                    'pitchThurst': '0',
+                    'yawThrust': action[1].__str__(),
+                    'rollThrust': '0',
+                    'depthHoldMode': '1'
                 }
             }
         }
-
-        self.server.msg = json.dumps(action_msg)
 
     def send_server_config(self):
         """
         Generate server config for client
         """
-        self.server.msg = json.dumps(self.server.server_config)
+        self.server.msg = self.server.server_config
 
     def send_reset(self):
-        msg = {
-            "msgType": "reset_episode",
-            "payload": {}
+        self.server.msg = {
+            'msgType': 'reset_episode',
+            'payload': {}
         }
-
-        self.server.msg = json.dumps(msg)
 
     def send_awaiting_training(self):
-        msg = {
-            "msgType": "awaiting_training",
-            "payload": {}
+        self.server.msg = {
+            'msgType': 'awaiting_training',
+            'payload': {}
         }
-
-        self.server.msg = json.dumps(msg)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -263,10 +258,10 @@ class UnitySimHandler:
         """
         Dumping the image to a continuously progressing file, just for debugging purposes
         """
-        os.makedirs(self.server.debug_config["image_dir"], exist_ok=True)
+        os.makedirs(self.server.debug_config['image_dir'], exist_ok=True)
 
-        i = 1
-        while os.path.exists(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg")):
+        i = 0
+        while os.path.exists(os.path.join(self.server.debug_config['image_dir'], f'image{i}.jpg')):
             i += 1
-        with open(os.path.join(self.server.debug_config["image_dir"], f"sample{i}.jpeg"), "wb") as f:
+        with open(os.path.join(self.server.debug_config['image_dir'], f'image{i}.jpg'), 'wb') as f:
             f.write(image)

@@ -76,9 +76,12 @@ public class Automation_Training : Singleton<Automation_Training>
 
             _instance.action_timer = _instance.TIME_TO_ACT;
         }
+        /* Connection failed the first time, might be pip installing try again (will be recursive) */
         else
         {
-            SimulationManager._instance.QuitApplication();
+            _instance.current_actions.AddRange(new List<Enums.E_Automation_Actions> {
+                    Enums.E_Automation_Actions.SERVER_CONNECT
+                });
         }
     }
 }

@@ -35,7 +35,7 @@ ALGOS = {
 parser = argparse.ArgumentParser()
 parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
 parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
-parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default='gym_underwater/Logs', type=str)
+parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default=os.path.join('gym_underwater' + os.sep, 'Logs'), type=str)
 parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=True, type=bool)
 parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
 parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
@@ -161,7 +161,7 @@ set_global_seeds(hyperparams.get('seed', 0))
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.join(args.base_filepath, args.algo)
+algo_specific_path = os.path.join(args.base_filepath + os.sep, args.algo)
 run_id = 0
 # if run is first run for args.algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):

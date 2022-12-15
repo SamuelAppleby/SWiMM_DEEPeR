@@ -1,0 +1,43 @@
+{
+    "type": "object",
+    "properties": {
+        "server_image_dir": {
+            "type": "string"
+        },
+        "server_packets_sent_dir": {
+            "type": "string"
+        },
+        "server_packets_received_dir": {
+            "type": "string"
+        },
+        "client_editor_image_dir": {
+            "type": "string"
+        },
+        "client_editor_server_packets_sent_dir": {
+            "type": "string"
+        },
+        "client_editor_server_packets_received_dir": {
+            "type": "string"
+        },
+        "client_build_windows_image_dir": {
+            "type": "string"
+        },
+        "client_build_windows_packets_sent_dir": {
+            "type": "string"
+        },
+        "client_build_windows_packets_received_dir": {
+            "type": "string"
+        },
+        "client_build_linux_image_dir": {
+            "type": "string"
+        },
+        "client_build_linux_packets_sent_dir": {
+            "type": "string"
+        },
+        "client_build_linux_packets_received_dir": {
+            "type": "string"
+        }
+    },
+    "required": [
+    ]
+}

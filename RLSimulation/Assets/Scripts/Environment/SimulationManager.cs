@@ -481,12 +481,6 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             switch (args[i])
             {
-                case "debug_conf_dir":
-                    _instance.debug_config_dir = args[++i];
-                    break;
-                case "network_conf_dir":
-                    _instance.network_config_dir = args[++i];
-                    break;
                 case "automation_training":
                     _instance.automation_training_obj.GetComponent<Automation_Training>().enabled = true;
                     break;

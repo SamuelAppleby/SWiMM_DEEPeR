@@ -6,13 +6,16 @@ which are stored in the yaml file associated with the chosen algorithm, in the '
 # The following are run parameters 
 
 # Algorithm to import from Stable Baselines. CHOICES: 'sac', 'ddpg', 'ppo'
+import os
+
+
 ALGO = 'sac'
 
 # If want to train on top of an existing model, provide filepath, else pass empty string
 MODEL = ''
 
 # Base filepath for saving outputs and logs
-BASE_FILEPATH = 'gym_underwater/Logs'
+BASE_FILEPATH = 'gym_underwater' + os.sep + 'Logs'
 
 # Whether or not to use Tensorboard NOTE: resulting event files are large
 TB = True

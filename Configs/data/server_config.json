@@ -11,7 +11,7 @@
             180,
             70
           ],
-          "angularThrustPower" : [
+          "angularThrustPower": [
             0.5,
             0.5,
             0.5
@@ -29,7 +29,7 @@
         }
       },
       "envConfig": {
-        "actionInference" : "maintain",
+        "actionInference": "maintain",
         "faunaConfig": {
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,

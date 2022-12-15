@@ -67,7 +67,7 @@ public class ROVController : MonoBehaviour
     public Vector3 angular_force_to_be_applied;
     public Vector3 last_action_angular_force;
 
-    private int manual_screenshot_count = 0;
+    private int screenshot_count = 0;
 
     List<Tuple<int, int>> valid_resolutions = new List<Tuple<int, int>> { new Tuple<int, int>(256, 256), new Tuple<int, int>(512, 512), new Tuple<int, int>(1024, 1024),
     new Tuple<int, int>(2048, 2048)};
@@ -308,9 +308,9 @@ public class ROVController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (Input.GetKeyUp(KeyCode.V))
+        if (Input.GetKeyUp(KeyCode.F11))
         {
-            TakeScreenshot(valid_resolutions[manual_screenshot_count], true);
+            StartCoroutine(TakeScreenshot(valid_resolutions[screenshot_count], SimulationManager._instance.debug_config.image_dir));
         }
     }
 
@@ -321,7 +321,7 @@ public class ROVController : MonoBehaviour
         StartCoroutine(SendImageData());
     }
 
-    private IEnumerator TakeScreenshot(Tuple<int,int> res, bool save_image)
+    private IEnumerator TakeScreenshot(Tuple<int,int> res, string dir)
     {
         yield return new WaitForEndOfFrame();
 
@@ -336,12 +336,12 @@ public class ROVController : MonoBehaviour
         RenderTexture.active = null;
         Destroy(rt);
 
-        if (save_image)
+        if (dir != null)
         {
-            File.WriteAllBytes(SimulationManager._instance.debug_config.image_dir + "sent_image" + manual_screenshot_count.ToString() + ".jpg", screen_shot.EncodeToJPG());
-            manual_screenshot_count++;
+            File.WriteAllBytes(dir + "image_" + screenshot_count.ToString() + ".jpg", screen_shot.EncodeToJPG());
         }
 
+        screenshot_count++;
         current_screenshot = screen_shot;
     }
 
@@ -349,7 +349,7 @@ public class ROVController : MonoBehaviour
     {
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsConnectionValid() && !SimulationManager._instance.in_manual_mode)
         {
-            yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.save_images));
+            yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.image_dir));
 
             TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
             int pos = 0;
@@ -367,13 +367,12 @@ public class ROVController : MonoBehaviour
             SimulationManager._instance.server.obsv = new DataToSend
             {
                 msg_type = "on_telemetry",
-                payload = new Telemetary_Data
+                payload = new Payload_Data
                 {
-                    sequence_num = SimulationManager._instance.server.observations_sent,
                     jpg_image = current_screenshot.EncodeToJPG(),
-                    position = new float[] { transform.position.x, transform.position.y, transform.position.z },
+                    position = Utils.Vector3ToFloatArray(transform.position),
                     collision_objects = collision_objects_list.ToArray(),
-                    fwd = new float[] { transform.forward.x, transform.forward.y, transform.forward.z },
+                    fwd = Utils.Vector3ToFloatArray(transform.forward),
                     targets = targetPositions
                 }
             };

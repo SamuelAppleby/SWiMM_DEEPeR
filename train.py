@@ -33,16 +33,16 @@ ALGOS = {
     'sac': SAC,
 }
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
-# parser.add_argument('--obs', help='Observation type', default='image', type=str, required=False, choices=list(OBS))
-# parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
-# parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default='gym_underwater/Logs', type=str)
-# parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=True, type=bool)
-# parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
-# parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
-# parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
-# args = parser.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
+parser.add_argument('--obs', help='Observation type', default='image', type=str, required=False, choices=list(OBS))
+parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
+parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default=os.path.join('gym_underwater' + os.sep, 'Logs'), type=str)
+parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=True, type=bool)
+parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
+parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
+parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
+args = parser.parse_args()
 
 
 # --------------------------- Utils ------------------------#

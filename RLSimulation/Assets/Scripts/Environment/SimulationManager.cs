@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading.Tasks;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -67,10 +68,9 @@ public class SimulationManager : Singleton<SimulationManager>
     [Serializable]
     public struct DebugConfig
     {
-        public bool save_images;
         public string image_dir;
-        public bool save_sent_packets;
-        public string packet_sent_dir;
+        public string packets_sent_dir;
+        public string packets_received_dir;
     }
 
     /* Local configs for reading */
@@ -136,7 +136,7 @@ public class SimulationManager : Singleton<SimulationManager>
             _instance.server.obsv = new DataToSend
             {
                 msg_type = "server_config_received",
-                payload = new Telemetary_Data { }
+                payload = new Payload_Data { }
             };
         }
     }
@@ -179,38 +179,44 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
 #if UNITY_EDITOR
-        _instance.debug_config_dir = "../Configs/data/client_debug_config.json";
+        _instance.debug_config_dir = "../Configs/data/debug_config.json";
         _instance.network_config_dir = "../Configs/data/network_config.json";
 #else
-        _instance.debug_config_dir = "../../../Configs/data/client_debug_config.json";
+        _instance.debug_config_dir = "../../../Configs/data/debug_config.json";
         _instance.network_config_dir = "../../../Configs/data/network_config.json";
-#endif
+#endif        
 
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
         _instance.ProcessConfig(ref _instance.debug_config, _instance.debug_config_dir);
         _instance.ProcessConfig(ref _instance.network_config, _instance.network_config_dir);
 
-        _instance.PurgeAndCreateDirectory(_instance.debug_config.packet_sent_dir);
-        _instance.PurgeAndCreateDirectory(_instance.debug_config.image_dir);
+        _instance.CleanAndCreateDirectories(new string[] { _instance.debug_config.image_dir, _instance.debug_config.packets_sent_dir, _instance.debug_config.packets_received_dir });
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
 
         _instance.server = null;
         _instance.in_manual_mode = true;
-
         _instance.IsInitialized = true;
     }
 
-    private void PurgeAndCreateDirectory(string dir_path)
+    private void CleanAndCreateDirectories(string[] dir_paths)
     {
-        if (Directory.Exists(dir_path))
+        foreach(string path in dir_paths)
         {
-            Directory.Delete(dir_path, true);
-        }
+            if(path == null)
+            {
+                continue;
+            }
 
-        Directory.CreateDirectory(dir_path);
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
+
+            Directory.CreateDirectory(path);
+        }
     }
 
     public void OnROVInitialised(GameObject rov)
@@ -241,7 +247,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void Quit()
     {
-        _instance.MoveToScene(SimulationManager._instance.current_scene_index == Enums.E_SceneIndices.MAIN_MENU ? Enums.E_SceneIndices.EXIT : Enums.E_SceneIndices.MAIN_MENU);
+        _instance.MoveToScene(_instance.current_scene_index == Enums.E_SceneIndices.MAIN_MENU ? Enums.E_SceneIndices.EXIT : Enums.E_SceneIndices.MAIN_MENU);
     }
 
     public void MoveToScene(Enums.E_SceneIndices to, bool in_manual = false)
@@ -349,9 +355,10 @@ public class SimulationManager : Singleton<SimulationManager>
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
+        return;
 #endif
+
+        Application.Quit();
     }
 
     public void IndexWindow()
@@ -453,53 +460,9 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         globalControls.Update(_instance.in_manual_mode);
 
-        if (_instance.server != null && _instance.server.server_crash)
-        {
-            Enums.E_SceneIndices moving_to = current_scene_index == Enums.E_SceneIndices.MAIN_MENU ? Enums.E_SceneIndices.EXIT : Enums.E_SceneIndices.MAIN_MENU;
-            _instance.MoveToScene(moving_to);
-
-            if (_instance.server.server_crash)
-            {
-                _instance.server.server_crash = false;
-            }
-        }
-
         if (_instance.server != null)
         {
             MonitorAndFireServerEvents();
-        }
-    }
-
-    public void Clear_Cache()
-    {
-        DirectoryInfo di = new DirectoryInfo(debug_config.packet_sent_dir);
-
-        if (di.Exists)
-        {
-            FileInfo[] files = di.GetFiles();
-            foreach (FileInfo file in files)
-            {
-                file.Delete();
-            }
-        }
-        else
-        {
-            System.IO.Directory.CreateDirectory(di.FullName);
-        }
-
-        di = new DirectoryInfo(debug_config.image_dir);
-
-        if (di.Exists)
-        {
-            FileInfo[] files = di.GetFiles();
-            foreach (FileInfo file in files)
-            {
-                file.Delete();
-            }
-        }
-        else
-        {
-            Directory.CreateDirectory(di.FullName);
         }
     }
 
@@ -518,12 +481,6 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             switch (args[i])
             {
-                case "debug_conf_dir":
-                    _instance.debug_config_dir = args[++i];
-                    break;
-                case "network_conf_dir":
-                    _instance.network_config_dir = args[++i];
-                    break;
                 case "automation_training":
                     _instance.automation_training_obj.GetComponent<Automation_Training>().enabled = true;
                     break;

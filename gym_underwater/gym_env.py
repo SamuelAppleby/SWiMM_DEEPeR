@@ -64,7 +64,6 @@ class UnderwaterEnv(gym.Env):
     #     #return [seed]
 
     def step(self, action):
-
         # send action decision to communicator to send off to sim
         self.communicator.take_action(action)
 

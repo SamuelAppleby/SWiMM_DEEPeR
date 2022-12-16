@@ -2,16 +2,14 @@ using Cinemachine;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using TMPro;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static Server;
-using static UnityEngine.Rendering.VirtualTexturing.Debugging;
 using AsyncOperation = UnityEngine.AsyncOperation;
 using Random = UnityEngine.Random;
 
@@ -88,8 +86,6 @@ public class SimulationManager : Singleton<SimulationManager>
 
     [HideInInspector]
     public NetworkConfig network_config;
-
-    public bool IsInitialized { get; private set; }
 
     [HideInInspector]
     public GameObject[] lighting_objs;
@@ -201,7 +197,6 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.server = null;
         _instance.in_manual_mode = true;
-        _instance.IsInitialized = true;
     }
 
     private void CleanAndCreateDirectories(string[] dir_paths)
@@ -350,6 +345,14 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void OnSceneChanged(Enums.E_SceneIndices to)
     {
+        switch (to)
+        {
+            case Enums.E_SceneIndices.SIMULATION:
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+                break;
+        }
+
         _instance.scene_loading = null;
         _instance.current_scene_index = to;
     }

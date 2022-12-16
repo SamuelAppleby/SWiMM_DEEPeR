@@ -59,7 +59,7 @@ class UnitySimHandler:
         self.server_connected = False
         self.server = PythonServer(self)
         self.image_array = np.zeros((256, 256, 3))
-        self.last_obs = self.image_array
+        self.last_obs = np.zeros((256, 256, 3))
         self.hit = []
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)

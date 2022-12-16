@@ -59,4 +59,11 @@ public static class Enums
         TO_MENU = 2,
         START_TRAINING = 3
     }
+
+    public enum E_Rover_Dive_Mode
+    {
+        MANUAL = 0,
+        DEPTH_HOLD = 1,
+        STABILIZE = 2
+    }
 }

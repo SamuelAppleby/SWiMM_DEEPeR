@@ -21,34 +21,13 @@ public class ROVController : MonoBehaviour
 
     [HideInInspector]
     public Rigidbody m_RigidBody;
-    [HideInInspector]
-    public bool m_depth_hold_mode = true;
-    [HideInInspector]
-    public bool m_stabilise_mode = true;
 
     public LayerMask water_mask;
-    public LayerMask ground_mask;
 
     private List<string> collision_objects_list = new List<string>();
-    private bool m_IsUnderwater;
-    private bool m_is_grounded;
-
-    public ROVControls movement_controls = new ROVControls();
-
-    public Camera firstPersonCam;
-    public Camera thirdPersonCam;
-    public CinemachineFreeLook cinecamera;
-
-    [HideInInspector] 
-    public Camera active_cam, inactive_cam;
+    private bool m_is_underwater;
 
     public Tuple<int, int> resolution;
-
-    [HideInInspector]
-    public Vector3 desiredMove;
-
-    [HideInInspector]
-    public Vector3 desiredRotation;
 
     public Material underwater_skybox_mat;
     public Material ground_skybox_mat;
@@ -63,248 +42,52 @@ public class ROVController : MonoBehaviour
     private float top_of_water;
     private float m_distance_undewater;
 
-    public Vector3 linear_force_to_be_applied;
-    public Vector3 last_action_linear_force;
-    public Vector3 angular_force_to_be_applied;
-    public Vector3 last_action_angular_force;
-
     private int screenshot_count = 0;
 
     List<Tuple<int, int>> valid_resolutions = new List<Tuple<int, int>> { new Tuple<int, int>(256, 256), new Tuple<int, int>(512, 512), new Tuple<int, int>(1024, 1024),
     new Tuple<int, int>(2048, 2048)};
 
-    [Serializable]
-    public struct Controls_Audio
-    {
-        public AudioSource audio_motor;
-        public AudioSource hover_noise;
-    }
+    private ROVControls controls;
 
-    public Controls_Audio audios;
+    public Camera first_person_cam;
 
     public void OnJsonControls(JsonMessage param)
     {
-        linear_force_to_be_applied = new Vector3(param.payload.jsonControls.swayThrust, 
-            param.payload.jsonControls.heaveThrust, param.payload.jsonControls.surgeThrust);
-        angular_force_to_be_applied = new Vector3(param.payload.jsonControls.pitchThrust, 
-            param.payload.jsonControls.yawThrust, param.payload.jsonControls.rollThrust);
-
-        /* Simulate joystick output with boolean values */
-        angular_force_to_be_applied.x = angular_force_to_be_applied.x < 0.5 && angular_force_to_be_applied.x > -0.5 ? 0 : angular_force_to_be_applied.x <= -0.5 ? -1 : 1;    
-        angular_force_to_be_applied.z = angular_force_to_be_applied.z < 0.5 && angular_force_to_be_applied.z > -0.5 ? 0 : angular_force_to_be_applied.z <= -0.5 ? -1 : 1;
-
-        if (param.payload.jsonControls.depthHoldMode < 0 && m_depth_hold_mode || param.payload.jsonControls.depthHoldMode >= 0 && !m_depth_hold_mode)
-        {
-            ToggleDepthHoldMode();
-        }
-
-        last_action_linear_force = linear_force_to_be_applied;
-        last_action_angular_force = angular_force_to_be_applied;
-        StartCoroutine(SendImageData());
+       StartCoroutine(SendImageData());
     }
 
-    public void ToggleDepthHoldMode()
+    private void Start()
     {
-        audios.hover_noise.Play();
-        m_depth_hold_mode = !m_depth_hold_mode;
-    }
-
-    private IEnumerator Start()
-    {
+        controls = GetComponent<ROVControls>();
         top_of_water = water_collider.transform.position.y + (water_collider.GetComponent<BoxCollider>().size.y / 2);
         volume.profile.TryGetSettings(out m_colour_grading);
         m_color_grading_filter_start = m_colour_grading.colorFilter.value;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
         m_RigidBody = GetComponent<Rigidbody>();
-        m_depth_hold_mode = true;
         m_RigidBody.drag = air_drag;
         m_RigidBody.angularDrag = angular_air_drag;
-        active_cam = thirdPersonCam;
-        inactive_cam = firstPersonCam;
 
-        firstPersonCam.fieldOfView = 100;
         resolution = new Tuple<int, int>(2048,2048);
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
-            firstPersonCam.fieldOfView = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.fov;
-            resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0],
-                SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]);
+            resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0], SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]);
             m_RigidBody.mass += SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.ballastMass;
-            movement_controls.stabilityThreshold = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityThreshold;
-            movement_controls.stabilityForce = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityForce;
-            movement_controls.LinearThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
-            movement_controls.AngularThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
         }
 
-        yield return new WaitUntil(() => GetComponent<FloaterContainer>().is_initialized);
         EventMaster._instance.rov_initialised_event.Raise(gameObject);
-    }
-
-    public void PlayAudioEffects()
-    {
-        if (linear_force_to_be_applied.magnitude > 0 || angular_force_to_be_applied.magnitude > 0 || (SimulationManager._instance.server != null && (
-            (Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
-            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE) && 
-            last_action_linear_force.magnitude > 0 || last_action_angular_force.magnitude > 0)))
-        {
-            if (!audios.audio_motor.isPlaying)
-            {
-                audios.audio_motor.Play();
-            }
-        }
-        else
-        {
-            audios.audio_motor.Stop();
-        }
-    }
-
-    public void OnMouseWheelScroll(float scroll)
-    {
-        ref float fov = ref cinecamera.m_Lens.FieldOfView;
-        fov -= scroll * movement_controls.sensitivity;
-        fov = Mathf.Clamp(fov, movement_controls.minFov, movement_controls.maxFov);
-    }
-
-    public void OnChangeCamera()
-    {
-        inactive_cam.depth = 0;
-        inactive_cam.rect = new Rect(0, 0, 1, 1);
-        active_cam.depth = 1;
-        active_cam.rect = new Rect(0.7f, 0, 0.3f, 0.3f);
-        Camera temp = active_cam;
-        active_cam = inactive_cam;
-        inactive_cam = temp;
-        gameObject.GetComponentInChildren<CinemachineFreeLook>().enabled = active_cam == thirdPersonCam;
-    }
-
-    public void ChangeFarPlane(float val)
-    {
-        if ((val > 0 && firstPersonCam.farClipPlane < 2000) || (val < 0 && firstPersonCam.farClipPlane > 100))
-        {
-            firstPersonCam.farClipPlane += val;
-            cinecamera.m_Lens.FarClipPlane += val;
-        }
     }
 
     void Update()
     {
         m_distance_undewater = top_of_water - transform.position.y;
         CheckCameraEffects();
-        movement_controls.Update(SimulationManager._instance.in_manual_mode, this);
-        PlayAudioEffects();
     }
 
     private void FixedUpdate()
     {
-        desiredMove = new Vector3();
-        desiredRotation = new Vector3();
-        m_RigidBody.drag = m_IsUnderwater ? water_drag : air_drag;
-        m_RigidBody.angularDrag = m_IsUnderwater ? angular_water_drag : angular_air_drag;
-
-        if (SimulationManager._instance.server != null && !SimulationManager._instance.in_manual_mode)
-        {
-            if(Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
-            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
-            {
-                linear_force_to_be_applied = last_action_linear_force;
-                angular_force_to_be_applied = last_action_angular_force;
-            }
-        } 
-            
-        /* N.B. Before internal physics engine does oncollisions, provide the check anyway otherwise we skip a frame */
-        if (m_IsUnderwater || m_depth_hold_mode)
-        {
-            /* Movement */
-            if (linear_force_to_be_applied.magnitude > float.Epsilon)
-            {
-                if (linear_force_to_be_applied.x != 0)
-                {
-                    desiredMove += firstPersonCam.transform.right * linear_force_to_be_applied.x;
-                }
-                if (linear_force_to_be_applied.y != 0)
-                {
-                    desiredMove += firstPersonCam.transform.up * linear_force_to_be_applied.y;
-                }
-                if (linear_force_to_be_applied.z != 0)
-                {
-                    desiredMove += firstPersonCam.transform.forward * linear_force_to_be_applied.z;
-                }
-            }
-
-            /* Rotation */
-            if (angular_force_to_be_applied.magnitude > float.Epsilon)
-            {
-                if (angular_force_to_be_applied.x != 0)
-                {
-                    desiredRotation.x += angular_force_to_be_applied.x;
-                }
-                if (angular_force_to_be_applied.y != 0)
-                {
-                    desiredRotation.y += angular_force_to_be_applied.y;
-                }
-                if (angular_force_to_be_applied.z != 0)
-                {
-                    desiredRotation.z += angular_force_to_be_applied.z;
-                }
-            }
-
-            /*
-             * 
-             * The modes below are for the different settings the rover can be in, don't consider the thrust strength here
-             * 
-             */
-
-            /* Counteract the forces due to gravity irrelevant of fixed dt */
-            if (m_depth_hold_mode)
-            {
-                m_RigidBody.AddForce(-Physics.gravity, ForceMode.Acceleration);     // ACCELERATION IS A CONSTANT ACCELERATION, TREAT DIFFERENTLY
-
-                //if (m_RigidBody.velocity.y < -movement_controls.stabilityThreshold)
-                //{
-                //    desiredMove += Vector3.up;
-                //}
-                //else if (m_RigidBody.velocity.y > movement_controls.stabilityThreshold)
-                //{
-                //    desiredMove += -Vector3.up;
-                //}
-
-                m_RigidBody.AddForce(Vector3.up * -GetComponent<FloaterContainer>().submerged_buoyant_strength, ForceMode.Force);
-                //desiredMove += Vector3.up * -GetComponent<FloaterContainer>().submerged_buoyant_strength;
-            }
-
-            /* Stabilise roll and pitch, NOT sway */
-            if (m_stabilise_mode)
-            {
-                if(90 - gameObject.transform.rotation.eulerAngles.x < -movement_controls.stabilityThreshold)     // Pitch is too far up so force down
-                {
-                    desiredRotation += Vector3.right;
-                }
-                else if (90 - gameObject.transform.rotation.eulerAngles.x > movement_controls.stabilityThreshold)     // Pitch is too far down so force up
-                {
-                    desiredRotation += -Vector3.right;
-                }
-
-                if (90 - gameObject.transform.rotation.eulerAngles.z < -movement_controls.stabilityThreshold)     // Pitch is too far up so force down
-                {
-                    desiredRotation += Vector3.forward;
-                }
-                else if (90 - gameObject.transform.rotation.eulerAngles.z > movement_controls.stabilityThreshold)     // Pitch is too far down so force down
-                {
-                    desiredRotation += -Vector3.forward;
-                }
-            }
-
-            desiredMove = Vector3.Scale(desiredMove, movement_controls.LinearThrustStrength);
-            desiredRotation = Vector3.Scale(desiredRotation, movement_controls.AngularThrustStrength);
-            m_RigidBody.AddForce(desiredMove, ForceMode.Force);
-            m_RigidBody.AddRelativeTorque(desiredRotation, ForceMode.Force);
-        }
-
-        linear_force_to_be_applied = Vector3.zero;
-        angular_force_to_be_applied = Vector3.zero;
+        m_RigidBody.drag = m_is_underwater ? water_drag : air_drag;
+        m_RigidBody.angularDrag = m_is_underwater ? angular_water_drag : angular_air_drag;
     }
 
     private void LateUpdate()
@@ -315,27 +98,26 @@ public class ROVController : MonoBehaviour
         }
     }
 
-    private Texture2D current_screenshot;
-
     public void OnAIGroupsComplete()
     {
         StartCoroutine(SendImageData());
     }
 
-    private IEnumerator TakeScreenshot(Tuple<int,int> res, string dir)
+    private IEnumerator TakeScreenshot(Tuple<int,int> res, string dir, System.Action<byte[]> callback = null)
     {
         yield return new WaitForEndOfFrame();
 
         RenderTexture rt = new RenderTexture(res.Item1, res.Item2, 24);
-        firstPersonCam.targetTexture = rt;
-        firstPersonCam.Render();
+        first_person_cam.targetTexture = rt;
+        first_person_cam.Render();
         RenderTexture.active = rt;
         Texture2D screen_shot = new Texture2D(res.Item1, res.Item2, TextureFormat.RGB24, false);
         screen_shot.ReadPixels(new Rect(0, 0, res.Item1, res.Item2), 0, 0);
         screen_shot.Apply();
-        firstPersonCam.targetTexture = null;
+        first_person_cam.targetTexture = null;
         RenderTexture.active = null;
         Destroy(rt);
+        Destroy(screen_shot);
 
         if (dir != null)
         {
@@ -343,47 +125,43 @@ public class ROVController : MonoBehaviour
         }
 
         screenshot_count++;
-        current_screenshot = screen_shot;
+
+        callback.Invoke(screen_shot.EncodeToJPG());
     }
 
     private IEnumerator SendImageData()
     {
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsConnectionValid() && !SimulationManager._instance.in_manual_mode)
         {
-            yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.image_dir));
-
-            TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
-            int pos = 0;
-
-            foreach (Transform trans in target_transforms)
+            yield return StartCoroutine(TakeScreenshot(resolution, SimulationManager._instance.debug_config.image_dir, byte_image =>
             {
-                targetPositions[pos] = new TargetObject
-                {
-                    position = new float[] { trans.position.x, trans.position.y, trans.position.z },
-                    fwd = new float[] { trans.forward.x, trans.forward.y, trans.forward.z }
-                };
-                pos++;
-            }
+                TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
+                int pos = 0;
 
-            SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
-            {
-                msg_type = "on_telemetry",
-                payload = new Payload_Data
+                foreach (Transform trans in target_transforms)
                 {
-                    seq_num = SimulationManager._instance.server.packets_sent,
-                    jpg_image = current_screenshot.EncodeToJPG(),
-                    position = Utils.Vector3ToFloatArray(transform.position),
-                    collision_objects = collision_objects_list.ToArray(),
-                    fwd = Utils.Vector3ToFloatArray(transform.forward),
-                    targets = targetPositions
+                    targetPositions[pos] = new TargetObject
+                    {
+                        position = new float[] { trans.position.x, trans.position.y, trans.position.z },
+                        fwd = new float[] { trans.forward.x, trans.forward.y, trans.forward.z }
+                    };
+                    pos++;
                 }
-            });
 
-            if(!SimulationManager._instance.server.json_str_obsv.Contains("position"))
-            {
-                Debug.Log("OBSERVATION:" + JsonConvert.SerializeObject(SimulationManager._instance.server.json_str_obsv, Formatting.Indented));
-                File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "ERROR.json", SimulationManager._instance.server.json_str_obsv);
-            }
+                SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
+                {
+                    msg_type = "on_telemetry",
+                    payload = new Payload_Data
+                    {
+                        seq_num = SimulationManager._instance.server.packets_sent,
+                        jpg_image = byte_image,
+                        position = Utils.Vector3ToFloatArray(transform.position),
+                        collision_objects = collision_objects_list.ToArray(),
+                        fwd = Utils.Vector3ToFloatArray(transform.forward),
+                        targets = targetPositions
+                    }
+                });
+            }));
         }
     }
 
@@ -404,28 +182,28 @@ public class ROVController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        m_is_grounded = ((1 << other.gameObject.layer) & ground_mask) != 0;
+        m_is_underwater = ((1 << other.gameObject.layer) & water_mask) != 0;
+        controls.object_underwater = m_is_underwater;
     }
 
     private void OnTriggerStay(Collider other)
     {
-        m_IsUnderwater = ((1 << other.gameObject.layer) & water_mask) != 0;
+        m_is_underwater = ((1 << other.gameObject.layer) & water_mask) != 0;
+        controls.object_underwater = m_is_underwater;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (m_IsUnderwater && ((1 << other.gameObject.layer) & water_mask) != 0)
+        if (m_is_underwater && ((1 << other.gameObject.layer) & water_mask) != 0)
         {
-            m_IsUnderwater = false;
-            m_depth_hold_mode = false;
+            m_is_underwater = false;
+            controls.object_underwater = m_is_underwater;
         }
-
-        m_is_grounded = ((1 << other.gameObject.layer) & ground_mask) != 0;
     }
 
     public void CheckCameraEffects()
     {
-        Collider[] hit_colliders = Physics.OverlapSphere(firstPersonCam.transform.position, 0.1f);
+        Collider[] hit_colliders = Physics.OverlapSphere(first_person_cam.transform.position, 0.1f);
 
         foreach (Collider col in hit_colliders)
         {

@@ -13,20 +13,14 @@ using Task = System.Threading.Tasks.Task;
 public class Server
 {
     public int packets_sent = 0;
-
     public int observations_sent = 0;
-
     public int actions_received = 0;
-
     public int resets_received = 0;
-
     public bool first_observation_sent = false;
-
     byte[] receive_buffer;
 
-    public NetworkStream stream = null;
-
     public TcpClient tcp_client = null;
+    public NetworkStream stream = null;
 
     public UdpClient udp_client = null;
 
@@ -278,11 +272,6 @@ public class Server
             {
                 /* Writing */
                 await WaitUntilAsync(DataReadyToSend);
-
-                if (!json_str_obsv.Contains("position"))
-                {
-                    Debug.Log("Error from receiver");
-                }
 
                 try
                 {

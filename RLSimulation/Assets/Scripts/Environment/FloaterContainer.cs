@@ -10,8 +10,6 @@ public class FloaterContainer : MonoBehaviour
     public float submerged_buoyant_strength;
     private Collider m_collider;
     private List<GameObject> floaters = new List<GameObject>();
-    [HideInInspector]
-    public bool is_initialized = false;
     private const int NUM_FLOATERS = 4;
     public Collider ocean_collider;
     private const float displacement_volume = 375;      // cubic inches
@@ -28,7 +26,6 @@ public class FloaterContainer : MonoBehaviour
 
         m_collider = GetComponent<Collider>();
         InitialiseFloaters();
-        is_initialized = true;
     }
 
     public void InitialiseFloaters()

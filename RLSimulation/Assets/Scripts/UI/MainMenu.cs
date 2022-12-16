@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,7 +6,6 @@ using UnityEngine.Audio;
 using static Server;
 using UnityEngine.EventSystems;
 using Newtonsoft.Json;
-using Unity.VisualScripting;
 
 public class MainMenu : MonoBehaviour
 {
@@ -83,9 +81,8 @@ public class MainMenu : MonoBehaviour
         connect_button.onClick.RemoveAllListeners();
     }
 
-    private IEnumerator Start()
+    private void Start()
     {
-        yield return new WaitUntil(() => SimulationManager._instance.IsInitialized);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         main_menu.SetActive(true);

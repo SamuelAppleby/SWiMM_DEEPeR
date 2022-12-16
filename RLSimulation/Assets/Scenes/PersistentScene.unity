@@ -1025,10 +1025,9 @@ MonoBehaviour:
   avgFrameRate: 0
   processing_obj: {fileID: 1582158832}
   debug_config:
-    save_images: 0
     image_dir: 
-    save_sent_packets: 0
-    packet_sent_dir: 
+    packets_sent_dir: 
+    packets_received_dir: 
   lighting_objs: []
   water_objs: []
 --- !u!4 &1373481078

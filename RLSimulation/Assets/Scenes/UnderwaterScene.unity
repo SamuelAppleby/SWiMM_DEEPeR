@@ -1049,7 +1049,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1498372151}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!124 &300520022
 Behaviour:
@@ -1075,7 +1075,7 @@ Camera:
   m_FOVAxisMode: 0
   m_SensorSize: {x: 4.96, y: 3.72}
   m_LensShift: {x: 0, y: 0}
-  m_FocalLength: 2.97
+  m_FocalLength: 1.5607253
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0.7
@@ -1084,7 +1084,7 @@ Camera:
     height: 0.3
   near clip plane: 0.1
   far clip plane: 10000
-  field of view: 64.114746
+  field of view: 100
   orthographic: 0
   orthographic size: 5
   m_Depth: 1
@@ -2152,7 +2152,7 @@ GameObject:
   - component: {fileID: 546330208}
   - component: {fileID: 546330207}
   m_Layer: 5
-  m_Name: Depth Hold Mode Title
+  m_Name: Control Mode Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2198,7 +2198,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Depth Hold:'
+  m_text: 'Dive Mode:'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
@@ -2286,7 +2286,7 @@ GameObject:
   - component: {fileID: 563266352}
   - component: {fileID: 563266353}
   m_Layer: 0
-  m_Name: Hover
+  m_Name: ModeChange
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2436,7 +2436,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1498372151}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!124 &566393374
 Behaviour:
@@ -3924,7 +3924,7 @@ GameObject:
   - component: {fileID: 971931242}
   - component: {fileID: 971931243}
   m_Layer: 0
-  m_Name: Motor
+  m_Name: Thrusters
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4166,6 +4166,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawner: {fileID: 432339669}
   third_person_movement: {fileID: 1498372156}
+  third_person_controls: {fileID: 1498372161}
   fps_value_text: {fileID: 639050127}
   observations_sent: {fileID: 1463580715}
   actions_received: {fileID: 1879083331}
@@ -4176,7 +4177,7 @@ MonoBehaviour:
   angular_velocity_value_text: {fileID: 1477902071}
   movement_input_value_text: {fileID: 859437668}
   rotation_input_value_text: {fileID: 1828404985}
-  depth_hold_mode_text: {fileID: 2055595551}
+  control_mode_value_text: {fileID: 2055595551}
   movement_value_text: {fileID: 1179440646}
   rotation_value_text: {fileID: 1393525296}
   water_shader_text: {fileID: 1354121216}
@@ -4585,7 +4586,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1251690379}
   m_Layer: 5
-  m_Name: Depth Hold Mode
+  m_Name: Control Mode
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5675,6 +5676,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1498372151}
   - component: {fileID: 1498372156}
+  - component: {fileID: 1498372161}
   - component: {fileID: 1498372157}
   - component: {fileID: 1498372158}
   - component: {fileID: 1498372159}
@@ -5699,8 +5701,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 892743271}
-  - {fileID: 566393373}
   - {fileID: 300520021}
+  - {fileID: 566393373}
   - {fileID: 1351001729}
   - {fileID: 2732117605736927396}
   m_Father: {fileID: 0}
@@ -5724,74 +5726,14 @@ MonoBehaviour:
   water_drag: 2
   angular_water_drag: 3
   m_RigidBody: {fileID: 0}
-  m_depth_hold_mode: 1
-  m_stabilise_mode: 1
   water_mask:
     serializedVersion: 2
     m_Bits: 16
-  ground_mask:
-    serializedVersion: 2
-    m_Bits: 64
-  movement_controls:
-    stabilityForce: 0.2
-    stabilityThreshold: 1
-    LinearThrustStrength: {x: 30, y: 180, z: 30}
-    AngularThrustStrength: {x: 0.5, y: 0.5, z: 0.5}
-    SlopeCurveModifier:
-      serializedVersion: 2
-      m_Curve:
-      - serializedVersion: 3
-        time: -90
-        value: 1
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 0
-        value: 1
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 90
-        value: 0
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    minFov: 15
-    maxFov: 120
-    sensitivity: 20
-    decrease_far_plane: 0
-  firstPersonCam: {fileID: 300520026}
-  thirdPersonCam: {fileID: 566393378}
-  cinecamera: {fileID: 1351001728}
-  active_cam: {fileID: 0}
-  inactive_cam: {fileID: 0}
-  desiredMove: {x: 0, y: 0, z: 0}
-  desiredRotation: {x: 0, y: 0, z: 0}
   underwater_skybox_mat: {fileID: 2100000, guid: 507312846abc13d45a396f47ca8326ea, type: 2}
   ground_skybox_mat: {fileID: 2100000, guid: 14e1fd0506b8e2047afeaf0b55606197, type: 2}
   volume: {fileID: 50173731}
   water_collider: {fileID: 50173724}
-  linear_force_to_be_applied: {x: 0, y: 0, z: 0}
-  last_action_linear_force: {x: 0, y: 0, z: 0}
-  angular_force_to_be_applied: {x: 0, y: 0, z: 0}
-  last_action_angular_force: {x: 0, y: 0, z: 0}
-  audios:
-    audio_motor: {fileID: 971931243}
-    hover_noise: {fileID: 563266353}
+  first_person_cam: {fileID: 300520026}
 --- !u!54 &1498372157
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5834,7 +5776,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   submerged_buoyant_strength: 0
-  is_initialized: 0
   ocean_collider: {fileID: 50173730}
 --- !u!114 &1498372160
 MonoBehaviour:
@@ -5879,6 +5820,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1498372161}
+        m_TargetAssemblyTypeName: ROVControls, Assembly-CSharp
+        m_MethodName: OnJsonControls
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   observation_sent_unity_event:
     m_PersistentCalls:
       m_Calls: []
@@ -5906,6 +5859,74 @@ MonoBehaviour:
   scene_changed_unity_event:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1498372161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1498372150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfb5f22e4c2fa1047baf8ebf0e307b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stabilityForce: 0.2
+  stabilityThreshold: 1
+  LinearThrustStrength: {x: 70, y: 180, z: 70}
+  AngularThrustStrength: {x: 0.5, y: 0.5, z: 0.5}
+  SlopeCurveModifier:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -90
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 90
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  minFov: 15
+  maxFov: 120
+  sensitivity: 20
+  input_linear: {x: 0, y: 0, z: 0}
+  last_action_input_linear: {x: 0, y: 0, z: 0}
+  input_angular: {x: 0, y: 0, z: 0}
+  last_action_input_angular: {x: 0, y: 0, z: 0}
+  control_mode: 0
+  cine_cam: {fileID: 1351001728}
+  audios:
+    thrusters: {fileID: 971931243}
+    mode_change: {fileID: 563266353}
+  first_person_cam: {fileID: 300520026}
+  third_person_cam: {fileID: 566393378}
+  active_cam: {fileID: 0}
+  inactive_cam: {fileID: 0}
+  desired_move: {x: 0, y: 0, z: 0}
+  desired_rotation: {x: 0, y: 0, z: 0}
+  object_underwater: 0
 --- !u!1 &1509826151
 GameObject:
   m_ObjectHideFlags: 0
@@ -8206,7 +8227,7 @@ GameObject:
   - component: {fileID: 2055595552}
   - component: {fileID: 2055595551}
   m_Layer: 5
-  m_Name: Depth Hold Mode Value
+  m_Name: Control Mode Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8252,7 +8273,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: FALSE
+  m_text: DEPTH HOLD
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}

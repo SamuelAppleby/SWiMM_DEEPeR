@@ -12,6 +12,9 @@ public class GameUI : MonoBehaviour
     private ROVController third_person_movement;
 
     [SerializeField]
+    private ROVControls third_person_controls;
+
+    [SerializeField]
     private TextMeshProUGUI fps_value_text;
 
     [SerializeField]
@@ -42,7 +45,7 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI rotation_input_value_text;
 
     [SerializeField]
-    private TextMeshProUGUI depth_hold_mode_text;
+    private TextMeshProUGUI control_mode_value_text;
 
     [SerializeField]
     private TextMeshProUGUI movement_value_text;
@@ -62,7 +65,7 @@ public class GameUI : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI far_plane_text;
 
-    void Update()
+    void FixedUpdate()
     {
         fps_value_text.text = SimulationManager._instance.avgFrameRate.ToString();
 
@@ -77,11 +80,11 @@ public class GameUI : MonoBehaviour
         orienation_value_text.text = third_person_movement.transform.rotation.eulerAngles.ToString();
         linear_velocity_value_text.text = third_person_movement.m_RigidBody.velocity.ToString();
         angular_velocity_value_text.text = third_person_movement.m_RigidBody.angularVelocity.ToString();
-        movement_input_value_text.text = third_person_movement.linear_force_to_be_applied.ToString();
-        rotation_input_value_text.text = third_person_movement.angular_force_to_be_applied.ToString();
-        depth_hold_mode_text.text = third_person_movement.m_depth_hold_mode.ToString();
-        movement_value_text.text = third_person_movement.desiredMove.ToString();
-        rotation_value_text.text = third_person_movement.desiredRotation.ToString();
+        movement_input_value_text.text = third_person_controls.input_linear.ToString();
+        rotation_input_value_text.text = third_person_controls.input_angular.ToString();
+        control_mode_value_text.text = third_person_controls.dive_mode.ToString();
+        movement_value_text.text = third_person_controls.desired_move.ToString();
+        rotation_value_text.text = third_person_controls.desired_rotation.ToString();
 
         if (SimulationManager._instance.water_objs.Length > 0)
         {
@@ -94,6 +97,6 @@ public class GameUI : MonoBehaviour
         }
 
         total_ai_text.text = spawner.GetTotalNPCs().ToString();
-        far_plane_text.text = third_person_movement.firstPersonCam.farClipPlane.ToString();
+        far_plane_text.text = third_person_movement.first_person_cam.farClipPlane.ToString();
     }
 }

@@ -6,6 +6,8 @@ using UnityEngine.UI;
 using UnityEngine.Audio;
 using static Server;
 using UnityEngine.EventSystems;
+using Newtonsoft.Json;
+using Unity.VisualScripting;
 
 public class MainMenu : MonoBehaviour
 {
@@ -108,11 +110,14 @@ public class MainMenu : MonoBehaviour
     {
         if ((Enums.E_LevelType)level != Enums.E_LevelType.MANUAL)
         {
-            SimulationManager._instance.server.obsv = new DataToSend
+            SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
             {
                 msg_type = "training_ready",
-                payload = { }
-            };
+                payload = new Payload_Data
+                {
+                    seq_num = SimulationManager._instance.server.packets_sent,
+                }
+            });
 
             SimulationManager._instance.processing_obj.SetActive(true);
             SimulationManager._instance.processing_obj.GetComponentInChildren<TextMeshProUGUI>().text = "Model initialising...";

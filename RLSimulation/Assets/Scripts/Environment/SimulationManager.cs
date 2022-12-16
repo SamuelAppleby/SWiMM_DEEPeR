@@ -133,11 +133,14 @@ public class SimulationManager : Singleton<SimulationManager>
 
         if (_instance.server != null && _instance.server.IsConnectionValid())
         {
-            _instance.server.obsv = new DataToSend
+            _instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
             {
                 msg_type = "server_config_received",
-                payload = new Payload_Data { }
-            };
+                payload = new Payload_Data
+                {
+                    seq_num = _instance.server.packets_sent,
+                }
+            });
         }
     }
 
@@ -439,11 +442,17 @@ public class SimulationManager : Singleton<SimulationManager>
             _instance.server.json_end_simulation.is_overriden = false;
         }
 
-        if (_instance.server.last_obsv != null)
+        if (_instance.server.json_str_obsv_last != null)
         {
-            switch (_instance.server.last_obsv.Value.msg_type)
+            DataToSend last_send = JsonConvert.DeserializeObject<DataToSend>(_instance.server.json_str_obsv_last);
+
+            switch (last_send.msg_type)
             {
+                case "connection_request":
+                    break;
                 case "on_server_config_received":
+                    break;
+                case "training_ready":
                     break;
                 case "on_telemetry":
                     EventMaster._instance.observation_sent_event.Raise();
@@ -452,7 +461,7 @@ public class SimulationManager : Singleton<SimulationManager>
                     break;
             }
 
-            _instance.server.last_obsv = null;
+            _instance.server.json_str_obsv_last = null;
         }
     }
 

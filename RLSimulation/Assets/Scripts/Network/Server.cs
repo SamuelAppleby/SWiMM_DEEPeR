@@ -1,10 +1,12 @@
 using Newtonsoft.Json;
 using System;
+using System.Dynamic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Unity.VisualScripting;
 using UnityEngine;
 using Task = System.Threading.Tasks.Task;
 
@@ -170,16 +172,17 @@ public class Server
 
     public JsonMessage json_end_simulation;
 
-    public DataToSend? last_obsv;
+    public string json_str_obsv;
 
-    public DataToSend? obsv;
+    public string json_str_obsv_last;
 
     IPAddress ipAddress;
     IPEndPoint ipEndPoint;
 
     public Server()
     {
-        obsv = null;
+        json_str_obsv = null;
+        json_str_obsv_last = null;
     }
 
     public bool IsConnectionValid()
@@ -249,7 +252,7 @@ public class Server
 
     private bool DataReadyToSend()
     {
-        return obsv != null && last_obsv == null;
+        return json_str_obsv != null && json_str_obsv_last == null;
     }
 
     //public void CastAndOverride<T, P>(JsonMessage<T> data, ref JsonMessage<P> param)
@@ -262,31 +265,34 @@ public class Server
     {
         try
         {
-            obsv = new DataToSend
+            json_str_obsv = JsonConvert.SerializeObject(new DataToSend
             {
                 msg_type = "connection_request",
-                payload = new Payload_Data { }
-            };
+                payload = new Payload_Data
+                {
+                    seq_num = packets_sent,
+                }
+            });
 
             while (IsConnectionValid())
             {
                 /* Writing */
                 await WaitUntilAsync(DataReadyToSend);
 
-                DataToSend sent = obsv.Value;
-                sent.payload.seq_num = packets_sent;
-
-                string json_str = JsonConvert.SerializeObject(sent);
+                if (!json_str_obsv.Contains("position"))
+                {
+                    Debug.Log("Error from receiver");
+                }
 
                 try
                 {
                     if (SimulationManager._instance.debug_config.packets_sent_dir != null)
                     {
-                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "packet_" + packets_sent.ToString() + ".json", json_str);
+                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "packet_" + packets_sent.ToString() + ".json", json_str_obsv);
                     }
 
-                    Debug.Log("Sending: " + json_str);
-                    byte[] _data = Encoding.UTF8.GetBytes(json_str);
+                    Debug.Log("Sending: " + json_str_obsv);
+                    byte[] _data = Encoding.UTF8.GetBytes(json_str_obsv);
 
                     if(udp_client != null)
                     {
@@ -297,8 +303,8 @@ public class Server
                         await stream.WriteAsync(_data, 0, _data.Length);
                     }
 
-                    last_obsv = obsv;
-                    obsv = null;
+                    json_str_obsv_last = json_str_obsv;
+                    json_str_obsv = null;
                     packets_sent++;
                 }
 
@@ -308,12 +314,12 @@ public class Server
                 }
 
                 /* Reading */
-                json_str = "";
+                string json_str_action = "";
 
                 if (udp_client != null)
                 {
                     byte[] receiveBytes = udp_client.Receive(ref ipEndPoint);
-                    json_str = Encoding.Default.GetString(receiveBytes);
+                    json_str_action = Encoding.Default.GetString(receiveBytes);
                 }
                 else
                 {
@@ -325,18 +331,18 @@ public class Server
                         break;
                     }
 
-                    json_str = Encoding.Default.GetString(receive_buffer);
+                    json_str_action = Encoding.Default.GetString(receive_buffer);
                     Array.Clear(receive_buffer, 0, receive_buffer.Length);
                 }
 
-                if (json_str != null)
+                if (json_str_action != null)
                 {
-                    Debug.Log("Received: " + json_str);
-                    JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(json_str);
+                    Debug.Log("Received: " + json_str_action);
+                    JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(json_str_action);
 
                     if (SimulationManager._instance.debug_config.packets_received_dir != null)
                     {
-                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_received_dir + "packet_" + message.payload.seq_num + ".json", json_str);
+                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_received_dir + "packet_" + message.payload.seq_num + ".json", json_str_action);
                     }
 
                     try

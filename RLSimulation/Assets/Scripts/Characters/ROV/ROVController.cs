@@ -1,4 +1,5 @@
 using Cinemachine;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -364,18 +365,25 @@ public class ROVController : MonoBehaviour
                 pos++;
             }
 
-            SimulationManager._instance.server.obsv = new DataToSend
+            SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
             {
                 msg_type = "on_telemetry",
                 payload = new Payload_Data
                 {
+                    seq_num = SimulationManager._instance.server.packets_sent,
                     jpg_image = current_screenshot.EncodeToJPG(),
                     position = Utils.Vector3ToFloatArray(transform.position),
                     collision_objects = collision_objects_list.ToArray(),
                     fwd = Utils.Vector3ToFloatArray(transform.forward),
                     targets = targetPositions
                 }
-            };
+            });
+
+            if(!SimulationManager._instance.server.json_str_obsv.Contains("position"))
+            {
+                Debug.Log("OBSERVATION:" + JsonConvert.SerializeObject(SimulationManager._instance.server.json_str_obsv, Formatting.Indented));
+                File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "ERROR.json", SimulationManager._instance.server.json_str_obsv);
+            }
         }
     }
 

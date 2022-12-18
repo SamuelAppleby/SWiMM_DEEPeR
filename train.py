@@ -167,11 +167,12 @@ algo_specific_path = os.path.join(BASE_FILEPATH, ALGO)
 run_id = 0
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
-    run_num = path.split("/")[-1]
+    run_num = path.split(os.sep)[-1]
     if run_num.isdigit() and int(run_num) > run_id:
         run_id = int(run_num)
 run_specific_path = os.path.join(algo_specific_path, str(run_id + 1))
 os.makedirs(run_specific_path, exist_ok=True)
+
 print("Outputs and logs will be saved to {}/... ".format(run_specific_path))
 
 # generate path for TB files

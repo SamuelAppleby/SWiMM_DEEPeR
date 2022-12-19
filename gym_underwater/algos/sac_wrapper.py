@@ -8,8 +8,6 @@ from stable_baselines.common.tf_util import total_episode_reward_logger
 from stable_baselines.common.schedules import get_schedule_fn
 from stable_baselines.common.math_util import safe_mean
 from stable_baselines.common import TensorboardWriter
-from gym_underwater import gym_env
-from gym_underwater.gym_env import UnderwaterEnv
 
 
 class SACWrap(SAC):

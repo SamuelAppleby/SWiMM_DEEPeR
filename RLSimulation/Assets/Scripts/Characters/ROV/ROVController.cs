@@ -121,7 +121,7 @@ public class ROVController : MonoBehaviour
 
         if (dir != null)
         {
-            File.WriteAllBytes(dir + "image_" + screenshot_count.ToString() + ".jpg", screen_shot.EncodeToJPG());
+            File.WriteAllBytes(dir + "image_" + SimulationManager._instance.server.current_obsv_num.ToString() + ".jpg", screen_shot.EncodeToJPG());
         }
 
         screenshot_count++;
@@ -153,7 +153,8 @@ public class ROVController : MonoBehaviour
                     msg_type = "on_telemetry",
                     payload = new Payload_Data
                     {
-                        seq_num = SimulationManager._instance.server.packets_sent,
+                        seq_num = SimulationManager._instance.server.current_packet_num,
+                        obsv_num = SimulationManager._instance.server.current_obsv_num,
                         jpg_image = byte_image,
                         position = Utils.Vector3ToFloatArray(transform.position),
                         collision_objects = collision_objects_list.ToArray(),

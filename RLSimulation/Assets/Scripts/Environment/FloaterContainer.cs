@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -9,12 +10,11 @@ public class FloaterContainer : MonoBehaviour
     [HideInInspector]
     public float submerged_buoyant_strength;
     private Collider m_collider;
-    private List<GameObject> floaters = new List<GameObject>();
+    public List<GameObject> floaters = new List<GameObject>();
     private const int NUM_FLOATERS = 4;
     public Collider ocean_collider;
     private const float displacement_volume = 375;      // cubic inches
     private float net_buoyancy;      // cubic inches
-
     void Start()
     {
         /* Fb = pgV, volume of rover from https://discuss.bluerobotics.com/t/volume-of-bluerov/245/5  NEED TO TEST VOLUME IN REAL */
@@ -30,41 +30,37 @@ public class FloaterContainer : MonoBehaviour
 
     public void InitialiseFloaters()
     {
-        Vector2 extents = Vector2.zero;
-
-        extents.x = m_collider.bounds.extents.x;
-        extents.y = m_collider.bounds.extents.y;
-
-        if (extents != Vector2.zero)
+        for (int i = 0; i < NUM_FLOATERS; ++i)
         {
-            for (int i = 0; i < NUM_FLOATERS; ++i)
+            GameObject new_floater = new GameObject("Floater_" + i.ToString());
+            new_floater.tag = "Floater";
+            new_floater.transform.parent = transform;
+
+            switch (i)
             {
-                GameObject new_floater = new GameObject("Floater_" + i.ToString());
-                new_floater.tag = "Floater";
-                new_floater.transform.parent = transform;
-
-                if (i == 0)
-                {
-                    new_floater.transform.position = transform.position + new Vector3(extents.x / 2, 0, 0);
-                }
-                else if (i == 1)
-                {
-                    new_floater.transform.position = transform.position + new Vector3(-extents.x / 2, 0, 0);
-                }
-                else if (i == 2)
-                {
-                    new_floater.transform.position = transform.position + new Vector3(0, 0, extents.y / 2);
-                }
-                else if (i == 3)
-                {
-                    new_floater.transform.position = transform.position + new Vector3(0, 0, -extents.y / 2);
-                }
-
-                new_floater.AddComponent<SphereCollider>();
-                new_floater.AddComponent<Floater>().buoyant_strength = submerged_buoyant_strength / NUM_FLOATERS;
-                new_floater.GetComponent<Floater>().water_collider = ocean_collider;
-                floaters.Add(new_floater);
+                case 0:
+                    new_floater.transform.position = transform.position + new Vector3(m_collider.bounds.extents.x, 0, m_collider.bounds.extents.z);
+                    break;
+                case 1:
+                    new_floater.transform.position = transform.position + new Vector3(-m_collider.bounds.extents.x, 0, -m_collider.bounds.extents.z);
+                    break;
+                case 2:
+                    new_floater.transform.position = transform.position + new Vector3(m_collider.bounds.extents.x, 0, -m_collider.bounds.extents.z);
+                    break;
+                case 3:
+                    new_floater.transform.position = transform.position + new Vector3(-m_collider.bounds.extents.x, 0, m_collider.bounds.extents.z);
+                    break;
             }
+
+            new_floater.AddComponent<SphereCollider>();
+            new_floater.AddComponent<Floater>();
+            new_floater.GetComponent<Floater>().buoyant_strength = submerged_buoyant_strength / NUM_FLOATERS;
+            new_floater.GetComponent<Floater>().water_collider = ocean_collider;
+            floaters.Add(new_floater);
         }
+    }
+
+    private void FixedUpdate()
+    {
     }
 }

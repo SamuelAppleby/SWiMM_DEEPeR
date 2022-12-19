@@ -30,16 +30,16 @@ public static class MovementControlMap
 [RequireComponent(typeof(ROVController))]
 public class ROVControls : MonoBehaviour
 {
-    public float stabilityForce = 0.2f;
-    public float stabilityThreshold = 1f;
+    public float stability_force = 0.2f;
+    public float stability_threshold = 1f;
 
-    public Vector3 LinearThrustStrength = new Vector3(10, 10, 10);
-    public Vector3 AngularThrustStrength = new Vector3(10, 10, 10);
+    public Vector3 linear_thrust_stength = new Vector3(10, 10, 10);
+    public Vector3 angular_thrust_strength = new Vector3(10, 10, 10);
 
-    public AnimationCurve SlopeCurveModifier = new AnimationCurve(new Keyframe(-90.0f, 1.0f), new Keyframe(0.0f, 1.0f), new Keyframe(90.0f, 0.0f));
+    public AnimationCurve slope_curve_modifier = new AnimationCurve(new Keyframe(-90.0f, 1.0f), new Keyframe(0.0f, 1.0f), new Keyframe(90.0f, 0.0f));
 
-    public float minFov = 15f;
-    public float maxFov = 120f;
+    public float min_fov = 15f;
+    public float max_fov = 120f;
     public float sensitivity = 20f;
 
     [HideInInspector]
@@ -86,10 +86,10 @@ public class ROVControls : MonoBehaviour
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
             first_person_cam.fieldOfView = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.fov;
-            stabilityThreshold = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityThreshold;
-            stabilityForce = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityForce;
-            LinearThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
-            AngularThrustStrength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
+            stability_threshold = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityThreshold;
+            stability_force = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityForce;
+            linear_thrust_stength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
+            angular_thrust_strength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
         }
     }
 
@@ -195,8 +195,8 @@ public class ROVControls : MonoBehaviour
                 }
             }
 
-            desired_move = Vector3.Scale(desired_move, LinearThrustStrength);
-            desired_rotation = Vector3.Scale(desired_rotation, AngularThrustStrength);
+            desired_move = Vector3.Scale(desired_move, linear_thrust_stength);
+            desired_rotation = Vector3.Scale(desired_rotation, angular_thrust_strength);
 
             /*
              * 
@@ -207,23 +207,21 @@ public class ROVControls : MonoBehaviour
             /* Stabilise roll and pitch, NOT sway */
             if (dive_mode != Enums.E_Rover_Dive_Mode.MANUAL)
             {
-                if (90 - gameObject.transform.rotation.eulerAngles.x < -stabilityThreshold)     // Pitch is too far up so force down
+                Vector3 interp_from = Vector3.zero;
+
+                for(int i = 0; i < 3; ++i)
                 {
-                    desired_rotation += Vector3.right;
-                }
-                else if (90 - gameObject.transform.rotation.eulerAngles.x > stabilityThreshold)     // Pitch is too far down so force up
-                {
-                    desired_rotation += -Vector3.right;
+                    /* Don't stabilize x, not available on default BLUEROV 2 configuration, or y as pitch is retrieved action instead */
+                    if (/*i == 0 ||*/ i == 1)
+                    {
+                        continue;
+                    }
+
+                    interp_from[i] = gameObject.transform.rotation.eulerAngles[i] > 270 && 360 - gameObject.transform.rotation.eulerAngles[i] > stability_threshold ? (360 - gameObject.transform.rotation.eulerAngles[i]) :
+                    gameObject.transform.rotation.eulerAngles[i] < 90 && gameObject.transform.rotation.eulerAngles[i] > stability_threshold ? -gameObject.transform.rotation.eulerAngles[i] : 0;
                 }
 
-                if (90 - gameObject.transform.rotation.eulerAngles.z < -stabilityThreshold)     // Roll is too far left so force right
-                {
-                    desired_rotation += Vector3.forward;
-                }
-                else if (90 - gameObject.transform.rotation.eulerAngles.z > stabilityThreshold)     // Roll is too far right so force left
-                {
-                    desired_rotation += -Vector3.forward;
-                }
+                desired_rotation += Vector3.Lerp(interp_from, Vector3.zero, 0.01f) * stability_force;
 
                 /* Counteract the forces due to gravity irrelevant of fixed dt */
                 if (dive_mode == Enums.E_Rover_Dive_Mode.DEPTH_HOLD)
@@ -263,7 +261,7 @@ public class ROVControls : MonoBehaviour
     {
         ref float fov = ref cine_cam.m_Lens.FieldOfView;
         fov -= scroll * sensitivity;
-        fov = Mathf.Clamp(fov, minFov, maxFov);
+        fov = Mathf.Clamp(fov, min_fov, max_fov);
     }
 
     public void OnChangeCamera()

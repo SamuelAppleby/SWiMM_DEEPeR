@@ -1,60 +1,19 @@
 import base64
 import logging
-import time
-import json
 import os
+import time
 import numpy as np
 import math
 from io import BytesIO
 from PIL import Image
 from skimage.transform import resize
-
-from gym_underwater.python_server import PythonServer
-from Configs.config import *
+from gym_underwater.python_server import PythonServer, clean_and_create_directory
 
 logger = logging.getLogger(__name__)
 
 
-class UnitySimCommunicator:
-    def __init__(self):
-        logger.setLevel(logging.INFO)
-        self.handler = UnitySimHandler()
-
-    def wait_until_loaded(self):
-        while not self.handler.server_connected:
-            logger.warning("waiting for sim ..")
-            time.sleep(1.0)
-
-    def wait_until_training_ready(self):
-        while not self.handler.sim_training_ready:
-            logger.warning("waiting for sim trainig message ..")
-            time.sleep(1.0)
-
-    def send_server_config(self):
-        self.handler.send_server_config()
-
-    def reset(self):
-        self.handler.reset()
-
-    def take_action(self, action):
-        self.handler.take_action(action)
-
-    def observe(self, obs):
-        return self.handler.observe(obs)
-
-    def quit(self):
-        self.handler.server.stop()
-
-    def render(self):
-        pass
-
-    def calc_reward(self):
-        return self.handler.calc_reward()
-
-
 class UnitySimHandler:
-
-    def __init__(self):
+    def __init__(self, opt_d, max_d, img_scale):
         self.sim_training_ready = False
         self.server_connected = False
         self.server = PythonServer(self)
@@ -68,6 +27,9 @@ class UnitySimHandler:
         self.raw_d = 0.0
         self.d = 0.0
         self.a = 0.0
+        self.opt_d = opt_d
+        self.max_d = max_d
+        self.img_scale = img_scale
 
         self.fns = {
             "connection_request": self.connection_request,
@@ -76,13 +38,37 @@ class UnitySimHandler:
             "on_telemetry": self.on_telemetry
         }
 
+        logger.setLevel(logging.INFO)
+
+    def wait_until_loaded(self):
+        while not self.server_connected:
+            logger.warning("waiting for sim ..")
+            time.sleep(1.0)
+
+    def wait_until_training_ready(self):
+        while not self.sim_training_ready:
+            logger.warning("waiting for sim training message ..")
+            time.sleep(1.0)
+
+    def render(self):
+        pass
+
+    def quit(self):
+        self.server.stop()
+
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def reset(self):
         logger.debug("resetting")
 
-        self.send_reset()
+        if 'packets_received_dir' in self.server.debug_config:
+            clean_and_create_directory(self.server.debug_config['packets_received_dir'])
+        if 'packets_sent_dir' in self.server.debug_config:
+            clean_and_create_directory(self.server.debug_config['packets_sent_dir'])
+        if 'image_dir' in self.server.debug_config:
+            clean_and_create_directory(self.server.debug_config['image_dir'])
 
+        self.send_reset()
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
         self.hit = []
@@ -105,7 +91,7 @@ class UnitySimHandler:
         # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
         if obs == 'vector':
             observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2],
-                            self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
+                           self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
 
         reward = self.calc_reward()
 
@@ -123,7 +109,7 @@ class UnitySimHandler:
         norm_heading = heading / np.linalg.norm(heading)
 
         # if target is ahead of rover, heading[2] (i.e z-coord) should be positive and vice versa
-        # so that the optimal tracking position dictated by heading[2] - OPT_D is always *behind* the target
+        # so that the optimal tracking position dictated by heading[2] - opt_d is always *behind* the target
         # regardless of travelling direction in world
         if np.dot(norm_heading, self.target_fwd) > 0:
             heading[2] = math.fabs(heading[2])
@@ -134,18 +120,18 @@ class UnitySimHandler:
 
         # calculate distance i.e. magnitude of heading vector
         # NOTE THAT THIS IS DISTANCE FROM ROVER TO OPTIMAL TRACKING POSITION, NOT ROVER TO TARGET
-        self.d = math.sqrt(math.pow(heading[0], 2) + math.pow((heading[2] - OPT_D), 2))
+        self.d = math.sqrt(math.pow(heading[0], 2) + math.pow((heading[2] - self.opt_d), 2))
 
         # calculate angle between rover's forward facing vector and heading vector
         self.a = math.degrees(math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
 
         # scaling function taken from Luo et al. (2018), range [-1, 1], distance and angle equal contribution
-        reward = 1.0 - ((self.d / MAX_D) + (math.fabs(self.a) / 180))
+        reward = 1.0 - ((self.d / self.max_d) + (math.fabs(self.a) / 180))
 
         return reward
 
     def determine_episode_over(self):
-        if self.d > MAX_D:
+        if self.d > self.max_d:
             print("Episode terminated as target out of range {}".format(self.d))
             logger.debug(f"game over: distance {self.d}")
             return True
@@ -156,10 +142,6 @@ class UnitySimHandler:
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-    def on_connect(self):
-        logger.debug("socket connected")
-        self.server_connected = True
-
     def on_disconnect(self):
         logger.debug("socket disconnected")
         self.server = None
@@ -167,7 +149,6 @@ class UnitySimHandler:
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def on_recv_message(self, message):
-
         if "msg_type" not in message:
             logger.warning("expected msg_type field")
             return
@@ -180,12 +161,16 @@ class UnitySimHandler:
             logger.warning(f"unknown message type {msg_type}")
 
     def connection_request(self, payload):
-        # let handler know when connection has been made
-        self.on_connect()
+        logger.debug("socket connected")
+        self.server_connected = True
         return
 
     def server_config_confirmation(self, payload):
-        self.send_awaiting_training()
+        self.server.msg = {
+            'msgType': 'awaiting_training',
+            'payload': {}
+        }
+
         return
 
     def sim_training_ready_request(self, payload):
@@ -197,7 +182,7 @@ class UnitySimHandler:
         self.hit = payload['collision_objects']
         self.rover_fwd = np.array([payload["fwd"][0], payload['fwd'][1], payload['fwd'][2]])
 
-        # TODO: implement receiving data on multiple targets
+        # TODO: implement receiving json on multiple targets
         # Sam.A, targets are now an array, use the last element of it for targeting
         for target in payload['targets']:
             self.target_pos = np.array([target['position'][0], target['position'][1], target['position'][2]])
@@ -206,12 +191,12 @@ class UnitySimHandler:
         image = bytearray(base64.b64decode(payload['jpg_image']))
 
         if 'image_dir' in self.server.debug_config:
-            self.write_image_to_file_incrementally(image)
+            self.write_image_to_file_incrementally(image, payload['obsv_num'])
 
         image = np.array(Image.open(BytesIO(image)))
 
         # scale image otherwise model optimisation takes approx 15 minutes
-        image = resize(image, IMG_SCALE, 0)
+        image = resize(image, self.img_scale, 0)
 
         self.image_array = image
 
@@ -248,22 +233,13 @@ class UnitySimHandler:
             'payload': {}
         }
 
-    def send_awaiting_training(self):
-        self.server.msg = {
-            'msgType': 'awaiting_training',
-            'payload': {}
-        }
-
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-    def write_image_to_file_incrementally(self, image):
+    def write_image_to_file_incrementally(self, image, obsv_num):
         """
-        Dumping the image to a continuously progressing file, just for debugging purposes
+        Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
         """
         os.makedirs(self.server.debug_config['image_dir'], exist_ok=True)
 
-        i = 0
-        while os.path.exists(os.path.join(self.server.debug_config['image_dir'], f'image{i}.jpg')):
-            i += 1
-        with open(os.path.join(self.server.debug_config['image_dir'], f'image{i}.jpg'), 'wb') as f:
+        with open(os.path.join(self.server.debug_config['image_dir'], f'image{obsv_num}.jpg'), 'wb') as f:
             f.write(image)

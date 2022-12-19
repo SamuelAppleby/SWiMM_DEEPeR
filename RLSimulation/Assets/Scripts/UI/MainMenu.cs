@@ -112,7 +112,8 @@ public class MainMenu : MonoBehaviour
                 msg_type = "training_ready",
                 payload = new Payload_Data
                 {
-                    seq_num = SimulationManager._instance.server.packets_sent,
+                    seq_num = SimulationManager._instance.server.current_packet_num,
+                    obsv_num = SimulationManager._instance.server.current_obsv_num,
                 }
             });
 

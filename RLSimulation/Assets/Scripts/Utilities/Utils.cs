@@ -1,3 +1,4 @@
+using System.IO;
 using UnityEngine;
 
 public static class Utils
@@ -51,5 +52,25 @@ public static class Utils
             volume += SignedVolumeOfTriangle(p1, p2, p3);
         }
         return Mathf.Abs(volume);
+    }
+
+
+
+    public static void CleanAndCreateDirectories(string[] dir_paths)
+    {
+        foreach (string path in dir_paths)
+        {
+            if (path == null)
+            {
+                continue;
+            }
+
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
+
+            Directory.CreateDirectory(path);
+        }
     }
 }

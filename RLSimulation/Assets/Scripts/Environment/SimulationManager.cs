@@ -5,11 +5,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Xml;
 using TMPro;
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static Server;
+using static UnityEngine.EventSystems.EventTrigger;
 using AsyncOperation = UnityEngine.AsyncOperation;
 using Random = UnityEngine.Random;
 
@@ -95,7 +98,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void OnObservationSent()
     {
-        _instance.server.observations_sent++;
+        _instance.server.current_obsv_num++;
 
         if (Enums.action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.FREEZE ||
             Enums.action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
@@ -134,7 +137,8 @@ public class SimulationManager : Singleton<SimulationManager>
                 msg_type = "server_config_received",
                 payload = new Payload_Data
                 {
-                    seq_num = _instance.server.packets_sent,
+                    seq_num = _instance.server.current_packet_num,
+                    obsv_num = _instance.server.current_obsv_num,
                 }
             });
         }
@@ -145,6 +149,9 @@ public class SimulationManager : Singleton<SimulationManager>
         if(_instance.server != null)
         {
             _instance.server.resets_received++;
+
+            Utils.CleanAndCreateDirectories(new string[] { _instance.debug_config.image_dir, _instance.debug_config.packets_sent_dir, _instance.debug_config.packets_received_dir });
+            File.WriteAllText(_instance.debug_config.packets_received_dir + "packet_" + _instance.server.json_reset_episode.payload.seq_num + ".json", _instance.server.last_json_msg);
 
             switch (current_scene_index)
             {
@@ -178,43 +185,31 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
 #if UNITY_EDITOR
-        _instance.debug_config_dir = "../Configs/data/debug_config.json";
-        _instance.network_config_dir = "../Configs/data/network_config.json";
+        _instance.debug_config_dir = "../Configs/json/debug_config.json";
+        _instance.network_config_dir = "../Configs/json/network_config.json";
 #else
-        _instance.debug_config_dir = "../../../Configs/data/debug_config.json";
-        _instance.network_config_dir = "../../../Configs/data/network_config.json";
+        _instance.debug_config_dir = "../../../Configs/json/debug_config.json";
+        _instance.network_config_dir = "../../../Configs/json/network_config.json";
 #endif        
 
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
-        _instance.ProcessConfig(ref _instance.debug_config, _instance.debug_config_dir);
-        _instance.ProcessConfig(ref _instance.network_config, _instance.network_config_dir);
+        _instance.debug_config = _instance.ProcessConfig<DebugConfig>(_instance.debug_config_dir);
+        _instance.network_config = _instance.ProcessConfig<NetworkConfig>(_instance.network_config_dir);
 
-        _instance.CleanAndCreateDirectories(new string[] { _instance.debug_config.image_dir, _instance.debug_config.packets_sent_dir, _instance.debug_config.packets_received_dir });
+#if !UNITY_EDITOR
+        _instance.debug_config.image_dir = "../../" + _instance.debug_config.image_dir;
+        _instance.debug_config.packets_received_dir = "../../" + _instance.debug_config.packets_received_dir;
+        _instance.debug_config.packets_sent_dir = "../../" + _instance.debug_config.packets_sent_dir;
+#endif   
+
+        Utils.CleanAndCreateDirectories(new string[] { _instance.debug_config.image_dir, _instance.debug_config.packets_sent_dir, _instance.debug_config.packets_received_dir });
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
 
         _instance.server = null;
         _instance.in_manual_mode = true;
-    }
-
-    private void CleanAndCreateDirectories(string[] dir_paths)
-    {
-        foreach(string path in dir_paths)
-        {
-            if(path == null)
-            {
-                continue;
-            }
-
-            if (Directory.Exists(path))
-            {
-                Directory.Delete(path, true);
-            }
-
-            Directory.CreateDirectory(path);
-        }
     }
 
     public void OnROVInitialised(GameObject rov)
@@ -478,12 +473,12 @@ public class SimulationManager : Singleton<SimulationManager>
         }
     }
 
-    public void ProcessConfig<T>(ref T config, string dir)
+    public T ProcessConfig<T>(string dir)
     {
         using (StreamReader r = new StreamReader(dir))
         {
             string json = r.ReadToEnd();
-            config = JsonConvert.DeserializeObject<T>(json);
+            return JsonConvert.DeserializeObject<T>(json);
         }
     }
 

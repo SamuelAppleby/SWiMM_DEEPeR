@@ -12,8 +12,9 @@ using Task = System.Threading.Tasks.Task;
 
 public class Server
 {
-    public int packets_sent = 0;
-    public int observations_sent = 0;
+    public string last_json_msg = "";
+    public int current_packet_num = 0;
+    public int current_obsv_num = 0;
     public int actions_received = 0;
     public int resets_received = 0;
     public bool first_observation_sent = false;
@@ -129,6 +130,7 @@ public class Server
     public struct Payload_Data
     {
         public int seq_num;
+        public int obsv_num;
         public byte[] jpg_image;
         public float[] position;
         public string[] collision_objects;
@@ -264,7 +266,8 @@ public class Server
                 msg_type = "connection_request",
                 payload = new Payload_Data
                 {
-                    seq_num = packets_sent,
+                    seq_num = SimulationManager._instance.server.current_packet_num,
+                    obsv_num = SimulationManager._instance.server.current_obsv_num,
                 }
             });
 
@@ -277,7 +280,7 @@ public class Server
                 {
                     if (SimulationManager._instance.debug_config.packets_sent_dir != null)
                     {
-                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "packet_" + packets_sent.ToString() + ".json", json_str_obsv);
+                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "packet_" + current_packet_num.ToString() + ".json", json_str_obsv);
                     }
 
                     Debug.Log("Sending: " + json_str_obsv);
@@ -294,7 +297,7 @@ public class Server
 
                     json_str_obsv_last = json_str_obsv;
                     json_str_obsv = null;
-                    packets_sent++;
+                    current_packet_num++;
                 }
 
                 catch (Exception e)
@@ -303,12 +306,10 @@ public class Server
                 }
 
                 /* Reading */
-                string json_str_action = "";
-
                 if (udp_client != null)
                 {
                     byte[] receiveBytes = udp_client.Receive(ref ipEndPoint);
-                    json_str_action = Encoding.Default.GetString(receiveBytes);
+                    last_json_msg = Encoding.Default.GetString(receiveBytes);
                 }
                 else
                 {
@@ -320,18 +321,18 @@ public class Server
                         break;
                     }
 
-                    json_str_action = Encoding.Default.GetString(receive_buffer);
+                    last_json_msg = Encoding.Default.GetString(receive_buffer);
                     Array.Clear(receive_buffer, 0, receive_buffer.Length);
                 }
 
-                if (json_str_action != null)
+                if (last_json_msg != null)
                 {
-                    Debug.Log("Received: " + json_str_action);
-                    JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(json_str_action);
+                    Debug.Log("Received: " + last_json_msg);
+                    JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(last_json_msg);
 
                     if (SimulationManager._instance.debug_config.packets_received_dir != null)
                     {
-                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_received_dir + "packet_" + message.payload.seq_num + ".json", json_str_action);
+                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_received_dir + "packet_" + message.payload.seq_num + ".json", last_json_msg);
                     }
 
                     try

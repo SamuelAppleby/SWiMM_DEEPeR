@@ -5776,6 +5776,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   submerged_buoyant_strength: 0
+  floaters: []
   ocean_collider: {fileID: 50173730}
 --- !u!114 &1498372160
 MonoBehaviour:
@@ -5871,11 +5872,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfb5f22e4c2fa1047baf8ebf0e307b6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stabilityForce: 0.2
-  stabilityThreshold: 1
-  LinearThrustStrength: {x: 70, y: 180, z: 70}
-  AngularThrustStrength: {x: 0.5, y: 0.5, z: 0.5}
-  SlopeCurveModifier:
+  stability_force: 0.1
+  stability_threshold: 0.001
+  linear_thrust_stength: {x: 70, y: 180, z: 70}
+  angular_thrust_strength: {x: 0.5, y: 0.5, z: 0.5}
+  slope_curve_modifier:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -5908,14 +5909,14 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  minFov: 15
-  maxFov: 120
+  min_fov: 15
+  max_fov: 120
   sensitivity: 20
   input_linear: {x: 0, y: 0, z: 0}
   last_action_input_linear: {x: 0, y: 0, z: 0}
   input_angular: {x: 0, y: 0, z: 0}
   last_action_input_angular: {x: 0, y: 0, z: 0}
-  control_mode: 0
+  dive_mode: 0
   cine_cam: {fileID: 1351001728}
   audios:
     thrusters: {fileID: 971931243}

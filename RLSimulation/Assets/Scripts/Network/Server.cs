@@ -154,6 +154,8 @@ public class Server
         public float pitchThrust;
         public float yawThrust;
         public float rollThrust;
+        public float manualMode;
+        public float stabilizeMode;
         public float depthHoldMode;
     }
 

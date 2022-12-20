@@ -216,6 +216,8 @@ class UnitySimHandler:
                     'pitchThurst': '0',
                     'yawThrust': action[1].__str__(),
                     'rollThrust': '0',
+                    'manualMode': '0',
+                    'stabilizeMode': '0',
                     'depthHoldMode': '1'
                 }
             }

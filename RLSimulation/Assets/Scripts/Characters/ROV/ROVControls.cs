@@ -302,14 +302,30 @@ public class ROVControls : MonoBehaviour
         input_angular.x = input_angular.x < 0.5 && input_angular.x > -0.5 ? 0 : input_angular.x <= -0.5 ? -1 : 1;
         input_angular.z = input_angular.z < 0.5 && input_angular.z > -0.5 ? 0 : input_angular.z <= -0.5 ? -1 : 1;
 
-        if (param.payload.jsonControls.depthHoldMode < 0 && dive_mode == Enums.E_Rover_Dive_Mode.DEPTH_HOLD)
+
+        /* DEPTH_HOLD takes precedence first, then STABILIZE, then MANUAL */
+        if (param.payload.jsonControls.depthHoldMode > 0)
         {
-            ToggleControlMode(Enums.E_Rover_Dive_Mode.MANUAL);
+            if (dive_mode != Enums.E_Rover_Dive_Mode.DEPTH_HOLD)
+            {
+                ToggleControlMode(Enums.E_Rover_Dive_Mode.DEPTH_HOLD);
+            }
         }
 
-        else if (param.payload.jsonControls.depthHoldMode >= 0 && dive_mode != Enums.E_Rover_Dive_Mode.DEPTH_HOLD)
+        else if (param.payload.jsonControls.stabilizeMode > 0)
         {
-            ToggleControlMode(Enums.E_Rover_Dive_Mode.DEPTH_HOLD);
+            if (dive_mode != Enums.E_Rover_Dive_Mode.STABILIZE)
+            {
+                ToggleControlMode(Enums.E_Rover_Dive_Mode.STABILIZE);
+            }
+        }
+
+        else if (param.payload.jsonControls.manualMode > 0)
+        {
+            if (dive_mode != Enums.E_Rover_Dive_Mode.MANUAL)
+            {
+                ToggleControlMode(Enums.E_Rover_Dive_Mode.MANUAL);
+            }
         }
 
         last_action_input_linear = input_linear;

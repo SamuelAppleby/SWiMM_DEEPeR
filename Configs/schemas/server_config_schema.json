@@ -185,6 +185,9 @@
                                                     },
                                                     "maxSpeed" : {
                                                         "type": "number"
+                                                    },
+                                                    "scaleVariance": {
+                                                        "type": "number"
                                                     }
                                                 },
                                                 "required": [
@@ -199,7 +202,8 @@
                                                     "rotationOffset",
                                                     "scale",
                                                     "minSpeed",
-                                                    "maxSpeed"
+                                                    "maxSpeed",
+                                                    "scaleVariance"
                                                 ]
                                             }
                                         }

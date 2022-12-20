@@ -47,7 +47,6 @@
                 false,
                 true
               ],
-              "spawnInfront": true,
               "rotationOffset": [
                 0,
                 0,
@@ -55,7 +54,9 @@
               ],
               "scale": 1,
               "minSpeed": 0.02,
-              "maxSpeed": 0.04
+              "maxSpeed": 0.04,
+              "spawnInfront": true,
+              "scaleVariance": 0
             },
             {
               "prefabName": "whale",

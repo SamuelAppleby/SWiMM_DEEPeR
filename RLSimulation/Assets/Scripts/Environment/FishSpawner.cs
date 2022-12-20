@@ -39,6 +39,8 @@ public class AIGroup
     public float maxSpeed = 7;
     [SerializeField]
     public bool spawnInfront = false;
+    [SerializeField]
+    public float scaleVariance = 0;
     public GameObject objectPrefab { get; set; }
 
     public AIGroup(string prefab_name, int max_ai, int spawn_amount, bool random_movement, bool randomize_stats, Vector3 rotation_offfset, int scale_value)
@@ -209,7 +211,7 @@ public class FishSpawner : MonoBehaviour
                         fixed_rotation.GetComponent<FishMovement>().rotation_offset = fixed_rotation.transform.rotation.eulerAngles;
                         fixed_rotation.GetComponent<FishMovement>().m_mix_max_speed = new Tuple<float, float>(group.minSpeed, group.maxSpeed);
                         fixed_rotation.GetComponent<FishMovement>().valid_movements = group.waypointAxesVector;
-                        temp_spawn.transform.localScale *= (group.scale * Random.Range(0.75f, 1.25f));
+                        temp_spawn.transform.localScale *= (group.scale * Random.Range(1 - group.scaleVariance, 1 + group.scaleVariance));
 
                         SimulationManager._instance.rover.GetComponent<ROVController>().target_transforms.Add(fixed_rotation.transform);
                         current_ai_count++;

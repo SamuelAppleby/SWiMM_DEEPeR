@@ -43,6 +43,7 @@ RLSimulation/Logs/
 RLSimulation/Logs/Builds/Logs/
 RLSimulation/Builds/Windows/Logs
 RLSimulation/Builds/Linux/Logs
+benchmarking/images
 .venv/
 *.pyc
 .idea/

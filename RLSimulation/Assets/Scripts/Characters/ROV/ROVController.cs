@@ -103,7 +103,7 @@ public class ROVController : MonoBehaviour
         StartCoroutine(SendImageData());
     }
 
-    private IEnumerator TakeScreenshot(Tuple<int,int> res, string dir, System.Action<byte[]> callback = null)
+    public IEnumerator TakeScreenshot(Tuple<int,int> res, string dir, System.Action<byte[]> callback = null)
     {
         yield return new WaitForEndOfFrame();
 
@@ -121,12 +121,22 @@ public class ROVController : MonoBehaviour
 
         if (dir != null)
         {
-            File.WriteAllBytes(dir + "image_" + SimulationManager._instance.server.current_obsv_num.ToString() + ".jpg", screen_shot.EncodeToJPG());
+            if(SimulationManager._instance.server != null)
+            {
+                File.WriteAllBytes(dir + "image_" + SimulationManager._instance.server.current_obsv_num.ToString() + ".jpg", screen_shot.EncodeToJPG());
+            }
+            else
+            {
+                File.WriteAllBytes(dir + "image_" + screenshot_count + ".jpg", screen_shot.EncodeToJPG());
+            }
         }
 
         screenshot_count++;
 
-        callback.Invoke(screen_shot.EncodeToJPG());
+        if(callback != null)
+        {
+            callback.Invoke(screen_shot.EncodeToJPG());
+        }
     }
 
     private IEnumerator SendImageData()
@@ -210,7 +220,6 @@ public class ROVController : MonoBehaviour
         {
             if (((1 << col.gameObject.layer) & water_mask) != 0)
             {
-                //RenderSettings.fog = true;
                 RenderSettings.skybox = underwater_skybox_mat;
 
                 if(m_distance_undewater > 0)
@@ -226,7 +235,6 @@ public class ROVController : MonoBehaviour
             }
         }
 
-        //RenderSettings.fog = false;
         RenderSettings.skybox = ground_skybox_mat;
     }
 }

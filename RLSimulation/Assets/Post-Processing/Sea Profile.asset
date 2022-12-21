@@ -23,8 +23,8 @@ MonoBehaviour:
     overrideState: 1
     value: 0.4
   focalLength:
-    overrideState: 0
-    value: 50
+    overrideState: 1
+    value: 2.97
   kernelSize:
     overrideState: 0
     value: 1
@@ -49,7 +49,7 @@ MonoBehaviour:
     value: 1
   intensity:
     overrideState: 1
-    value: 2.39
+    value: 2.5
   color:
     overrideState: 0
     value: {r: 0, g: 0, b: 0, a: 1}

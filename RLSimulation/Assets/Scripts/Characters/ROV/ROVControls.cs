@@ -227,7 +227,11 @@ public class ROVControls : MonoBehaviour
                 if (dive_mode == Enums.E_Rover_Dive_Mode.DEPTH_HOLD)
                 {
                     applicable_body.AddForce(-Physics.gravity, ForceMode.Acceleration);     // ACCELERATION IS A CONSTANT ACCELERATION, TREAT DIFFERENTLY
-                    desired_move += Vector3.up * -GetComponent<FloaterContainer>().submerged_buoyant_strength;
+
+                    foreach(Floater floater in GetComponentsInChildren<Floater>())
+                    {
+                        desired_move += Vector3.up * -floater.buoyant_strength;
+                    }
                 }
             }
 

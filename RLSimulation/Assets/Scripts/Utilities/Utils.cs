@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -56,21 +57,21 @@ public static class Utils
 
 
 
-    public static void CleanAndCreateDirectories(string[] dir_paths)
+    public static void CleanAndCreateDirectories(Dictionary<string, bool> dir_paths)
     {
-        foreach (string path in dir_paths)
+        foreach (KeyValuePair<string, bool> path in dir_paths)
         {
-            if (path == null)
+            if (path.Key == null)
             {
                 continue;
             }
 
-            if (Directory.Exists(path))
+            if (Directory.Exists(path.Key) && path.Value)
             {
-                Directory.Delete(path, true);
+                Directory.Delete(path.Key, true);
             }
 
-            Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path.Key);
         }
     }
 }

@@ -11,7 +11,7 @@ public class FloaterContainer : MonoBehaviour
     public float submerged_buoyant_strength;
     private Collider m_collider;
     public List<GameObject> floaters = new List<GameObject>();
-    private const int NUM_FLOATERS = 4;
+    public int num_floaters = 4;
     public Collider ocean_collider;
     private const float displacement_volume = 375;      // cubic inches
     private float net_buoyancy;      // cubic inches
@@ -30,7 +30,7 @@ public class FloaterContainer : MonoBehaviour
 
     public void InitialiseFloaters()
     {
-        for (int i = 0; i < NUM_FLOATERS; ++i)
+        for (int i = 0; i < num_floaters; ++i)
         {
             GameObject new_floater = new GameObject("Floater_" + i.ToString());
             new_floater.tag = "Floater";
@@ -54,7 +54,7 @@ public class FloaterContainer : MonoBehaviour
 
             new_floater.AddComponent<SphereCollider>();
             new_floater.AddComponent<Floater>();
-            new_floater.GetComponent<Floater>().buoyant_strength = submerged_buoyant_strength / NUM_FLOATERS;
+            new_floater.GetComponent<Floater>().buoyant_strength = submerged_buoyant_strength / num_floaters;
             new_floater.GetComponent<Floater>().water_collider = ocean_collider;
             floaters.Add(new_floater);
         }

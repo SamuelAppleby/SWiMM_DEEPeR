@@ -150,7 +150,13 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             _instance.server.resets_received++;
 
-            Utils.CleanAndCreateDirectories(new string[] { _instance.debug_config.image_dir, _instance.debug_config.packets_sent_dir, _instance.debug_config.packets_received_dir });
+            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+                {
+                    { _instance.debug_config.image_dir, true },
+                    { _instance.debug_config.packets_sent_dir, true },
+                    { _instance.debug_config.packets_received_dir, true },
+                });
+
             File.WriteAllText(_instance.debug_config.packets_received_dir + "packet_" + _instance.server.json_reset_episode.payload.seq_num + ".json", _instance.server.last_json_msg);
 
             switch (current_scene_index)
@@ -201,9 +207,14 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.debug_config.image_dir = "../../" + _instance.debug_config.image_dir;
         _instance.debug_config.packets_received_dir = "../../" + _instance.debug_config.packets_received_dir;
         _instance.debug_config.packets_sent_dir = "../../" + _instance.debug_config.packets_sent_dir;
-#endif   
+#endif
 
-        Utils.CleanAndCreateDirectories(new string[] { _instance.debug_config.image_dir, _instance.debug_config.packets_sent_dir, _instance.debug_config.packets_received_dir });
+        Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+                {
+                    { _instance.debug_config.image_dir, true },
+                    { _instance.debug_config.packets_sent_dir, true },
+                    { _instance.debug_config.packets_received_dir, true },
+                });
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];

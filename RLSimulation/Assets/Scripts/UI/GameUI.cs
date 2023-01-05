@@ -18,6 +18,9 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI fps_value_text;
 
     [SerializeField]
+    private TextMeshProUGUI episode_num;
+
+    [SerializeField]
     private TextMeshProUGUI observations_sent;
 
     [SerializeField]
@@ -71,7 +74,8 @@ public class GameUI : MonoBehaviour
 
         if (SimulationManager._instance.server != null)
         {
-            observations_sent.text = SimulationManager._instance.server.current_obsv_num.ToString();
+            episode_num.text = SimulationManager._instance.server.episode_num.ToString();
+            observations_sent.text = SimulationManager._instance.server.obsv_num.ToString();
             actions_received.text = SimulationManager._instance.server.actions_received.ToString();
             resets_received.text = SimulationManager._instance.server.resets_received.ToString();
         }

@@ -109,12 +109,7 @@ public class MainMenu : MonoBehaviour
         {
             SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
             {
-                msg_type = "training_ready",
-                payload = new Payload_Data
-                {
-                    seq_num = SimulationManager._instance.server.current_packet_num,
-                    obsv_num = SimulationManager._instance.server.current_obsv_num,
-                }
+                msg_type = "training_ready"
             });
 
             SimulationManager._instance.processing_obj.SetActive(true);

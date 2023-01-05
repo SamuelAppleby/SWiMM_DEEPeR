@@ -42,34 +42,31 @@ public class GameEventListener : MonoBehaviour
     [SerializeField]
     public SceneChangedUnityEvent scene_changed_unity_event;
 
+    [SerializeField]
+    public JsonDataUnityEvent set_position_unity_event;
+
     public virtual void OnEnable()
     {
-        EventMaster._instance.reset_episode_event.RegisterListener(this);
-        EventMaster._instance.end_simulation_event.RegisterListener(this);
         EventMaster._instance.rov_initialised_event.RegisterListener(this);
-        EventMaster._instance.server_config_received_event.RegisterListener(this);
         EventMaster._instance.server_connecting_event.RegisterListener(this);
         EventMaster._instance.server_connection_attempt_event.RegisterListener(this);
-        EventMaster._instance.json_control_event.RegisterListener(this);
         EventMaster._instance.observation_sent_event.RegisterListener(this);
-        EventMaster._instance.server_awaiting_training_event.RegisterListener(this);
         EventMaster._instance.ai_groups_complete_event.RegisterListener(this);
         EventMaster._instance.scene_changed_event.RegisterListener(this);
+        EventMaster._instance.server_event.RegisterListener(this);
+        EventMaster._instance.sent_event.RegisterListener(this);
     }
 
     protected virtual void OnDisable()
     {
-        EventMaster._instance.reset_episode_event.UnregisterListener(this);
-        EventMaster._instance.end_simulation_event.UnregisterListener(this);
         EventMaster._instance.rov_initialised_event.UnregisterListener(this);
-        EventMaster._instance.server_config_received_event.UnregisterListener(this);
         EventMaster._instance.server_connecting_event.UnregisterListener(this);
         EventMaster._instance.server_connection_attempt_event.UnregisterListener(this);
-        EventMaster._instance.json_control_event.UnregisterListener(this);
         EventMaster._instance.observation_sent_event.UnregisterListener(this);
-        EventMaster._instance.server_awaiting_training_event.UnregisterListener(this);
         EventMaster._instance.ai_groups_complete_event.UnregisterListener(this);
         EventMaster._instance.scene_changed_event.UnregisterListener(this);
+        EventMaster._instance.server_event.UnregisterListener(this);
+        EventMaster._instance.sent_event.UnregisterListener(this);
     }
 
     public void OnEpisodeResetEventRaised()
@@ -125,5 +122,10 @@ public class GameEventListener : MonoBehaviour
     public void OnSceneChangedEventRaised(Enums.E_SceneIndices to)
     {
         scene_changed_unity_event.Invoke(to);
+    }
+
+    public void OnSetPositionEventRaised(JsonMessage msg)
+    {
+        set_position_unity_event.Invoke(msg);
     }
 }

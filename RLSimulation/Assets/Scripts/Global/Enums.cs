@@ -49,7 +49,7 @@ public static class Enums
         { "onReceive", E_Action_Inference.ON_RECEIVE },
         { "maintain", E_Action_Inference.MAINTAIN },
         { "freeze", E_Action_Inference.FREEZE },
-        { "maintainFreeze", E_Action_Inference.MAINTAIN_FREEZE },
+        { "maintainFreeze", E_Action_Inference.MAINTAIN_FREEZE }
     };
 
     public enum E_Automation_Actions

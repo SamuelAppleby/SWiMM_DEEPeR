@@ -60,6 +60,8 @@ class UnitySimHandler:
 
     def reset(self):
         logger.debug("resetting")
+        self.server.action_num = 0
+        self.server.episode_num += 1
 
         if 'packets_received_dir' in self.server.debug_config:
             clean_and_create_directory(self.server.debug_config['packets_received_dir'])
@@ -68,7 +70,6 @@ class UnitySimHandler:
         if 'image_dir' in self.server.debug_config:
             clean_and_create_directory(self.server.debug_config['image_dir'])
 
-        self.send_reset()
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
         self.hit = []
@@ -79,6 +80,7 @@ class UnitySimHandler:
         self.raw_d = 0.0
         self.d = 0.0
         self.a = 0.0
+        self.send_reset()
 
     def observe(self, obs):
         while self.last_obs is self.image_array:
@@ -178,17 +180,17 @@ class UnitySimHandler:
         self.sim_training_ready = True
 
     def on_telemetry(self, payload):
-        self.rover_pos = np.array([payload['position'][0], payload['position'][1], payload['position'][2]])
-        self.hit = payload['collision_objects']
-        self.rover_fwd = np.array([payload["fwd"][0], payload['fwd'][1], payload['fwd'][2]])
+        self.rover_pos = np.array([payload['telemetry_data']['position'][0], payload['telemetry_data']['position'][1], payload['telemetry_data']['position'][2]])
+        self.hit = payload['telemetry_data']['collision_objects']
+        self.rover_fwd = np.array([payload['telemetry_data']["fwd"][0], payload['telemetry_data']['fwd'][1], payload['telemetry_data']['fwd'][2]])
 
         # TODO: implement receiving json on multiple targets
         # Sam.A, targets are now an array, use the last element of it for targeting
-        for target in payload['targets']:
+        for target in payload['telemetry_data']['targets']:
             self.target_pos = np.array([target['position'][0], target['position'][1], target['position'][2]])
             self.target_fwd = np.array([target['fwd'][0], target['fwd'][1], target['fwd'][2]])
 
-        image = bytearray(base64.b64decode(payload['jpg_image']))
+        image = bytearray(base64.b64decode(payload['telemetry_data']['jpg_image']))
 
         if 'image_dir' in self.server.debug_config:
             self.write_image_to_file_incrementally(image, payload['obsv_num'])
@@ -202,7 +204,7 @@ class UnitySimHandler:
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-    def take_action(self, action):
+    def send_action(self, action):
         if self.server is None:
             return
 

@@ -88,8 +88,8 @@ public class ROVControls : MonoBehaviour
             first_person_cam.fieldOfView = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.fov;
             stability_threshold = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityThreshold;
             stability_force = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityForce;
-            linear_thrust_stength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
-            angular_thrust_strength = Utils.FloatArrayToVector3(ref SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
+            linear_thrust_stength = Utils.FloatArrayToVector3(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
+            angular_thrust_strength = Utils.FloatArrayToVector3(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.angularThrustPower);
         }
     }
 

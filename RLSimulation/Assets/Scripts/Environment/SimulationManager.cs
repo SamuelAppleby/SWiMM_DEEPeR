@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Xml;
 using TMPro;
+using Unity.VisualScripting;
 using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -98,7 +99,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void OnObservationSent()
     {
-        _instance.server.current_obsv_num++;
+        _instance.server.obsv_num++;
 
         if (Enums.action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.FREEZE ||
             Enums.action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
@@ -134,12 +135,7 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             _instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
             {
-                msg_type = "server_config_received",
-                payload = new Payload_Data
-                {
-                    seq_num = _instance.server.current_packet_num,
-                    obsv_num = _instance.server.current_obsv_num,
-                }
+                msg_type = "server_config_received"
             });
         }
     }
@@ -148,17 +144,6 @@ public class SimulationManager : Singleton<SimulationManager>
     {
         if(_instance.server != null)
         {
-            _instance.server.resets_received++;
-
-            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
-                {
-                    { _instance.debug_config.image_dir, true },
-                    { _instance.debug_config.packets_sent_dir, true },
-                    { _instance.debug_config.packets_received_dir, true },
-                });
-
-            File.WriteAllText(_instance.debug_config.packets_received_dir + "packet_" + _instance.server.json_reset_episode.payload.seq_num + ".json", _instance.server.last_json_msg);
-
             switch (current_scene_index)
             {
                 case Enums.E_SceneIndices.MAIN_MENU:
@@ -169,6 +154,7 @@ public class SimulationManager : Singleton<SimulationManager>
                     {
                         Time.timeScale = 0;
                     }
+
                     break;
             }
         }
@@ -187,7 +173,7 @@ public class SimulationManager : Singleton<SimulationManager>
     }
 
     private void Start()
-    {
+    { 
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
 #if UNITY_EDITOR
@@ -419,69 +405,25 @@ public class SimulationManager : Singleton<SimulationManager>
         }
     }
 
-    public void MonitorAndFireServerEvents()
+    public void OnSetPosition(JsonMessage msg)
     {
-        if (_instance.server.json_server_config.is_overriden)
+        foreach (GameObjectPosition pos in msg.payload.objectPositions)
         {
-            EventMaster._instance.server_config_received_event.Raise(_instance.server.json_server_config);
-            _instance.server.json_server_config.is_overriden = false;
-        }
-
-        if (_instance.server.json_awaiting_training.is_overriden)
-        {
-            EventMaster._instance.server_awaiting_training_event.Raise();
-            _instance.server.json_awaiting_training.is_overriden = false;
-        }
-
-        if (_instance.server.json_reset_episode.is_overriden)
-        {
-            EventMaster._instance.reset_episode_event.Raise();
-            _instance.server.json_reset_episode.is_overriden = false;
-        }
-
-        if (_instance.server.json_rover_controls.is_overriden)
-        {
-            EventMaster._instance.json_control_event.Raise(_instance.server.json_rover_controls);
-            _instance.server.json_rover_controls.is_overriden = false;
-        }
-
-        if (_instance.server.json_end_simulation.is_overriden)
-        {
-            EventMaster._instance.end_simulation_event.Raise();
-            _instance.server.json_end_simulation.is_overriden = false;
-        }
-
-        if (_instance.server.json_str_obsv_last != null)
-        {
-            DataToSend last_send = JsonConvert.DeserializeObject<DataToSend>(_instance.server.json_str_obsv_last);
-
-            switch (last_send.msg_type)
+            switch (pos.object_name)
             {
-                case "connection_request":
-                    break;
-                case "on_server_config_received":
-                    break;
-                case "training_ready":
-                    break;
-                case "on_telemetry":
-                    EventMaster._instance.observation_sent_event.Raise();
+                case "rover":
+                    rover.transform.position = Utils.FloatArrayToVector3(pos.position);
+                    rover.transform.rotation = Utils.FloatArrayToQuaternion(pos.rotation);
                     break;
                 default:
                     break;
             }
-
-            _instance.server.json_str_obsv_last = null;
         }
     }
 
     void Update()
     {
         globalControls.Update(_instance.in_manual_mode);
-
-        if (_instance.server != null)
-        {
-            MonitorAndFireServerEvents();
-        }
     }
 
     public T ProcessConfig<T>(string dir)

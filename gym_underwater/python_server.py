@@ -71,7 +71,8 @@ class PythonServer:
         self.protocol = None
         self.server_config = None
         self.receive_buffer_size = None
-        self.current_packet_num = 0
+        self.episode_num = -1
+        self.action_num = 0
 
         conf_arr = process_and_validate_configs({
             '../Configs/json/debug_config.json': '../Configs/schemas/debug_config_schema.json',
@@ -157,7 +158,7 @@ class PythonServer:
             json_dict = json.loads(json_str)
 
             if 'packets_received_dir' in self.debug_config:
-                with open(self.debug_config['packets_received_dir'] + 'packet_' + str(json_dict['payload']['seq_num']) + '.json', 'w', encoding='utf-8') as f:
+                with open(self.debug_config['packets_received_dir'] + 'episode_' + str(json_dict['payload']['episode_num']) + '_observation_' + str(json_dict['payload']['obsv_num']) + '.json', 'w', encoding='utf-8') as f:
                     json.dump(json_dict, f, ensure_ascii=False, indent=4)
 
             self.handler.on_recv_message(json_dict)
@@ -168,12 +169,13 @@ class PythonServer:
                 time.sleep(1.0 / 120.0)
 
             # print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
-            self.msg['payload']['seq_num'] = self.current_packet_num
+            self.msg['payload']['episode_num'] = self.episode_num
+            self.msg['payload']['action_num'] = self.action_num
             json_str = json.dumps(self.msg)
             # print('Sending: {}'.format(json_str))
 
             if 'packets_sent_dir' in self.debug_config:
-                with open(self.debug_config['packets_sent_dir'] + 'packet_' + str(self.current_packet_num) + '.json', 'w', encoding='utf-8') as f:
+                with open(self.debug_config['packets_sent_dir'] + 'episode_' + str(self.episode_num) + '_action_' + str(self.action_num) + '.json', 'w', encoding='utf-8') as f:
                     json.dump(self.msg, f, ensure_ascii=False, indent=4)
 
             if self.protocol == Protocol.UDP:
@@ -181,7 +183,7 @@ class PythonServer:
             else:
                 self.conn.sendall(bytes(json_str, encoding="utf-8"))
 
-            self.current_packet_num += 1
+            self.action_num += 1
             self.msg = None
 
     def stop(self):

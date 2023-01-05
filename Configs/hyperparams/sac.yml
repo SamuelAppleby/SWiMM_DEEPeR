@@ -1,5 +1,5 @@
 UnderwaterEnv:
-  n_timesteps: !!float 200
+  n_timesteps: !!float 1000000
   #policy: 'CnnPolicy'
   policy: 'LnMlpPolicy' 
   learning_rate: acc_3e-4

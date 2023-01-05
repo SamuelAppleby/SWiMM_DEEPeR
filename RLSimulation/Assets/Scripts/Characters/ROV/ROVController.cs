@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using static Server;
@@ -123,11 +124,11 @@ public class ROVController : MonoBehaviour
         {
             if(SimulationManager._instance.server != null)
             {
-                File.WriteAllBytes(dir + "image_" + SimulationManager._instance.server.current_obsv_num.ToString() + ".jpg", screen_shot.EncodeToJPG());
+                Task t = File.WriteAllBytesAsync(dir + "episode_" + SimulationManager._instance.server.episode_num.ToString() + "_image_" + SimulationManager._instance.server.obsv_num.ToString() + ".jpg", screen_shot.EncodeToJPG());
             }
             else
             {
-                File.WriteAllBytes(dir + "image_" + screenshot_count + ".jpg", screen_shot.EncodeToJPG());
+                Task t = File.WriteAllBytesAsync(dir + "image_" + screenshot_count + ".jpg", screen_shot.EncodeToJPG());
             }
         }
 
@@ -161,15 +162,16 @@ public class ROVController : MonoBehaviour
                 SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
                 {
                     msg_type = "on_telemetry",
-                    payload = new Payload_Data
+                    payload = new PayloadDataToSend
                     {
-                        seq_num = SimulationManager._instance.server.current_packet_num,
-                        obsv_num = SimulationManager._instance.server.current_obsv_num,
-                        jpg_image = byte_image,
-                        position = Utils.Vector3ToFloatArray(transform.position),
-                        collision_objects = collision_objects_list.ToArray(),
-                        fwd = Utils.Vector3ToFloatArray(transform.forward),
-                        targets = targetPositions
+                        telemetry_data = new TelemetryData
+                        {
+                            jpg_image = byte_image,
+                            position = Utils.Vector3ToFloatArray(transform.position),
+                            collision_objects = collision_objects_list.ToArray(),
+                            fwd = Utils.Vector3ToFloatArray(transform.forward),
+                            targets = targetPositions
+                        }
                     }
                 });
             }));

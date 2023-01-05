@@ -1,6 +1,9 @@
 using Newtonsoft.Json;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Dynamic;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -12,9 +15,8 @@ using Task = System.Threading.Tasks.Task;
 
 public class Server
 {
-    public string last_json_msg = "";
-    public int current_packet_num = 0;
-    public int current_obsv_num = 0;
+    public int episode_num = 0;
+    public int obsv_num = 0;
     public int actions_received = 0;
     public int resets_received = 0;
     public bool first_observation_sent = false;
@@ -38,16 +40,25 @@ public class Server
     public struct JsonMessage
     {
         public string msgType;
-        public Payload payload;
-        public bool is_overriden;
+        public PayloadDataToReceive payload;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
-    public struct Payload
+    public struct PayloadDataToReceive
     {
-        public int seq_num;
+        public int episode_num;
+        public int action_num;
         public ServerConfig serverConfig;
         public JsonControls jsonControls;
+        public GameObjectPosition[] objectPositions;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct GameObjectPosition
+    {
+        public string object_name;
+        public float[] position;
+        public float[] rotation;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
@@ -123,14 +134,20 @@ public class Server
     public struct DataToSend
     {
         public string msg_type;
-        public Payload_Data payload;
+        public PayloadDataToSend payload;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
-    public struct Payload_Data
+    public struct PayloadDataToSend
     {
-        public int seq_num;
+        public int episode_num;
         public int obsv_num;
+        public TelemetryData telemetry_data;
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public struct TelemetryData
+    {
         public byte[] jpg_image;
         public float[] position;
         public string[] collision_objects;
@@ -162,17 +179,7 @@ public class Server
     /* Configs/Messages from server */
     public JsonMessage json_server_config;
 
-    public JsonMessage json_awaiting_training;
-
-    public JsonMessage json_reset_episode;
-
-    public JsonMessage json_rover_controls;
-
-    public JsonMessage json_end_simulation;
-
     public string json_str_obsv;
-
-    public string json_str_obsv_last;
 
     IPAddress ipAddress;
     IPEndPoint ipEndPoint;
@@ -180,7 +187,6 @@ public class Server
     public Server()
     {
         json_str_obsv = null;
-        json_str_obsv_last = null;
     }
 
     public bool IsConnectionValid()
@@ -250,7 +256,7 @@ public class Server
 
     private bool DataReadyToSend()
     {
-        return json_str_obsv != null && json_str_obsv_last == null;
+        return json_str_obsv != null;
     }
 
     //public void CastAndOverride<T, P>(JsonMessage<T> data, ref JsonMessage<P> param)
@@ -266,11 +272,6 @@ public class Server
             json_str_obsv = JsonConvert.SerializeObject(new DataToSend
             {
                 msg_type = "connection_request",
-                payload = new Payload_Data
-                {
-                    seq_num = SimulationManager._instance.server.current_packet_num,
-                    obsv_num = SimulationManager._instance.server.current_obsv_num,
-                }
             });
 
             while (IsConnectionValid())
@@ -278,15 +279,24 @@ public class Server
                 /* Writing */
                 await WaitUntilAsync(DataReadyToSend);
 
+                DataToSend current_msg = JsonConvert.DeserializeObject<DataToSend>(json_str_obsv);
+
+                current_msg.payload.episode_num = episode_num;
+                current_msg.payload.obsv_num = obsv_num;
+
+                UnityMainThreadDispatcher.Instance().Enqueue(FireSentEvents(current_msg));
+
+                string update_json_str = JsonConvert.SerializeObject(current_msg);
+
                 try
                 {
                     if (SimulationManager._instance.debug_config.packets_sent_dir != null)
                     {
-                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "packet_" + current_packet_num.ToString() + ".json", json_str_obsv);
+                       Task t = File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "episode_" + current_msg.payload.episode_num.ToString() + "_observation_" + current_msg.payload.obsv_num.ToString() + ".json", update_json_str);
                     }
 
-                    Debug.Log("Sending: " + json_str_obsv);
-                    byte[] _data = Encoding.UTF8.GetBytes(json_str_obsv);
+                    Debug.Log("Sending: " + update_json_str);
+                    byte[] _data = Encoding.UTF8.GetBytes(update_json_str);
 
                     if(udp_client != null)
                     {
@@ -297,9 +307,7 @@ public class Server
                         await stream.WriteAsync(_data, 0, _data.Length);
                     }
 
-                    json_str_obsv_last = json_str_obsv;
                     json_str_obsv = null;
-                    current_packet_num++;
                 }
 
                 catch (Exception e)
@@ -308,10 +316,12 @@ public class Server
                 }
 
                 /* Reading */
+                string current_json_action = null; 
+
                 if (udp_client != null)
                 {
                     byte[] receiveBytes = udp_client.Receive(ref ipEndPoint);
-                    last_json_msg = Encoding.Default.GetString(receiveBytes);
+                    current_json_action = Encoding.Default.GetString(receiveBytes);
                 }
                 else
                 {
@@ -323,53 +333,43 @@ public class Server
                         break;
                     }
 
-                    last_json_msg = Encoding.Default.GetString(receive_buffer);
+                    current_json_action = Encoding.Default.GetString(receive_buffer);
                     Array.Clear(receive_buffer, 0, receive_buffer.Length);
                 }
 
-                if (last_json_msg != null)
+                if (current_json_action != null)
                 {
-                    Debug.Log("Received: " + last_json_msg);
-                    JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(last_json_msg);
+                    Debug.Log("Received: " + current_json_action);
+                    JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(current_json_action);
+
+                    episode_num = message.payload.episode_num;
+
+                    if(message.msgType == "episode_reset")
+                    {
+                        Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+                        {
+                            { SimulationManager._instance.debug_config.image_dir, true },
+                            { SimulationManager._instance.debug_config.packets_sent_dir, true },
+                            { SimulationManager._instance.debug_config.packets_received_dir, true },
+                        });
+
+                        obsv_num = 0;
+                        resets_received++;
+                    }
 
                     if (SimulationManager._instance.debug_config.packets_received_dir != null)
                     {
-                        await File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_received_dir + "packet_" + message.payload.seq_num + ".json", last_json_msg);
+                        Task t = File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_received_dir + "episode_" + message.payload.episode_num.ToString() + "_packet_" + message.payload.action_num.ToString() + ".json", current_json_action);
                     }
 
-                    try
+                    switch (message.msgType)
                     {
-                        switch (message.msgType)
-                        {
-                            case "process_server_config":
-                                json_server_config = message;
-                                json_server_config.is_overriden = true;
-                                break;
-                            case "awaiting_training":
-                                json_awaiting_training = message;
-                                json_awaiting_training.is_overriden = true;
-                                break;
-                            case "reset_episode":
-                                json_reset_episode = message;
-                                json_reset_episode.is_overriden = true;
-                                break;
-                            case "receive_json_controls":
-                                json_rover_controls = message;
-                                json_rover_controls.is_overriden = true;
-                                break;
-                            case "end_simulation":
-                                json_end_simulation = message;
-                                json_end_simulation.is_overriden = true;
-                                break;
-                            default:
-                                break;
-                        }
+                        case "process_server_config":
+                            json_server_config = message;
+                            break;
                     }
 
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
-                    }
+                    UnityMainThreadDispatcher.Instance().Enqueue(FireServerEvents(message));
                 }
             }
 
@@ -384,5 +384,17 @@ public class Server
             Disconnect();
             return null;
         }
+    }
+
+    private IEnumerator FireSentEvents(DataToSend msg)
+    {
+        EventMaster._instance.sent_event.Raise(msg);
+        yield return null;
+    }
+
+    private IEnumerator FireServerEvents(JsonMessage msg)
+    {
+        EventMaster._instance.server_event.Raise(msg);
+        yield return null;
     }
 }

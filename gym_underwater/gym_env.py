@@ -36,13 +36,12 @@ class UnderwaterEnv(gym.Env):
             dtype=np.float32,
         )
 
-
         # observation space declaration
         print("Declaring observation space")
         if self.obs == 'image':
             self.observation_space = spaces.Box(low=0, high=255, shape=self.scale, dtype=np.uint8)
         elif self.obs == 'vector':
-            self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1,12), dtype=np.float32)
+            self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, 12), dtype=np.float32)
         else:
             raise ValueError('Invalid observation type: {}'.format(obs))
 
@@ -63,7 +62,7 @@ class UnderwaterEnv(gym.Env):
 
     def step(self, action):
         # send action decision to handler to send off to sim
-        self.handler.take_action(action)
+        self.handler.send_action(action)
 
         # retrieve results of action implementation
         observation, reward, done, info = self.handler.observe(self.obs)

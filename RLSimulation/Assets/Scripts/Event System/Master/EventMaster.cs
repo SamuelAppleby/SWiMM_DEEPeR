@@ -6,19 +6,7 @@ public class EventMaster : Singleton<EventMaster>
     public ROVInitialisedEvent rov_initialised_event;
 
     [SerializeField]
-    public EndSimulationEvent end_simulation_event;
-
-    [SerializeField]
-    public ResetEpisodeEvent reset_episode_event;
-
-    [SerializeField]
-    public JsonControlsEvent json_control_event;
-
-    [SerializeField]
     public AIGroupsCompleteEvent ai_groups_complete_event;
-
-    [SerializeField]
-    public ServerConfigReceivedEvent server_config_received_event;
 
     [SerializeField]
     public ServerConnectingEvent server_connecting_event;
@@ -30,10 +18,13 @@ public class EventMaster : Singleton<EventMaster>
     public ObservationSentEvent observation_sent_event;
 
     [SerializeField]
-    public ServerAwaitingTrainingEvent server_awaiting_training_event;
+    public SceneChangedEvent scene_changed_event;
 
     [SerializeField]
-    public SceneChangedEvent scene_changed_event;
+    public ServerEvent server_event;
+
+    [SerializeField]
+    public SentEvent sent_event;
 
     protected override void Awake()
     {

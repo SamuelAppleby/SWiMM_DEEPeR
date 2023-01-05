@@ -30,13 +30,6 @@ public class ImageSampling : MonoBehaviour
         csv_dir = "../../" + csv_dir;
 #endif
 
-
-        Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
-        { 
-            {image_dir, true },
-            { csv_dir, false } 
-        });
-
         resolutions = new List<Tuple<int, int>>
         {
             new Tuple<int, int>(32,32),
@@ -54,6 +47,12 @@ public class ImageSampling : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.KeypadEnter))
         {
+            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+            {
+                { image_dir, true },
+                { csv_dir, false }
+            });
+
             foreach (Tuple<int, int> res in resolutions)
             {
                 string res_path = image_dir + res.Item1.ToString() + "x" + res.Item2.ToString() + "/";

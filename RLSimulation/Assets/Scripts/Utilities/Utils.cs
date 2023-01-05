@@ -12,9 +12,24 @@ public static class Utils
         return new float[] { vec.x, vec.y, vec.z };
     }
 
-    public static Vector3 FloatArrayToVector3(ref float[] arr)
+    public static Vector3 FloatArrayToVector3(float[] arr)
     {
+        if(arr.Length != 3)
+        {
+            return Vector3.zero;
+        }
+
         return new Vector3(arr[0], arr[1], arr[2]);
+    }
+
+    public static Quaternion FloatArrayToQuaternion(float[] arr)
+    {
+        if (arr.Length != 4)
+        {
+            return Quaternion.identity;
+        }
+
+        return new Quaternion(arr[0], arr[1], arr[2], arr[3]);
     }
 
     public static float VolumeOfBoxCollider(Collider collider)

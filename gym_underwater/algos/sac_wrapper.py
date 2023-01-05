@@ -124,7 +124,8 @@ class SACWrap(SAC):
                     self.episode_reward = total_episode_reward_logger(self.episode_reward, ep_reward,
                                                                       ep_done, writer, step)
 
-                if ep_len == self.train_freq:
+                # Done check here as the last step may have been force reset, don't want to do it twice
+                if not done and ep_len == self.train_freq:
                     print("Maximum episode length reached")
                     done = True
                     obs = self.env.reset()

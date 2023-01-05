@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Linq;
 using System;
 using Random = UnityEngine.Random;
+using static Server;
 
 [System.Serializable]
 public class AIGroup
@@ -112,6 +113,23 @@ public class FishSpawner : MonoBehaviour
 
     public float current_progress;
 
+    public void OnSetPosition(JsonMessage msg)
+    {
+        foreach(GameObjectPosition pos in msg.payload.objectPositions)
+        {
+            GameObject temp_group = GameObject.Find("Group: " + pos.object_name);
+
+            if (temp_group != null)
+            {
+                foreach (Transform t in temp_group.transform)
+                {
+                    t.transform.position = Utils.FloatArrayToVector3(pos.position);
+                    t.transform.rotation = Utils.FloatArrayToQuaternion(pos.rotation);
+                }
+            }
+        }
+    }
+
     public void OnROVInitialised(GameObject rov)
     {
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
@@ -176,6 +194,7 @@ public class FishSpawner : MonoBehaviour
 
                 total_ai += obj.maxAmount;
             }
+
             current_intiialized++;
             current_progress = (float)current_intiialized / ai_groups.Length;
         }

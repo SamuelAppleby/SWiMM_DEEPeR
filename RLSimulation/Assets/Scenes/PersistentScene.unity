@@ -15,7 +15,7 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
   m_Fog: 1
-  m_FogColor: {r: 0.078431375, g: 0.5764706, b: 0.7254902, a: 1}
+  m_FogColor: {r: 0, g: 0.5882353, b: 0.7254902, a: 1}
   m_FogMode: 2
   m_FogDensity: 0.005
   m_LinearFogStart: 0
@@ -982,6 +982,7 @@ GameObject:
   - component: {fileID: 1373481077}
   - component: {fileID: 1373481080}
   - component: {fileID: 1373481081}
+  - component: {fileID: 1373481082}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1058,16 +1059,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rov_initialised_event: {fileID: 11400000, guid: 41843b116b426e344ad4e99ad633451e, type: 2}
-  end_simulation_event: {fileID: 11400000, guid: 6fd0906aa8d5a1642a45cd31b68ddee6, type: 2}
-  reset_episode_event: {fileID: 11400000, guid: 01592ad09c1d18247aff71088ca37e0c, type: 2}
-  json_control_event: {fileID: 11400000, guid: 8fd3533b8b14d374484632a1fa9c880e, type: 2}
   ai_groups_complete_event: {fileID: 11400000, guid: 0a30bd4564573c54191dda2f3ab0cb31, type: 2}
-  server_config_received_event: {fileID: 11400000, guid: 9c012ab95e79b9049b6689907180b035, type: 2}
   server_connecting_event: {fileID: 11400000, guid: bb8fa7b60e4c5bf42967d34f8b805395, type: 2}
   server_connection_attempt_event: {fileID: 11400000, guid: 9809168dca526d7428cc8d7faafc028d, type: 2}
   observation_sent_event: {fileID: 11400000, guid: fb580ff4bcd398e4fad369220ee5df7c, type: 2}
-  server_awaiting_training_event: {fileID: 11400000, guid: b5f7216a668a6bb48b6b583d30103fc7, type: 2}
   scene_changed_event: {fileID: 11400000, guid: ec0efe08f347f724fa7230fa5076fdeb, type: 2}
+  server_event: {fileID: 11400000, guid: 2cc3afb516a8b754bbbb57e1d6924cfc, type: 2}
+  sent_event: {fileID: 11400000, guid: 789886be0fc61c047a5eb524442e0e5a, type: 2}
 --- !u!114 &1373481081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1330,6 +1328,33 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  set_position_unity_event:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1373481077}
+        m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
+        m_MethodName: OnSetPosition
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1373481082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373481076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e63869af2f5e1374c937ce079a46444f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1395858807
 GameObject:
   m_ObjectHideFlags: 0

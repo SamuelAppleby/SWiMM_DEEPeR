@@ -24,6 +24,9 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI observations_sent;
 
     [SerializeField]
+    private TextMeshProUGUI total_steps;
+
+    [SerializeField]
     private TextMeshProUGUI actions_received;
 
     [SerializeField]
@@ -68,6 +71,18 @@ public class GameUI : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI far_plane_text;
 
+    private void Start()
+    {
+        if (SimulationManager._instance.server != null)
+        {
+            observations_sent.text = SimulationManager._instance.server.obsv_num.ToString();
+            actions_received.text = SimulationManager._instance.server.action_num.ToString();
+            resets_received.text = SimulationManager._instance.server.resets_received.ToString();
+            episode_num.text = SimulationManager._instance.server.episode_num.ToString();
+            total_steps.text = SimulationManager._instance.server.total_steps.ToString();
+        }
+    }
+
     void FixedUpdate()
     {
         fps_value_text.text = SimulationManager._instance.avgFrameRate.ToString();
@@ -76,7 +91,8 @@ public class GameUI : MonoBehaviour
         {
             episode_num.text = SimulationManager._instance.server.episode_num.ToString();
             observations_sent.text = SimulationManager._instance.server.obsv_num.ToString();
-            actions_received.text = SimulationManager._instance.server.actions_received.ToString();
+            total_steps.text = SimulationManager._instance.server.total_steps.ToString();
+            actions_received.text = SimulationManager._instance.server.action_num.ToString();
             resets_received.text = SimulationManager._instance.server.resets_received.ToString();
         }
 

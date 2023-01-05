@@ -110,7 +110,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void OnActionReceived(JsonMessage param)
     {
-        _instance.server.actions_received++;
+        _instance.server.total_steps++;
 
         if (Time.timeScale == 0)
         {

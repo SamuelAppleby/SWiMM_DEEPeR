@@ -17,7 +17,8 @@ public class Server
 {
     public int episode_num = 0;
     public int obsv_num = 0;
-    public int actions_received = 0;
+    public int total_steps = 0;
+    public int action_num = 0;
     public int resets_received = 0;
     public bool first_observation_sent = false;
     byte[] receive_buffer;
@@ -343,8 +344,9 @@ public class Server
                     JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(current_json_action);
 
                     episode_num = message.payload.episode_num;
+                    action_num = message.payload.action_num;
 
-                    if(message.msgType == "episode_reset")
+                    if(message.msgType == "reset_episode")
                     {
                         Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
                         {

@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: WaterAdv
+  m_Shader: {fileID: 4800000, guid: c3025429319b36f4789124bd68e7ac7a, type: 3}
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _FlowMap:
+        m_Texture: {fileID: 2800000, guid: 4e391d5e074bade429e3f68055ff40ed, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 6ec5f14acb8ca894788ea0bb4517c171, type: 3}
+        m_Scale: {x: 10, y: 10}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseMap:
+        m_Texture: {fileID: 2800000, guid: d02c2e247bed7a246a40032119c98f3f, type: 3}
+        m_Scale: {x: 0.05, y: 0.05}
+        m_Offset: {x: 0, y: 0}
+    - _SecondaryTex:
+        m_Texture: {fileID: 2800000, guid: 7fb06e20553ecdb4a83ab8f2e970b377, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _FlowCycleLength: 2
+    - _FlowSpeed: 11
+    - _Glossiness: 62.81
+    - _Metallic: 229.44
+    - _ToonShaded: 0
+    - _WaveHeight: 0.03
+    - _WaveSpeed: 50
+    - _XFreq: 1
+    - _ZFreq: 1
+    m_Colors:
+    - _Color: {r: 0.2028302, g: 0.6416664, b: 1, a: 1}
+  m_BuildTextureStacks: []

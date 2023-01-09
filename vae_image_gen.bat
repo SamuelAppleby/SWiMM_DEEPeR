@@ -1,0 +1,3 @@
+cd RLSimulation\Builds\Windows
+START ReinforcementLearningSimulation.exe vae_gen num_images 220040
+EXIT

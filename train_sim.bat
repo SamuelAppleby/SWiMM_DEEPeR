@@ -3,5 +3,5 @@ pipenv install
 CALL .\.venv\Scripts\activate.bat
 START python train.py
 cd RLSimulation\Builds\Windows
-START ReinforcementLearningSimulation.exe automation_training
+START ReinforcementLearningSimulation.exe training
 EXIT

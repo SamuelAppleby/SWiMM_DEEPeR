@@ -27,8 +27,7 @@ public class ImageSampling : MonoBehaviour
     [SerializeField]
     private List<Resolution> resolutions;
 
-    [SerializeField]
-    private int num_iters;
+    private int num_iters = 5;
 
     public void OnAIGroupsComplete()
     {
@@ -62,39 +61,61 @@ public class ImageSampling : MonoBehaviour
 
         var csv = new StringBuilder();
 
+        if (SimulationManager._instance.data_dir == null)
+        {
 #if UNITY_EDITOR
-        data_dir = "../image_generation/sampling/";
+            data_dir = "..\\image_generation\\sampling\\";
 #else
-        data_dir = "../../../image_generation/sampling/";
+        data_dir = "..\\..\\..\\image_generation\\sampling\\";
 #endif
+        }
+
+        else
+        {
+            data_dir = SimulationManager._instance.data_dir;
+        }
 
         Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
         {
             { data_dir, true }
         });
 
-        image_dir = data_dir + "images/";
+        image_dir = data_dir + "images\\";
 
-        string graphics_pipeline = GraphicsSettings.defaultRenderPipeline == null ? "built_in" : "hdrp";
-        image_dir += graphics_pipeline + "/";
+        string graphics_pipeline = GraphicsSettings.defaultRenderPipeline == null ? "built_in\\" : "hdrp\\";
+        image_dir += graphics_pipeline;
 
         foreach (Resolution res in resolutions)
         {
-            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + "/";
+            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + "\\";
 
             Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
-                {
-                    {res_path, true }
-                });
+            {
+                { res_path, true }
+            });
         }
 
-        float rot_step = 360 / SimulationManager._instance.num_images;
+        int num_images = 10;
+
+        if (SimulationManager._instance.num_images != null)
+        {
+            try
+            {
+                num_images = int.Parse(SimulationManager._instance.num_images);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e.Message);
+            }
+        }
+
+        float rot_step = 360 / num_images;
 
         foreach (Resolution res in resolutions)
         {
-            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + "/";
+            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + "\\";
 
-            for (int current_img = 0; current_img < SimulationManager._instance.num_images; ++current_img)
+            for (int current_img = 0; current_img < num_images; ++current_img)
             {
                 /* Manual calculation */
                 //float opposite = Mathf.Sin((degree * Mathf.PI) / 180) * sample_distance;
@@ -113,7 +134,7 @@ public class ImageSampling : MonoBehaviour
                     float time_taken = Time.realtimeSinceStartup - start_time;
 
                     /* Time to record time taken */
-                    if (current_img == SimulationManager._instance.num_images - 1 && i != 0)      // Prioritising caching of the OS
+                    if (current_img == num_images - 1 && i != 0)      // Prioritising caching of the OS
                     {
                         var newLine = $"{res.width.ToString() + "x" + res.height.ToString()},{graphics_pipeline},{time_taken}";
                         csv.AppendLine(newLine);
@@ -122,7 +143,7 @@ public class ImageSampling : MonoBehaviour
             }
         }
 
-        File.AppendAllText(data_dir + "results.csv", csv.ToString());
+        File.AppendAllText(data_dir + "timings.csv", csv.ToString());
 
         Destroy(target_trans.gameObject);
 

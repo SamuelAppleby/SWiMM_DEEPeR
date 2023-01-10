@@ -21,8 +21,8 @@ import cmvae_models.cmvae
 import cmvae_utils
 
 # define training meta parameters
-data_dir = '/home/campus.ncl.ac.uk/b3024896/Projects/gym-donkeytrack/logs/vae_data_300k'
-output_dir = '/home/campus.ncl.ac.uk/b3024896/Projects/gym-donkeytrack/logs/cmvae/300k_run_17_05_22'
+data_dir = '~/D:/vae_images/'
+output_dir = '~/D:/vae_output'
 big_data = True
 batch_size = 32
 epochs = 30 #15 #50

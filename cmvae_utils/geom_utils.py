@@ -1,3 +1,14 @@
+'''
+file: geom_utils.py
+author: Kirsten Richardson
+date: 2022
+modified for use with SdSim as opposed to AirSim (one less dimension considered)
+
+code adapted from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation/racing_utils/
+author: Rogerio Bonatti et al
+
+'''
+
 from scipy.spatial.transform import Rotation
 import numpy as np
 
@@ -39,3 +50,4 @@ def get_yaw_as_Q(yaw):
     rot = Rotation.from_euler('zyx', [yaw, 0, 0], degrees=True) # NB yaw in place z because scipy defines z-axis as vertical axis
     rot_Q = rot.as_quat() # returns numpy array in format (x,y,z,w), again with z referring to rotation around vertical axis
     return rot_Q
+

@@ -21,8 +21,8 @@ import cmvae_models.cmvae
 import cmvae_utils
 
 # define training meta parameters
-data_dir = '~/D:/vae_images/'
-output_dir = '~/D:/vae_output'
+data_dir = '~/D:/vae'
+output_dir = '~/D:/vae/cmvae_run_10_01_23'
 big_data = True
 batch_size = 32
 epochs = 30 #15 #50

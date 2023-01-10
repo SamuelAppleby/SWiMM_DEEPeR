@@ -237,6 +237,25 @@ class UnitySimHandler:
             'payload': {}
         }
 
+    def send_object_pos(self, object, pos_x, pos_y, pos_z, Q):
+        # note that the pos_y argument has been allocated to the z-axis array index
+        # and the pos_z argument has been allocated to the y-axis array index
+        # due to the difference in axis naming between scipy (incoming) and unity (outgoing)
+        self.server.msg = {
+            'msgType': 'set_position',
+            'payload': {
+                'objectPositions': [
+                    {
+                        'object_name': object,
+                        'position': [pos_x, pos_z, pos_y],
+                        'rotation': Q
+                    }
+                ]
+            }
+        }
+
+
+
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def write_image_to_file_incrementally(self, image, obsv_num):

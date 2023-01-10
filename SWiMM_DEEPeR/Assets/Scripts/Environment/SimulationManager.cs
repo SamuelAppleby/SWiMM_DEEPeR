@@ -16,7 +16,11 @@ using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
-    public int num_images;
+    public Tuple<string, string> vae_resolution;
+
+    public string num_images;
+
+    public string data_dir;
 
     public EventMaster event_master;
 
@@ -188,6 +192,9 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private void Start()
     {
+        _instance.num_images = null;
+        _instance.data_dir = null;
+        _instance.vae_resolution = new Tuple<string, string>(null, null);
         _instance.game_state = E_Game_State.REGULAR;
 
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
@@ -195,20 +202,20 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
 #if UNITY_EDITOR
-        _instance.debug_config_dir = "../Configs/json/debug_config.json";
-        _instance.network_config_dir = "../Configs/json/network_config.json";
+        _instance.debug_config_dir = "..\\Configs\\json\\debug_config.json";
+        _instance.network_config_dir = "..\\Configs\\json\\network_config.json";
 #else
-        _instance.debug_config_dir = "../../../Configs/json/debug_config.json";
-        _instance.network_config_dir = "../../../Configs/json/network_config.json";
+        _instance.debug_config_dir = "..\\..\\..\\Configs\\json\\debug_config.json";
+        _instance.network_config_dir = "..\\..\\..\\Configs\\json\\network_config.json";
 #endif        
 
         _instance.debug_config = _instance.ProcessConfig<DebugConfig>(_instance.debug_config_dir);
         _instance.network_config = _instance.ProcessConfig<NetworkConfig>(_instance.network_config_dir);
 
 #if !UNITY_EDITOR
-        _instance.debug_config.image_dir = "../../" + _instance.debug_config.image_dir;
-        _instance.debug_config.packets_received_dir = "../../" + _instance.debug_config.packets_received_dir;
-        _instance.debug_config.packets_sent_dir = "../../" + _instance.debug_config.packets_sent_dir;
+        _instance.debug_config.image_dir = "..\\..\\" + _instance.debug_config.image_dir;
+        _instance.debug_config.packets_received_dir = "..\\..\\" + _instance.debug_config.packets_received_dir;
+        _instance.debug_config.packets_sent_dir = "..\\..\\" + _instance.debug_config.packets_sent_dir;
 #endif
 
         Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
@@ -416,13 +423,16 @@ public class SimulationManager : Singleton<SimulationManager>
                     _instance.game_state = E_Game_State.VAE_GEN;
                     break;
                 case "num_images":
-                    _instance.num_images = int.Parse(args[++i]);
+                    _instance.num_images = args[++i];
+                    break;
+                case "data_dir":
+                    _instance.data_dir = args[++i];
+                    break;
+                case "resolution":
+                    _instance.vae_resolution = new Tuple<string, string>(args[++i], args[++i]);
                     break;
             }
         }
-
-        _instance.game_state = E_Game_State.VAE_GEN;
-        _instance.num_images = 100;
 
         switch (_instance.game_state)
         {

@@ -144,7 +144,6 @@ public class FishMovement : MonoBehaviour
     {
         m_last_waypoint = m_waypoint;
         m_waypoint = random_movement ? ai_manager.GetRandomValidPosition(valid_movements) : ai_manager.RandomWaypoint();
-        Debug.Log(m_waypoint);
         m_speed = UnityEngine.Random.Range(m_mix_max_speed.Item1, m_mix_max_speed.Item2);
     }
 

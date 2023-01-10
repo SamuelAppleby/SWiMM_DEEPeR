@@ -41,9 +41,6 @@ public class VAEImageGeneration : MonoBehaviour
 
     private float fov_limit;
 
-    [SerializeField]
-    private Resolution resolution;
-
     private Vector3 PolarTranslation(float r, float theta)
     {
         float corrected = Mathf.PI / 2 + theta;
@@ -88,13 +85,39 @@ public class VAEImageGeneration : MonoBehaviour
 
         var csv = new StringBuilder();
 
-#if UNITY_EDITOR
-        data_dir = "../image_generation/vae/";
-#else
-        data_dir = "../../../image_generation/vae/";
-#endif     
+        Resolution res = new Resolution()
+        {
+            width = 1920,
+            height = 1080
+        };
 
-        image_dir = data_dir + "images/";
+        try
+        {
+            res.width = int.Parse(SimulationManager._instance.vae_resolution.Item1);
+            res.height = int.Parse(SimulationManager._instance.vae_resolution.Item2);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(e.Message);
+        }
+
+        if (SimulationManager._instance.data_dir == null)
+        {
+#if UNITY_EDITOR
+            data_dir = "..\\image_generation\\vae\\";
+#else
+        data_dir = "..\\..\\..\\image_generation\\vae\\";
+#endif     
+        }
+
+        else
+        {
+            data_dir = SimulationManager._instance.data_dir;
+        }
+
+        data_dir += res.width.ToString() + "x" + res.height.ToString() + "\\";
+
+        image_dir = data_dir + "images\\";
 
         Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
         {
@@ -111,10 +134,23 @@ public class VAEImageGeneration : MonoBehaviour
             max = fov_limit
         };
 
-        //int start = Directory.GetFiles(image_dir).Length;
-        int start = 0;
+        int num_images = 10;
 
-        for (int i = start + 1; i <= start + SimulationManager._instance.num_images; ++i)
+        if(SimulationManager._instance.num_images != null)
+        {
+            try
+            {
+                num_images = int.Parse(SimulationManager._instance.num_images);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e.Message);
+            }
+        }
+
+        int start = Directory.GetFiles(image_dir).Length;
+
+        for (int i = start + 1; i <= start + num_images; ++i)
         {
             Vector3 new_pos = new Vector3(0, -4, 0);
             new_pos.x = Random.Range(camera_x_range.min, camera_x_range.max);
@@ -141,12 +177,12 @@ public class VAEImageGeneration : MonoBehaviour
 
             target_trans.localRotation = dolphin_yaw_q;
 
-            yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(resolution.width, resolution.height), track_camera, image_dir + "image_" + i.ToString() + ".jpg"));
+            yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, image_dir + i.ToString() + ".jpg"));
             var newLine = $"{new_r}, {new_theta * Mathf.Rad2Deg}, {psi_rel}";
             csv.AppendLine(newLine);
         }
 
-        File.AppendAllText(data_dir + "results.csv", csv.ToString());
+        File.AppendAllText(data_dir + "state_data.csv", csv.ToString());
 
         Destroy(target_trans.gameObject);
     }

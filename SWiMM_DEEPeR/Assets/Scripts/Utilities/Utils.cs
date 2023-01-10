@@ -75,7 +75,7 @@ public static class Utils
             {
                 if (path.Value)
                 {
-                    //Directory.Delete(path.Key, true);
+                    Directory.Delete(path.Key, true);
                     Directory.CreateDirectory(path.Key);
                 }
             }

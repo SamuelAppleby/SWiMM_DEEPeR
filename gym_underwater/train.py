@@ -19,7 +19,7 @@ from stable_baselines.common.vec_env import VecNormalize, DummyVecEnv
 
 # local imports
 from algos import SAC
-from gym_underwater.gym_env import UnderwaterEnv
+from gym_env import UnderwaterEnv
 
 # remove warnings
 # TODO: terminal still flooded with warnings, try and remove

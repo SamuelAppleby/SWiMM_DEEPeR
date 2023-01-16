@@ -7,7 +7,7 @@ import math
 from io import BytesIO
 from PIL import Image
 from skimage.transform import resize
-from gym_underwater.python_server import PythonServer, clean_and_create_directory
+from python_server import PythonServer, clean_and_create_directory
 
 logger = logging.getLogger(__name__)
 

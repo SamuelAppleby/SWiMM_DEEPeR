@@ -23,6 +23,7 @@ import cmvae_utils
 # define training meta parameters
 data_dir = 'D:' + os.sep + 'vae' + os.sep + '1920x1080'
 output_dir = 'D:' + os.sep + 'vae' + os.sep + '1920x1080' + os.sep + 'cmvae_run_10_01_23'
+pretrained_model_path = ''
 big_data = False
 batch_size = 32
 epochs = 30 #15 #50
@@ -47,6 +48,11 @@ if big_data:
     model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, state_dim=3, res=img_res, learning_rate=learning_rate, beta=beta, trainable_model=True, big_data=True)
 else:
     model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, state_dim=3, res=img_res, learning_rate=learning_rate, beta=beta, trainable_model=True, big_data=False) 
+
+# check if training on top of existing model and if so load weights
+if pretrained_model_path != '':
+    print('Loading weights from {}'.format(pretrained_model_path))
+    model.load_weights(pretrained_model_path)
 
 # check if output folder exists
 if not os.path.isdir(output_dir):

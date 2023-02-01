@@ -10,6 +10,7 @@ import warnings
 import time
 from collections import OrderedDict
 import yaml
+import sys
 
 # specialist imports
 from stable_baselines.common import set_global_seeds
@@ -17,9 +18,15 @@ from stable_baselines.common.schedules import constfn
 from stable_baselines.bench import Monitor
 from stable_baselines.common.vec_env import VecNormalize, DummyVecEnv
 
+# code to go up a directory so higher level modules can be imported
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+import_path = os.path.join(curr_dir, '..')
+sys.path.insert(0, import_path)
+
 # local imports
-from algos import SAC
-from gym_env import UnderwaterEnv
+from gym_underwater.algos import SAC
+from gym_underwater.gym_env import UnderwaterEnv
+import cmvae_models.cmvae
 
 # remove warnings
 # TODO: terminal still flooded with warnings, try and remove
@@ -51,7 +58,7 @@ args.img_scale = tuple(args.img_scale)
 
 # --------------------------- Utils ------------------------#
 
-def make_env(obs, opt_d, max_d, img_scale, log_d, seed=None):
+def make_env(vae, obs, opt_d, max_d, img_scale, log_d, seed=None):
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
@@ -60,7 +67,7 @@ def make_env(obs, opt_d, max_d, img_scale, log_d, seed=None):
         # TODO: is below needed again?
         set_global_seeds(seed)
         # create instance of environment
-        env_inst = UnderwaterEnv(obs, opt_d, max_d, img_scale)
+        env_inst = UnderwaterEnv(vae, obs, opt_d, max_d, img_scale)
         print("Environment ready")
         # environment seeded with randomly generated seed on initialisation but overwrite if seed provided in yaml 
         if seed > 0:
@@ -152,6 +159,15 @@ if env_config['model'] != "":
     assert env_config['model'].endswith('.pkl') and os.path.isfile(env_config['model']), \
         "The argument trained_agent must be a valid path to a .pkl file"
 
+# if using pretrained vae, create instance of vae object and load trained weights from path provided
+vae = None
+if env_config['vae_path'] != '':
+    print("Loading VAE ...")
+    vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False) # these args should really be dynamically read in 
+    vae.load_weights(env_config['vae_path'])
+else:
+    print("Learning from pixels...")
+
 # load hyperparameters from yaml file into dict 
 print("Loading hyperparameters ...")
 with open('../Configs/hyperparams/{}.yml'.format(env_config['algo']), 'r') as f:
@@ -160,6 +176,11 @@ with open('../Configs/hyperparams/{}.yml'.format(env_config['algo']), 'r') as f:
 # this ordered (alphabetical) dict will be saved out alongside model so know which hyperparams were used for training
 # the reason for a second variable is that certain keys will be dropped from 'hyperparams' in prep for passing to model initialiser
 saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyperparams.keys())])
+
+# if using vae, save out which model file and which feature dims were used
+if vae is not None:
+    saved_hyperparams['vae_path'] = env_config['vae_path']
+    saved_hyperparams['z_size'] = vae.z_size
 
 # TODO: look into what this actually does, whether it is different to env.seed, how many times has to be called etc
 # if seed provided in yaml, use it, otherwise use zero
@@ -222,7 +243,7 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], log_dir, seed=hyperparams.get('seed', 0))])
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], log_dir, seed=hyperparams.get('seed', 0))])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:

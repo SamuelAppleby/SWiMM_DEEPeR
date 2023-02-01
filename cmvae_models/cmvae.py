@@ -177,8 +177,10 @@ class CmvaeDirect(object):
         # read in image from filepath and decode
         image = tf.io.read_file(img)
         image = tf.image.decode_png(image, channels=3, dtype=tf.uint8)
-        # cv2 used to write images so values in order BGR, switch first and last value so RGB
-        # NOTE if using donkey_10k, donkey_50k, or donkey_300k, comment out line below as already in order RGB due to mistake in recorder.py 
+        # if big_data argument set to False and image dataset created with function in dataset_utils.py, then cv2 used to 
+        # read in images and numpy array will be in BGR order. However, here the tf function will read in the image in the
+        # order BGR. Therefore flipping first and last channel for consistency, so that no matter if big_data is true or false,
+        # model will train on BGR ordered arrays
         image = tf.reverse(image, axis=[-1])
         # resize to height and width training with
         image = tf.image.resize_images(image, (self.res, self.res))

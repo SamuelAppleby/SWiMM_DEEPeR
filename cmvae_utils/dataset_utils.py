@@ -85,7 +85,6 @@ def read_images(data_dir, res, max_size=None):
     idx = 0
     for img_name in files_list:
         # read in image with cv2 (pixel order BGR)
-        # NOTE if using donkey_10k, donkey_50k, or donkey_300k, order will be RGB because passed wrong order to cv2.imwrite in recorder.py
         im = cv2.imread(img_name, cv2.IMREAD_COLOR)        
         im = cv2.resize(im, (res, res))
         im = im / 255.0 * 2.0 - 1.0
@@ -124,7 +123,6 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
     idx = 0
     for file in files_list:
         # read in image with cv2 (pixel order BGR)
-        # NOTE if using donkey_10k, donkey_50k, or donkey_300k, order will be RGB because passed wrong order to cv2.imwrite in recorder.py
         im = cv2.imread(file, cv2.IMREAD_COLOR)         
         im = cv2.resize(im, (res, res))
         im = im / 255.0 * 2.0 - 1.0
@@ -260,7 +258,6 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     idx = 0
     for file in files_list:
         # read in image with cv2 (pixel order BGR)
-        # NOTE if using donkey_10k, donkey_50k, or donkey_300k, order will be RGB because passed wrong order to cv2.imwrite in recorder.py
         im = cv2.imread(file, cv2.IMREAD_COLOR)         
         im = cv2.resize(im, (res, res))
         im = im/255.0*2.0-1.0

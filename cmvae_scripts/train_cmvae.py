@@ -12,11 +12,12 @@ import tensorflow as tf
 import os
 import sys
 from tqdm import tqdm
-curr_dir = os.path.dirname(os.path.abspath(__file__))
 
-# imports
+# code to go up a directory so higher level modules can be imported
+curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
 sys.path.insert(0, import_path)
+
 import cmvae_models.cmvae
 import cmvae_utils
 

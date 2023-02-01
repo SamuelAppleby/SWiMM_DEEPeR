@@ -14,15 +14,15 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
+import cv2
 
-# imports
+# code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
 sys.path.insert(0, import_path)
+
 import cmvae_models.cmvae
 import cmvae_utils
-
-import cv2
 
 # define testing meta parameters
 data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/dummy_images'

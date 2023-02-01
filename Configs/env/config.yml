@@ -9,6 +9,9 @@ algo: 'sac'
 # If want to train on top of an existing model, provide filepath, else pass empty string
 model: ''
 
+# If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
+vae_path: '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/gym_underwater/Logs/cmvae/cmvae_run_10_01_23/cmvae_model_29.ckpt'
+
 # Base filepath for saving outputs and logs
 base_filepath: 'Logs'
 
@@ -26,7 +29,7 @@ verbose: 1
 
 # The following are environment parameters
 
-# Observation type. CHOICES: 'image', 'vector'
+# Observation type. CHOICES: 'image', 'vector', 'vae'
 obs: 'vector'
 
 # If using image obs, declare desired output size of scaling function

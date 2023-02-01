@@ -2,6 +2,7 @@ import logging
 import warnings
 import gym
 import numpy as np
+import cv2
 from gym import spaces
 from sim_comms import UnitySimHandler
 
@@ -14,12 +15,18 @@ class UnderwaterEnv(gym.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, obs, opt_d, max_d, scale):
+    def __init__(self, vae, obs, opt_d, max_d, scale):
         print("Starting underwater environment ..")
 
         # set logging level
         logging.basicConfig(level=logging.INFO)
         logger.debug("DEBUG ON")
+
+        # initialise VAE
+        self.vae = vae
+        self.z_size = None
+        if vae is not None:
+            self.z_size = vae.z_size
 
         # make obs arg instance variable
         self.obs = obs
@@ -42,6 +49,8 @@ class UnderwaterEnv(gym.Env):
             self.observation_space = spaces.Box(low=0, high=255, shape=self.scale, dtype=np.uint8)
         elif self.obs == 'vector':
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, 12), dtype=np.float32)
+        elif self.obs == 'vae':
+            self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, self.z_size), dtype=np.float32)
         else:
             raise ValueError('Invalid observation type: {}'.format(obs))
 
@@ -67,6 +76,21 @@ class UnderwaterEnv(gym.Env):
         # retrieve results of action implementation
         observation, reward, done, info = self.handler.observe(self.obs)
 
+        # if vae has been passed, raw image observation encoded to latent vector
+        if self.vae is not None:
+            # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
+            observation = observation[:, :, ::-1]                                                                                        
+            # resize to resolution used to train vae
+            observation = cv2.resize(observation, (self.vae.res, self.vae.res))
+            # normalize pixel values
+            observation = observation / 255.0 * 2.0 - 1.0
+            # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
+            observation = observation.reshape(-1, *observation.shape)
+            # pass through encoder network                                                                
+            _, _, z = self.vae.encode(observation)
+            # set latent vector as observation
+            observation = z
+
         return observation, reward, done, info
 
     def reset(self):
@@ -75,6 +99,21 @@ class UnderwaterEnv(gym.Env):
 
         # fetch initial observation
         observation, reward, done, info = self.handler.observe(self.obs)
+
+        # if vae has been passed, raw image observation encoded to latent vector
+        if self.vae is not None:
+            # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
+            observation = observation[:, :, ::-1]                                                                                        
+            # resize to resolution used to train vae
+            observation = cv2.resize(observation, (self.vae.res, self.vae.res))
+            # normalize pixel values
+            observation = observation / 255.0 * 2.0 - 1.0
+            # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
+            observation = observation.reshape(-1, *observation.shape)
+            # pass through encoder network                                                                
+            _, _, z = self.vae.encode(observation)
+            # set latent vector as observation
+            observation = z
 
         return observation
 

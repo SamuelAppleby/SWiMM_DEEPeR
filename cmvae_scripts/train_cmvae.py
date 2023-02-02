@@ -12,6 +12,9 @@ import tensorflow as tf
 import os
 import sys
 from tqdm import tqdm
+import numpy as np
+import random 
+import yaml
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +39,15 @@ img_res = 64
 max_size = None  
 learning_rate = 1e-4
 beta = 8.0
+
+with open('../Configs/env/config.yml', 'r') as f:
+    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+
+# seeding for reproducability
+seed = env_config['seed']
+tf.set_random_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
 
 # load dataset
 # for 10k and 50k datasets, the original create_dataset_csv is sufficient, for the 300k, cannot load all 300k images into a numpy array

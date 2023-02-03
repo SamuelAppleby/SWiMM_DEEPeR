@@ -103,10 +103,12 @@ public class VAEImageGeneration : MonoBehaviour
 
         if (SimulationManager._instance.data_dir == null)
         {
+            data_dir = ".." + Path.DirectorySeparatorChar;
+
 #if UNITY_EDITOR
-            data_dir = "..\\image_generation\\vae\\";
+            data_dir += "image_generation" + Path.DirectorySeparatorChar + "vae" + Path.DirectorySeparatorChar;
 #else
-        data_dir = "..\\..\\..\\image_generation\\vae\\";
+            data_dir += ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "image_generation" + Path.DirectorySeparatorChar + "vae" + Path.DirectorySeparatorChar;
 #endif     
         }
 
@@ -115,9 +117,9 @@ public class VAEImageGeneration : MonoBehaviour
             data_dir = SimulationManager._instance.data_dir;
         }
 
-        data_dir += res.width.ToString() + "x" + res.height.ToString() + "\\";
+        data_dir += res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
 
-        image_dir = data_dir + "images\\";
+        image_dir = data_dir + "images" + Path.DirectorySeparatorChar;
 
         Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
         {

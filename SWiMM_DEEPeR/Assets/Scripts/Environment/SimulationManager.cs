@@ -201,21 +201,43 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
+        int final_index = 0;
+
 #if UNITY_EDITOR
-        _instance.debug_config_dir = "..\\Configs\\json\\debug_config.json";
-        _instance.network_config_dir = "..\\Configs\\json\\network_config.json";
+                final_index = 2;
 #else
-        _instance.debug_config_dir = "..\\..\\..\\Configs\\json\\debug_config.json";
-        _instance.network_config_dir = "..\\..\\..\\Configs\\json\\network_config.json";
-#endif        
+                final_index = 4;
+#endif    
+
+        DirectoryInfo di = new DirectoryInfo(@System.IO.Directory.GetCurrentDirectory());
+
+        List<DirectoryInfo> parts = Utils.Split(di);
+
+        string result = "";
+        foreach(DirectoryInfo part in parts)
+        {
+            if(part.Name.Length > 0)
+            {
+                result += part.Name + Path.DirectorySeparatorChar;
+
+                if(part == parts[parts.Count - final_index])
+                {
+                    break;
+                }
+            }
+        }
+
+
+        _instance.debug_config_dir = result + "Configs" + Path.DirectorySeparatorChar + "json" + Path.DirectorySeparatorChar + "debug_config.json";
+        _instance.network_config_dir = result + "Configs" + Path.DirectorySeparatorChar + "json" + Path.DirectorySeparatorChar + "network_config.json";
 
         _instance.debug_config = _instance.ProcessConfig<DebugConfig>(_instance.debug_config_dir);
         _instance.network_config = _instance.ProcessConfig<NetworkConfig>(_instance.network_config_dir);
 
 #if !UNITY_EDITOR
-        _instance.debug_config.image_dir = "..\\..\\" + _instance.debug_config.image_dir;
-        _instance.debug_config.packets_received_dir = "..\\..\\" + _instance.debug_config.packets_received_dir;
-        _instance.debug_config.packets_sent_dir = "..\\..\\" + _instance.debug_config.packets_sent_dir;
+        _instance.debug_config.image_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.image_dir;
+        _instance.debug_config.packets_received_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.packets_received_dir;
+        _instance.debug_config.packets_sent_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.packets_sent_dir;
 #endif
 
         Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()

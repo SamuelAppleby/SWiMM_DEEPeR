@@ -75,9 +75,9 @@ class PythonServer:
         self.action_num = 0
 
         conf_arr = process_and_validate_configs({
-            '../Configs/json/debug_config.json': '../Configs/schemas/debug_config_schema.json',
-            '../Configs/json/network_config.json': '../Configs/schemas/network_config_schema.json',
-            '../Configs/json/server_config.json': '../Configs/schemas/server_config_schema.json'
+            '..' + os.pathsep + 'Configs' + os.pathsep + 'json' + os.pathsep + 'debug_config.json': '..' + os.pathsep + 'Configs' + os.pathsep + 'schemas' + os.pathsep + 'debug_config_schema.json',
+            '..' + os.pathsep + 'Configs' + os.pathsep + 'json' + os.pathsep + 'network_config.json': '..' + os.pathsep + 'Configs' + os.pathsep + 'schemas' + os.pathsep + 'network_config_schema.json',
+            '..' + os.pathsep + 'Configs' + os.pathsep + 'json' + os.pathsep + 'server_config.json': '..' + os.pathsep + 'Configs' + os.pathsep + 'schemas' + os.pathsep + 'server_config_schema.json'
         })
 
         self.server_config = conf_arr.pop()
@@ -92,12 +92,15 @@ class PythonServer:
 
         # clean cache (old images, logs etc)
         if 'image_dir' in self.debug_config:
+            self.debug_config['image_dir'] = self.debug_config['image_dir'].replace("/", os.pathsep)
             clean_and_create_directory(self.debug_config['image_dir'])
 
         if 'packets_sent_dir' in self.debug_config:
+            self.debug_config['packets_sent_dir'] = self.debug_config['packets_sent_dir'].replace("/", os.pathsep)
             clean_and_create_directory(self.debug_config['packets_sent_dir'])
 
         if 'packets_received_dir' in self.debug_config:
+            self.debug_config['packets_received_dir'] = self.debug_config['packets_received_dir'].replace("/", os.pathsep)
             clean_and_create_directory(self.debug_config['packets_received_dir'])
 
         self.connect(*self.address)

@@ -10,7 +10,7 @@ algo: 'sac'
 model: ''
 
 # If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
-vae_path: '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23/cmvae_model_29.ckpt'
+vae_path: ''
 
 # Base filepath for saving outputs and logs
 base_filepath: 'Logs'
@@ -44,3 +44,5 @@ opt_d: 10
 
 # At what radial distance should the episode terminate (FROM THE OPTIMAL TRACKING POSITION, NOT THE TARGET POSITION)
 max_d: 30
+
+debug_logs: True

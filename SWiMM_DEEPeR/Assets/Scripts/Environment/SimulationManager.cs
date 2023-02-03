@@ -16,6 +16,16 @@ using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
+    public bool debug_logs;
+
+    public DirectoryInfo debug_output_dir;
+
+    public DirectoryInfo image_dir;
+
+    public DirectoryInfo packets_sent_dir;
+
+    public DirectoryInfo packets_received_dir;
+
     public Tuple<string, string> vae_resolution;
 
     public string num_images;
@@ -47,7 +57,6 @@ public class SimulationManager : Singleton<SimulationManager>
     public bool in_manual_mode;
 
     private string network_config_dir;
-    private string debug_config_dir;
 
     [HideInInspector]
     public Server server;
@@ -71,18 +80,6 @@ public class SimulationManager : Singleton<SimulationManager>
         public int port;
         public bool save_packet_data;
     }
-
-    [Serializable]
-    public struct DebugConfig
-    {
-        public string image_dir;
-        public string packets_sent_dir;
-        public string packets_received_dir;
-    }
-
-    /* Local configs for reading */
-    [HideInInspector]
-    public DebugConfig debug_config;
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct NetworkConfig
@@ -145,10 +142,10 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             switch (current_scene_index)
             {
-                case Enums.E_SceneIndices.MAIN_MENU:
+                case E_SceneIndices.MAIN_MENU:
                     _instance.processing_obj.SetActive(false);
                     break;
-                case Enums.E_SceneIndices.SIMULATION:
+                case E_SceneIndices.SIMULATION:
                     if (!in_manual)
                     {
                         Time.timeScale = 0;
@@ -192,12 +189,25 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private void Start()
     {
+        debug_logs = false;
+
+#if UNITY_EDITOR
+        _instance.debug_output_dir = new DirectoryInfo("Logs" + Path.DirectorySeparatorChar);
+#else
+        _instance.debug_output_dir = new DirectoryInfo(".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "Logs" + Path.DirectorySeparatorChar);
+#endif
+
+        _instance.image_dir = new DirectoryInfo(_instance.debug_output_dir + "images" + Path.DirectorySeparatorChar);
+        _instance.packets_sent_dir = new DirectoryInfo(_instance.debug_output_dir + "packets_sent" + Path.DirectorySeparatorChar);
+        _instance.packets_received_dir = new DirectoryInfo(_instance.debug_output_dir + "packets_received" + Path.DirectorySeparatorChar);
+
         _instance.num_images = null;
         _instance.data_dir = null;
         _instance.vae_resolution = new Tuple<string, string>(null, null);
         _instance.game_state = E_Game_State.REGULAR;
 
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
+        _instance.debug_logs = true;
 
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
@@ -207,7 +217,7 @@ public class SimulationManager : Singleton<SimulationManager>
                 final_index = 2;
 #else
                 final_index = 4;
-#endif    
+#endif
 
         DirectoryInfo di = new DirectoryInfo(@System.IO.Directory.GetCurrentDirectory());
 
@@ -227,29 +237,19 @@ public class SimulationManager : Singleton<SimulationManager>
             }
         }
 
-
-        _instance.debug_config_dir = result + "Configs" + Path.DirectorySeparatorChar + "json" + Path.DirectorySeparatorChar + "debug_config.json";
         _instance.network_config_dir = result + "Configs" + Path.DirectorySeparatorChar + "json" + Path.DirectorySeparatorChar + "network_config.json";
 
-        _instance.debug_config = _instance.ProcessConfig<DebugConfig>(_instance.debug_config_dir);
         _instance.network_config = _instance.ProcessConfig<NetworkConfig>(_instance.network_config_dir);
 
-        _instance.debug_config.image_dir = _instance.debug_config.image_dir.Replace('/', Path.DirectorySeparatorChar);
-        _instance.debug_config.packets_received_dir = _instance.debug_config.packets_received_dir.Replace('/', Path.DirectorySeparatorChar);
-        _instance.debug_config.packets_sent_dir = _instance.debug_config.packets_sent_dir.Replace('/', Path.DirectorySeparatorChar);
-
-#if !UNITY_EDITOR
-        _instance.debug_config.image_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.image_dir;
-        _instance.debug_config.packets_received_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.packets_received_dir;
-        _instance.debug_config.packets_sent_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.packets_sent_dir;
-#endif
-
-        Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+        if (debug_logs)
+        {
+            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
                 {
-                    { _instance.debug_config.image_dir, true },
-                    { _instance.debug_config.packets_sent_dir, true },
-                    { _instance.debug_config.packets_received_dir, true },
+                    { _instance.image_dir.FullName, true },
+                    { _instance.packets_sent_dir.FullName, true },
+                    { _instance.packets_received_dir.FullName, true }
                 });
+        }
 
         _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
         Screen.fullScreenMode = _instance.screenmodes[screenIndex];
@@ -257,7 +257,7 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.server = null;
         _instance.in_manual_mode = true;
 
-        _instance.MoveToScene(Enums.E_SceneIndices.MAIN_MENU);
+        _instance.MoveToScene(E_SceneIndices.MAIN_MENU);
     }
 
     protected override void Awake()
@@ -456,6 +456,9 @@ public class SimulationManager : Singleton<SimulationManager>
                     break;
                 case "resolution":
                     _instance.vae_resolution = new Tuple<string, string>(args[++i], args[++i]);
+                    break;
+                case "debug_logs":
+                    _instance.debug_logs = true;
                     break;
             }
         }

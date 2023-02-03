@@ -179,7 +179,7 @@ public class VAEImageGeneration : MonoBehaviour
 
             target_trans.localRotation = dolphin_yaw_q;
 
-            yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, image_dir + i.ToString() + ".jpg"));
+            yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, new DirectoryInfo(image_dir + i.ToString() + ".jpg")));
             var newLine = $"{new_r}, {new_theta * Mathf.Rad2Deg}, {psi_rel}";
             csv.AppendLine(newLine);
         }

@@ -131,7 +131,7 @@ public class ImageSampling : MonoBehaviour
                 for (int i = current_img == current_img - 1 ? 0 : num_iters; i < num_iters + 1; ++i)
                 {
                     float start_time = Time.realtimeSinceStartup;
-                    yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, res_path + current_img.ToString() + ".jpg"));
+                    yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, new DirectoryInfo(res_path + current_img.ToString() + ".jpg")));
                     float time_taken = Time.realtimeSinceStartup - start_time;
 
                     /* Time to record time taken */

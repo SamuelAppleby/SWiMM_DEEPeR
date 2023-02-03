@@ -91,7 +91,7 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN)
 
         if (Input.GetKeyUp(KeyCode.F11))
         {
-            StartCoroutine(Utils.TakeScreenshot(manual_screenshot_res, first_person_cam, SimulationManager._instance.debug_config.image_dir + "image_" + manual_screenshot_count + ".jpg"));
+            StartCoroutine(Utils.TakeScreenshot(manual_screenshot_res, first_person_cam, new DirectoryInfo(SimulationManager._instance.image_dir.FullName + "image_" + manual_screenshot_count + ".jpg")));
             manual_screenshot_count++;
         }
     }
@@ -116,7 +116,11 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN)
 
     private IEnumerator SendImageData()
     {
-        yield return StartCoroutine(Utils.TakeScreenshot(resolution, first_person_cam, SimulationManager._instance.debug_config.image_dir + "episode_" + SimulationManager._instance.server.episode_num.ToString() + "_image_" + SimulationManager._instance.server.obsv_num.ToString() + ".jpg", byte_image =>
+        DirectoryInfo image_dir = SimulationManager._instance.debug_logs ?
+            new DirectoryInfo(SimulationManager._instance.image_dir.FullName + "episode_" +
+            SimulationManager._instance.server.episode_num.ToString() + "_image_" + SimulationManager._instance.server.obsv_num.ToString() + ".jpg") : null;
+            
+        yield return StartCoroutine(Utils.TakeScreenshot(resolution, first_person_cam, image_dir, byte_image =>
         {
             TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
             int pos = 0;

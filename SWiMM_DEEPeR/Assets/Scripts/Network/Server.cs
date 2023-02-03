@@ -293,9 +293,9 @@ public class Server
 
                 try
                 {
-                    if (SimulationManager._instance.debug_config.packets_sent_dir != null)
+                    if (SimulationManager._instance.debug_logs)
                     {
-                       Task t = File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_sent_dir + "episode_" + current_msg.payload.episode_num.ToString() + "_observation_" + current_msg.payload.obsv_num.ToString() + ".json", update_json_str);
+                       Task t = File.WriteAllTextAsync(SimulationManager._instance.packets_sent_dir.FullName + "episode_" + current_msg.payload.episode_num.ToString() + "_observation_" + current_msg.payload.obsv_num.ToString() + ".json", update_json_str);
                     }
 
                     Debug.Log("Sending: " + update_json_str);
@@ -350,20 +350,24 @@ public class Server
 
                     if(message.msgType == "reset_episode")
                     {
-                        Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
-                        {
-                            { SimulationManager._instance.debug_config.image_dir, true },
-                            { SimulationManager._instance.debug_config.packets_sent_dir, true },
-                            { SimulationManager._instance.debug_config.packets_received_dir, true },
-                        });
-
                         obsv_num = 0;
                         resets_received++;
-                    }
 
-                    if (SimulationManager._instance.debug_config.packets_received_dir != null)
-                    {
-                        Task t = File.WriteAllTextAsync(SimulationManager._instance.debug_config.packets_received_dir + "episode_" + message.payload.episode_num.ToString() + "_packet_" + message.payload.action_num.ToString() + ".json", current_json_action);
+                        if (SimulationManager._instance.debug_logs)
+                        {
+                            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+                            {
+                                { SimulationManager._instance.image_dir.FullName, true },
+                                { SimulationManager._instance.packets_sent_dir.FullName, true },
+                                { SimulationManager._instance.packets_received_dir.FullName, true }
+                            });
+
+
+                            if (SimulationManager._instance.debug_logs)
+                            {
+                                Task t = File.WriteAllTextAsync(SimulationManager._instance.packets_received_dir.FullName + "episode_" + message.payload.episode_num.ToString() + "_packet_" + message.payload.action_num.ToString() + ".json", current_json_action);
+                            }
+                        }
                     }
 
                     switch (message.msgType)

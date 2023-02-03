@@ -1,5 +1,0 @@
-{
-    "image_dir" : "Logs/images/",
-    "packets_sent_dir" : "Logs/sent_packets/",
-    "packets_received_dir": "Logs/received_packets/"
-}

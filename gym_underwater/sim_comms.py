@@ -1,19 +1,25 @@
 import base64
 import logging
 import os
+import shutil
 import time
 import numpy as np
 import math
 from io import BytesIO
 from PIL import Image
 from skimage.transform import resize
-from python_server import PythonServer, clean_and_create_directory
+from python_server import PythonServer
 
 logger = logging.getLogger(__name__)
 
 
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_scale):
+    def __init__(self, opt_d, max_d, img_scale, debug):
+        self.debug_logs = debug
+        self.debug_logs_dir = '..' + os.sep + 'Logs' + os.sep
+        self.image_dir = self.debug_logs_dir + 'images' + os.sep
+        self.packets_sent_dir = self.debug_logs_dir + 'packets_sent' + os.sep
+        self.packets_received_dir = self.debug_logs_dir + 'packets_received' + os.sep
         self.sim_training_ready = False
         self.server_connected = False
         self.server = PythonServer(self)
@@ -56,6 +62,15 @@ class UnitySimHandler:
     def quit(self):
         self.server.stop()
 
+    def clean_and_create_debug_directories(self):
+        if os.path.isdir(self.debug_logs_dir):
+            shutil.rmtree(self.debug_logs_dir)
+
+        os.makedirs(self.debug_logs_dir)
+        os.makedirs(self.image_dir)
+        os.makedirs(self.packets_sent_dir)
+        os.makedirs(self.packets_received_dir)
+
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def reset(self):
@@ -63,14 +78,8 @@ class UnitySimHandler:
         self.server.action_num = 0
         self.server.episode_num += 1
 
-        if 'image_dir' in self.server.debug_config:
-            clean_and_create_directory(self.server.debug_config['image_dir'])
-
-        if 'packets_sent_dir' in self.server.debug_config:
-            clean_and_create_directory(self.server.debug_config['packets_sent_dir'])
-
-        if 'packets_received_dir' in self.server.debug_config:
-            clean_and_create_directory(self.server.debug_config['packets_received_dir'])
+        if self.debug_logs:
+            self.clean_and_create_debug_directories()
 
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
@@ -200,7 +209,7 @@ class UnitySimHandler:
 
         image = bytearray(base64.b64decode(payload['telemetry_data']['jpg_image']))
 
-        if 'image_dir' in self.server.debug_config:
+        if self.debug_logs:
             self.write_image_to_file_incrementally(image, payload['obsv_num'])
 
         image = np.array(Image.open(BytesIO(image)))
@@ -268,5 +277,5 @@ class UnitySimHandler:
         """
         Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
         """
-        with open(os.path.join(self.server.debug_config['image_dir'], f'image{obsv_num}.jpg'), 'wb') as f:
+        with open(self.image_dir + 'episode_' + str(self.episode_num) + '_' + f'image{obsv_num}.jpg', 'wb') as f:
             f.write(image)

@@ -49,16 +49,17 @@ parser.add_argument('--obs', help='Observation type', default='image', type=str,
 parser.add_argument('--img_scale', help='Image scale', default=[64, 64, 3], nargs='+', type=int, required=False, choices=list(env_config['obs']))
 parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
 parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default=os.path.join('gym_underwater' + os.sep, 'Logs'), type=str)
-parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', default=True, type=bool)
+parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', action='store_true')
 parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
 parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
 parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
 args = parser.parse_args()
 args.img_scale = tuple(args.img_scale)
 
+
 # --------------------------- Utils ------------------------#
 
-def make_env(vae, obs, opt_d, max_d, img_scale, log_d, seed=None):
+def make_env(vae, obs, opt_d, max_d, img_scale, debug_logs, log_d, seed=None):
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
@@ -67,7 +68,7 @@ def make_env(vae, obs, opt_d, max_d, img_scale, log_d, seed=None):
         # TODO: is below needed again?
         set_global_seeds(seed)
         # create instance of environment
-        env_inst = UnderwaterEnv(vae, obs, opt_d, max_d, img_scale)
+        env_inst = UnderwaterEnv(vae, obs, opt_d, max_d, img_scale, debug_logs)
         print("Environment ready")
         # environment seeded with randomly generated seed on initialisation but overwrite if seed provided in yaml 
         if seed > 0:
@@ -163,7 +164,7 @@ if env_config['model'] != "":
 vae = None
 if env_config['vae_path'] != '':
     print("Loading VAE ...")
-    vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False) # these args should really be dynamically read in 
+    vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
     vae.load_weights(env_config['vae_path'])
 else:
     print("Learning from pixels...")
@@ -243,7 +244,7 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], log_dir, seed=hyperparams.get('seed', 0))])
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], log_dir, seed=hyperparams.get('seed', 0))])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:

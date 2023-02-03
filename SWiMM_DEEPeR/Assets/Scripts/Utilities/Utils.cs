@@ -122,7 +122,7 @@ public static class Utils
         Application.Quit();
     }
 
-    public static IEnumerator TakeScreenshot(Tuple<int, int> res, Camera cam, string dir, System.Action<byte[]> callback = null)
+    public static IEnumerator TakeScreenshot(Tuple<int, int> res, Camera cam, DirectoryInfo dir, System.Action<byte[]> callback = null)
     {
         RenderTexture prevRenderTexture = RenderTexture.active;
         RenderTexture prevCameraTargetTexture = cam.targetTexture;
@@ -146,7 +146,7 @@ public static class Utils
 
         if (dir != null)
         {
-            File.WriteAllBytes(dir, byte_image);
+            File.WriteAllBytes(dir.FullName, byte_image);
         }
 
         if (callback != null)

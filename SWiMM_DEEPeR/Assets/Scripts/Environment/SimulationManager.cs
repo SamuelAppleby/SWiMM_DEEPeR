@@ -234,6 +234,10 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.debug_config = _instance.ProcessConfig<DebugConfig>(_instance.debug_config_dir);
         _instance.network_config = _instance.ProcessConfig<NetworkConfig>(_instance.network_config_dir);
 
+        _instance.debug_config.image_dir = _instance.debug_config.image_dir.Replace('/', Path.DirectorySeparatorChar);
+        _instance.debug_config.packets_received_dir = _instance.debug_config.packets_received_dir.Replace('/', Path.DirectorySeparatorChar);
+        _instance.debug_config.packets_sent_dir = _instance.debug_config.packets_sent_dir.Replace('/', Path.DirectorySeparatorChar);
+
 #if !UNITY_EDITOR
         _instance.debug_config.image_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.image_dir;
         _instance.debug_config.packets_received_dir = ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar +  _instance.debug_config.packets_received_dir;

@@ -63,10 +63,11 @@ public class ImageSampling : MonoBehaviour
 
         if (SimulationManager._instance.data_dir == null)
         {
+            data_dir = ".." + Path.DirectorySeparatorChar;
 #if UNITY_EDITOR
-            data_dir = "..\\image_generation\\sampling\\";
+            data_dir +=  "image_generation" + Path.DirectorySeparatorChar + "sampling" + Path.DirectorySeparatorChar;
 #else
-        data_dir = "..\\..\\..\\image_generation\\sampling\\";
+            data_dir += ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "image_generation" + Path.DirectorySeparatorChar + "sampling" + Path.DirectorySeparatorChar;
 #endif
         }
 
@@ -80,14 +81,14 @@ public class ImageSampling : MonoBehaviour
             { data_dir, true }
         });
 
-        image_dir = data_dir + "images\\";
+        image_dir = data_dir + "images" + Path.DirectorySeparatorChar;
 
-        string graphics_pipeline = GraphicsSettings.defaultRenderPipeline == null ? "built_in\\" : "hdrp\\";
+        string graphics_pipeline = GraphicsSettings.defaultRenderPipeline == null ? "built_in" + Path.DirectorySeparatorChar : "hdrp" + Path.DirectorySeparatorChar;
         image_dir += graphics_pipeline;
 
         foreach (Resolution res in resolutions)
         {
-            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + "\\";
+            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
 
             Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
             {
@@ -113,7 +114,7 @@ public class ImageSampling : MonoBehaviour
 
         foreach (Resolution res in resolutions)
         {
-            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + "\\";
+            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
 
             for (int current_img = 0; current_img < num_images; ++current_img)
             {

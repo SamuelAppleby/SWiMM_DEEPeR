@@ -63,12 +63,14 @@ class UnitySimHandler:
         self.server.action_num = 0
         self.server.episode_num += 1
 
-        if 'packets_received_dir' in self.server.debug_config:
-            clean_and_create_directory(self.server.debug_config['packets_received_dir'])
-        if 'packets_sent_dir' in self.server.debug_config:
-            clean_and_create_directory(self.server.debug_config['packets_sent_dir'])
         if 'image_dir' in self.server.debug_config:
             clean_and_create_directory(self.server.debug_config['image_dir'])
+
+        if 'packets_sent_dir' in self.server.debug_config:
+            clean_and_create_directory(self.server.debug_config['packets_sent_dir'])
+
+        if 'packets_received_dir' in self.server.debug_config:
+            clean_and_create_directory(self.server.debug_config['packets_received_dir'])
 
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
@@ -92,14 +94,17 @@ class UnitySimHandler:
         # for vector obs training run, overwrite image observation with vector obs 
         # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
         if obs == 'vector':
-            observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2],
-                           self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
+            observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0],
+                           self.rover_fwd[1], self.rover_fwd[2],
+                           self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0],
+                           self.target_fwd[1], self.target_fwd[2]]
 
         reward = self.calc_reward()
 
         done = self.determine_episode_over()
 
-        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "raw_dist": self.raw_d, "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
+        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "raw_dist": self.raw_d,
+                "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
 
         return observation, reward, done, info
 
@@ -125,7 +130,8 @@ class UnitySimHandler:
         self.d = math.sqrt(math.pow(heading[0], 2) + math.pow((heading[2] - self.opt_d), 2))
 
         # calculate angle between rover's forward facing vector and heading vector
-        self.a = math.degrees(math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
+        self.a = math.degrees(
+            math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
 
         # scaling function taken from Luo et al. (2018), range [-1, 1], distance and angle equal contribution
         reward = 1.0 - ((self.d / self.max_d) + (math.fabs(self.a) / 180))
@@ -180,9 +186,11 @@ class UnitySimHandler:
         self.sim_training_ready = True
 
     def on_telemetry(self, payload):
-        self.rover_pos = np.array([payload['telemetry_data']['position'][0], payload['telemetry_data']['position'][1], payload['telemetry_data']['position'][2]])
+        self.rover_pos = np.array([payload['telemetry_data']['position'][0], payload['telemetry_data']['position'][1],
+                                   payload['telemetry_data']['position'][2]])
         self.hit = payload['telemetry_data']['collision_objects']
-        self.rover_fwd = np.array([payload['telemetry_data']["fwd"][0], payload['telemetry_data']['fwd'][1], payload['telemetry_data']['fwd'][2]])
+        self.rover_fwd = np.array([payload['telemetry_data']["fwd"][0], payload['telemetry_data']['fwd'][1],
+                                   payload['telemetry_data']['fwd'][2]])
 
         # TODO: implement receiving json on multiple targets
         # Sam.A, targets are now an array, use the last element of it for targeting
@@ -254,15 +262,11 @@ class UnitySimHandler:
             }
         }
 
-
-
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def write_image_to_file_incrementally(self, image, obsv_num):
         """
         Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
         """
-        os.makedirs(self.server.debug_config['image_dir'], exist_ok=True)
-
         with open(os.path.join(self.server.debug_config['image_dir'], f'image{obsv_num}.jpg'), 'wb') as f:
             f.write(image)

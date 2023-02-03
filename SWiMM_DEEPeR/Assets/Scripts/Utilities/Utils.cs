@@ -25,6 +25,31 @@ public static class Utils
     public const int RHO_SALT_WATER = 1025;
     public const float metric_conversion_constant = 0.000016387f;      // 1 inch ^ 3 = 1.6387 * 10 ^ -5
 
+    public static List<DirectoryInfo> Split(this DirectoryInfo path)
+    {
+        if(path == null)
+        {
+            throw new ArgumentNullException("path");
+        } 
+
+        List<DirectoryInfo> ret = new List<DirectoryInfo>();
+        if (path.Parent != null)
+        {
+            ret.AddRange(Split(path.Parent));
+        }
+        
+        ret.Add(path);
+        return ret;
+    }
+
+    public static T[] SubArray<T>(this T[] array, int offset, int length)
+    {
+        Debug.Log(array);
+        T[] result = new T[length];
+        Array.Copy(array, offset, result, 0, length);
+        return result;
+    }
+
     public static float[] Vector3ToFloatArray(Vector3 vec)
     {
         return new float[] { vec.x, vec.y, vec.z };

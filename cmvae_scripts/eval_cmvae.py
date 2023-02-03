@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 import cv2
+import random
+import yaml
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,6 +46,15 @@ idx_far = 2 # same as above
 
 z_range_mural = [-0.02, 0.02]
 z_num_mural = 11
+
+with open('../Configs/env/config.yml', 'r') as f:
+    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+
+# seeding for reproducability
+seed = env_config['seed']
+tf.set_random_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 # 0 = all messages are logged (default behavior)

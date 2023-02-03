@@ -2,15 +2,15 @@
 #which are stored in the yaml file associated with the chosen algorithm, in the 'hyperparams' folder.
 
 # The following are run parameters
-# Algorithm to import from Stable Baselines. CHOICES: 'sac', 'ddpg', 'ppo'
 
+# Algorithm to import from Stable Baselines. CHOICES: 'sac', 'ddpg', 'ppo'
 algo: 'sac'
 
 # If want to train on top of an existing model, provide filepath, else pass empty string
 model: ''
 
 # If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
-vae_path: '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/gym_underwater/Logs/cmvae/cmvae_run_10_01_23/cmvae_model_29.ckpt'
+vae_path: '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23/cmvae_model_29.ckpt'
 
 # Base filepath for saving outputs and logs
 base_filepath: 'Logs'
@@ -26,6 +26,9 @@ log_interval: -1
 
 # Verbose mode (0: no output, 1: INFO)
 verbose: 1
+
+# set seed with arbritrary int so that can report with results
+seed: 31
 
 # The following are environment parameters
 

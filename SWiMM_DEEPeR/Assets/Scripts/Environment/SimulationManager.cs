@@ -26,9 +26,9 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public DirectoryInfo packets_received_dir;
 
-    public Tuple<string, string> vae_resolution;
+    public List<Resolution> image_generation_resolutions;
 
-    public string num_images;
+    public int num_images;
 
     public string data_dir;
 
@@ -37,7 +37,7 @@ public class SimulationManager : Singleton<SimulationManager>
     public E_Game_State game_state;
 
     [HideInInspector]
-    public Enums.E_SceneIndices current_scene_index;
+    public E_SceneIndices current_scene_index;
     public TextMeshProUGUI tips_text;
     public CanvasGroup alpha_canvas;
     public string[] tips;
@@ -201,9 +201,9 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.packets_sent_dir = new DirectoryInfo(_instance.debug_output_dir + "packets_sent" + Path.DirectorySeparatorChar);
         _instance.packets_received_dir = new DirectoryInfo(_instance.debug_output_dir + "packets_received" + Path.DirectorySeparatorChar);
 
-        _instance.num_images = null;
+        _instance.num_images = 0;
         _instance.data_dir = null;
-        _instance.vae_resolution = new Tuple<string, string>(null, null);
+        _instance.image_generation_resolutions = new List<Resolution> { };
         _instance.game_state = E_Game_State.REGULAR;
 
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
@@ -435,32 +435,46 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private void ParseCommandLineArguments(string[] args)
     {
-        for (int i = 0; i < args.Length; i++)
+        try
         {
-            switch (args[i])
+            for (int i = 0; i < args.Length; i++)
             {
-                case "training":
-                    _instance.game_state = E_Game_State.AUTOMATION_TRAINING;
-                    break;
-                case "sample_gen":
-                    _instance.game_state = E_Game_State.IMAGE_SAMPLING;
-                    break;
-                case "vae_gen":
-                    _instance.game_state = E_Game_State.VAE_GEN;
-                    break;
-                case "num_images":
-                    _instance.num_images = args[++i];
-                    break;
-                case "data_dir":
-                    _instance.data_dir = args[++i];
-                    break;
-                case "resolution":
-                    _instance.vae_resolution = new Tuple<string, string>(args[++i], args[++i]);
-                    break;
-                case "debug_logs":
-                    _instance.debug_logs = true;
-                    break;
+                switch (args[i])
+                {
+                    case "training":
+                        _instance.game_state = E_Game_State.AUTOMATION_TRAINING;
+                        break;
+                    case "sample_gen":
+                        _instance.game_state = E_Game_State.IMAGE_SAMPLING;
+                        break;
+                    case "vae_gen":
+                        _instance.game_state = E_Game_State.VAE_GEN;
+                        break;
+                    case "num_images":
+                        _instance.num_images = int.Parse(args[++i]);
+                        break;
+                    case "data_dir":
+                        _instance.data_dir = args[++i];
+                        break;
+                    case "resolutions":
+                        while (i < args.Length && int.Parse(args[i + 1]) != 0)
+                        {
+                            _instance.image_generation_resolutions.Add(new Resolution()
+                            {
+                                width = int.Parse(args[++i]),
+                                height = int.Parse(args[++i])
+                            });
+                        }
+                        break;
+                    case "debug_logs":
+                        _instance.debug_logs = true;
+                        break;
+                }
             }
+        }
+        catch(Exception e)
+        {
+            Debug.LogException(e);
         }
 
         switch (_instance.game_state)

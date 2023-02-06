@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -16,10 +17,6 @@ public class VAEImageGeneration : MonoBehaviour
 
     [SerializeField]
     private Camera track_camera;
-
-    private string image_dir;
-
-    private string data_dir;
 
     [SerializeField]
     private Range camera_x_range;
@@ -84,48 +81,35 @@ public class VAEImageGeneration : MonoBehaviour
         target_trans.transform.parent = track_camera.transform.parent;     // want the dolphin to be a child of ourselves to avoid recalculating world space
 
         var csv = new StringBuilder();
-
-        Resolution res = new Resolution()
-        {
-            width = 1920,
-            height = 1080
-        };
-
-        try
-        {
-            res.width = int.Parse(SimulationManager._instance.vae_resolution.Item1);
-            res.height = int.Parse(SimulationManager._instance.vae_resolution.Item2);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e.Message);
-        }
+        string parent_dir = "";
 
         if (SimulationManager._instance.data_dir == null)
         {
-            data_dir = ".." + Path.DirectorySeparatorChar;
+            parent_dir = ".." + Path.DirectorySeparatorChar;
 
 #if UNITY_EDITOR
-            data_dir += "image_generation" + Path.DirectorySeparatorChar + "vae" + Path.DirectorySeparatorChar;
+            parent_dir += "image_generation" + Path.DirectorySeparatorChar + "vae" + Path.DirectorySeparatorChar;
 #else
-            data_dir += ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "image_generation" + Path.DirectorySeparatorChar + "vae" + Path.DirectorySeparatorChar;
+            parent_dir += ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "image_generation" + Path.DirectorySeparatorChar + "vae" + Path.DirectorySeparatorChar;
 #endif     
         }
 
         else
         {
-            data_dir = SimulationManager._instance.data_dir;
+            parent_dir = SimulationManager._instance.data_dir;
         }
 
-        data_dir += res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
-
-        image_dir = data_dir + "images" + Path.DirectorySeparatorChar;
-
-        Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+        foreach(Resolution res in SimulationManager._instance.image_generation_resolutions)
         {
-            { data_dir, false },
-            { image_dir, false },
-        });
+            string data_dir = parent_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
+            string image_dir = data_dir + "images" + Path.DirectorySeparatorChar;
+
+            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+            {
+                { data_dir, false },
+                { image_dir, false },
+            });
+        }
 
         fov_limit = (float)track_camera.fieldOfView * 0.7f;
         fov_limit = fov_limit * 0.5f * Mathf.Deg2Rad;
@@ -136,23 +120,7 @@ public class VAEImageGeneration : MonoBehaviour
             max = fov_limit
         };
 
-        int num_images = 10;
-
-        if(SimulationManager._instance.num_images != null)
-        {
-            try
-            {
-                num_images = int.Parse(SimulationManager._instance.num_images);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e.Message);
-            }
-        }
-
-        int start = Directory.GetFiles(image_dir).Length;
-
-        for (int i = start + 1; i <= start + num_images; ++i)
+        for (int i = 0; i <= SimulationManager._instance.num_images; ++i)
         {
             Vector3 new_pos = new Vector3(0, -4, 0);
             new_pos.x = Random.Range(camera_x_range.min, camera_x_range.max);
@@ -179,12 +147,22 @@ public class VAEImageGeneration : MonoBehaviour
 
             target_trans.localRotation = dolphin_yaw_q;
 
-            yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, new DirectoryInfo(image_dir + i.ToString() + ".jpg")));
+            foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
+            {
+                string data_dir = parent_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
+                string image_dir = data_dir + "images" + Path.DirectorySeparatorChar;
+
+                yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, new DirectoryInfo(image_dir + (Directory.GetFiles(image_dir).Length + i + 1).ToString() + ".jpg")));
+            }
+
             var newLine = $"{new_r}, {new_theta * Mathf.Rad2Deg}, {psi_rel}";
             csv.AppendLine(newLine);
         }
 
-        File.AppendAllText(data_dir + "state_data.csv", csv.ToString());
+        foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
+        {
+            File.AppendAllText(parent_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar + "state_data.csv", csv.ToString());
+        }
 
         Destroy(target_trans.gameObject);
     }

@@ -24,9 +24,6 @@ public class ImageSampling : MonoBehaviour
     [SerializeField]
     private float distance;
 
-    [SerializeField]
-    private List<Resolution> resolutions;
-
     private int num_iters = 5;
 
     public void OnAIGroupsComplete()
@@ -86,7 +83,7 @@ public class ImageSampling : MonoBehaviour
         string graphics_pipeline = GraphicsSettings.defaultRenderPipeline == null ? "built_in" + Path.DirectorySeparatorChar : "hdrp" + Path.DirectorySeparatorChar;
         image_dir += graphics_pipeline;
 
-        foreach (Resolution res in resolutions)
+        foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
         {
             string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
 
@@ -96,27 +93,13 @@ public class ImageSampling : MonoBehaviour
             });
         }
 
-        int num_images = 10;
+        float rot_step = 360 / SimulationManager._instance.num_images;
 
-        if (SimulationManager._instance.num_images != null)
-        {
-            try
-            {
-                num_images = int.Parse(SimulationManager._instance.num_images);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e.Message);
-            }
-        }
-
-        float rot_step = 360 / num_images;
-
-        foreach (Resolution res in resolutions)
+        foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
         {
             string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
 
-            for (int current_img = 0; current_img < num_images; ++current_img)
+            for (int current_img = 0; current_img < SimulationManager._instance.num_images; ++current_img)
             {
                 /* Manual calculation */
                 //float opposite = Mathf.Sin((degree * Mathf.PI) / 180) * sample_distance;
@@ -135,7 +118,7 @@ public class ImageSampling : MonoBehaviour
                     float time_taken = Time.realtimeSinceStartup - start_time;
 
                     /* Time to record time taken */
-                    if (current_img == num_images - 1 && i != 0)      // Prioritising caching of the OS
+                    if (current_img == SimulationManager._instance.num_images - 1 && i != 0)      // Prioritising caching of the OS
                     {
                         var newLine = $"{res.width.ToString() + "x" + res.height.ToString()},{graphics_pipeline},{time_taken}";
                         csv.AppendLine(newLine);

@@ -277,5 +277,5 @@ class UnitySimHandler:
         """
         Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
         """
-        with open(self.image_dir + 'episode_' + str(self.episode_num) + '_' + f'image{obsv_num}.jpg', 'wb') as f:
+        with open(self.image_dir + 'episode_' + str(self.server.episode_num) + '_' + f'image{obsv_num}.jpg', 'wb') as f:
             f.write(image)

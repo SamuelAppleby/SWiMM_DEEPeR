@@ -106,7 +106,7 @@ class SACWrap(SAC):
                 ep_len += 1
 
                 if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
-                    print("{} steps".format(ep_len))
+                    print('{} steps'.format(ep_len))
 
                 # Store transition in the replay buffer.
                 self.replay_buffer.add(obs, rescaled_action, reward, new_obs, float(done))
@@ -126,7 +126,7 @@ class SACWrap(SAC):
 
                 # Done check here as the last step may have been force reset, don't want to do it twice
                 if not done and ep_len == self.train_freq:
-                    print("Maximum episode length reached")
+                    print('Maximum episode length reached')
                     done = True
                     obs = self.env.reset()
 

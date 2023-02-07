@@ -67,17 +67,14 @@ class PythonServer:
         self.action_num = 0
 
         conf_arr = process_and_validate_configs({
-            '..' + os.sep + 'Configs' + os.sep + 'json' + os.sep + 'network_config.json': '..' + os.sep + 'Configs' + os.sep + 'schemas' + os.sep + 'network_config_schema.json',
-            '..' + os.sep + 'Configs' + os.sep + 'json' + os.sep + 'server_config.json': '..' + os.sep + 'Configs' + os.sep + 'schemas' + os.sep + 'server_config_schema.json'
+            os.path.abspath(os.path.join(os.pardir, 'Configs', 'json', 'network_config.json')): os.path.abspath(os.path.join(os.pardir, 'Configs', 'schemas', 'network_config_schema.json')),
+            os.path.abspath(os.path.join(os.pardir, 'Configs', 'json', 'server_config.json')):  os.path.abspath(os.path.join(os.pardir, 'Configs', 'schemas', 'server_config_schema.json'))
         })
 
         self.server_config = conf_arr.pop()
         self.network_config = conf_arr.pop()
-
         self.protocol = protocol_mapping[self.network_config["protocol"]]
-
         self.address = (self.network_config["host"], self.network_config["port"])
-
         self.receive_buffer_size = self.network_config["buffers"]["server_receive_buffer_size_kb"]
 
         if self.handler.debug_logs:
@@ -141,7 +138,8 @@ class PythonServer:
             json_dict = json.loads(json_str)
 
             if self.handler.debug_logs:
-                with open(self.handler.packets_received_dir + 'episode_' + str(json_dict['payload']['episode_num']) + '_observation_' + str(json_dict['payload']['obsv_num']) + '.json', 'w', encoding='utf-8') as f:
+                with open(os.path.abspath(os.path.join(self.handler.packets_received_dir, 'episode_' + str(self.episode_num) + '_observation_' + str(json_dict['payload']['obsv_num']) + '.json')), 'w',
+                          encoding='utf-8') as f:
                     json.dump(json_dict, f, ensure_ascii=False, indent=4)
 
             self.handler.on_recv_message(json_dict)
@@ -158,7 +156,7 @@ class PythonServer:
             # print('Sending: {}'.format(json_str))
 
             if self.handler.debug_logs:
-                with open(self.handler.packets_sent_dir + 'episode_' + str(self.episode_num) + '_action_' + str(self.action_num) + '.json', 'w', encoding='utf-8') as f:
+                with open(os.path.abspath(os.path.join(self.handler.packets_sent_dir, 'episode_' + str(self.episode_num) + '_action_' + str(self.action_num) + '.json')), 'w', encoding='utf-8') as f:
                     json.dump(self.msg, f, ensure_ascii=False, indent=4)
 
             if self.protocol == Protocol.UDP:

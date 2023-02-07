@@ -299,7 +299,7 @@ public class ROVControls : MonoBehaviour
         dive_mode = to;
     }
 
-    public void OnJsonControls(JsonMessage param)
+    public void OnActionReceived(JsonMessage param)
     {
         input_linear = new Vector3(param.payload.jsonControls.swayThrust,
             param.payload.jsonControls.heaveThrust, param.payload.jsonControls.surgeThrust);

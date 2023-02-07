@@ -12,9 +12,6 @@ model: ''
 # If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
 vae_path: ''
 
-# Base filepath for saving outputs and logs
-base_filepath: 'Logs'
-
 # Whether or not to use Tensorboard NOTE: resulting event files are large
 tb: True
 
@@ -45,4 +42,5 @@ opt_d: 10
 # At what radial distance should the episode terminate (FROM THE OPTIMAL TRACKING POSITION, NOT THE TARGET POSITION)
 max_d: 30
 
+# Do we want to ouput the packet information and save images
 debug_logs: True

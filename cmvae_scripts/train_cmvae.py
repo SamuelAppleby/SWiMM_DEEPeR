@@ -7,40 +7,47 @@ NB rolled back from TF2 to TF1, and three not four state variables
 code taken from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
 author: Rogerio Bonatti et al
 '''
+import argparse
+from datetime import datetime
 
 import tensorflow as tf
 import os
 import sys
 from tqdm import tqdm
 import numpy as np
-import random 
+import random
 import yaml
-
-# code to go up a directory so higher level modules can be imported
-curr_dir = os.path.dirname(os.path.abspath(__file__))
-import_path = os.path.join(curr_dir, '..')
-sys.path.insert(0, import_path)
-
 import cmvae_models.cmvae
 import cmvae_utils
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_dir', help='Directory where the images/state data is contained', default="", type=str)
+parser.add_argument('--model_dir', help='Directory where the pretrained model is', default="", type=str)
+parser.add_argument('--big_data', help='Directory where the pretrained model is', action='store_true')
+args = parser.parse_args()
+
+if args.data_dir is "":
+    print('No data directory specified, quitting!')
+    quit()
+
 # define training meta parameters
-data_dir = 'D:' + os.sep + 'vae' + os.sep + '1920x1080'
-output_dir = 'D:' + os.sep + 'vae' + os.sep + '1920x1080' + os.sep + 'cmvae_run_10_01_23'
-pretrained_model_path = 'D:' + os.sep + 'vae' + os.sep + '1920x1080' + os.sep + 'cmvae_run_10_01_23' + 'cmvae_model_29.ckpt'
-#data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/dummy_images'
-#output_dir = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23'
-#pretrained_model_path = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23/cmvae_model_29.ckpt'
-big_data = False
+data_dir = args.data_dir
+output_dir = os.path.join(data_dir,  datetime.now().strftime('%m/%d/%Y'))
+pretrained_model_path = args.model_dir
+
+# data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/dummy_images'
+# output_dir = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23'
+# pretrained_model_path = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23/cmvae_model_29.ckpt'
+
 batch_size = 32
-epochs = 30 #15 #50
+epochs = 30  # 15 #50
 n_z = 10
 img_res = 64
-max_size = None  
+max_size = None
 learning_rate = 1e-4
 beta = 8.0
 
-with open('../Configs/env/config.yml', 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 # seeding for reproducability
@@ -53,17 +60,14 @@ random.seed(seed)
 # for 10k and 50k datasets, the original create_dataset_csv is sufficient, for the 300k, cannot load all 300k images into a numpy array
 # so wrote a new function that just returns filenames and cmvae.py then loads images in batches on the fly
 print('Starting dataset')
-if big_data:
+if args.big_data:
     train_ds, test_ds, n_batches_train, n_batches_test = cmvae_utils.dataset_utils.create_dataset_filepaths(data_dir, batch_size, img_res, max_size=max_size)
 else:
     train_ds, test_ds, n_batches_train, n_batches_test = cmvae_utils.dataset_utils.create_dataset_csv(data_dir, batch_size, img_res, max_size=max_size)
 print('Done with dataset')
 
 # create model
-if big_data:
-    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, state_dim=3, res=img_res, learning_rate=learning_rate, beta=beta, trainable_model=True, big_data=True)
-else:
-    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, state_dim=3, res=img_res, learning_rate=learning_rate, beta=beta, trainable_model=True, big_data=False) 
+model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, state_dim=3, res=img_res, learning_rate=learning_rate, beta=beta, trainable_model=True, big_data=args.big_data)
 
 # check if training on top of existing model and if so load weights
 if pretrained_model_path != '':
@@ -82,7 +86,7 @@ metrics_writer = tf.summary.FileWriter(output_dir, model.graph)
 # train
 for epoch in range(epochs):
     # initialize dataset iterator with train data
-    model.sess.run(model.init_op, feed_dict={model.img_data: train_ds[0], model.state_data: train_ds[1], model.batch_size:batch_size})
+    model.sess.run(model.init_op, feed_dict={model.img_data: train_ds[0], model.state_data: train_ds[1], model.batch_size: batch_size})
     pbar = tqdm(total=n_batches_train)
     for _ in range(n_batches_train):
         (train_img_loss, train_state_loss, train_kl_loss, train_total_loss, global_step, _) = model.sess.run([
@@ -96,7 +100,7 @@ for epoch in range(epochs):
         pbar.update(1)
     pbar.close()
     # initialize dataset iterator with test data
-    model.sess.run(model.init_op, feed_dict={model.img_data: test_ds[0], model.state_data: test_ds[1], model.batch_size:batch_size})
+    model.sess.run(model.init_op, feed_dict={model.img_data: test_ds[0], model.state_data: test_ds[1], model.batch_size: batch_size})
     pbar = tqdm(total=n_batches_test)
     for _ in range(n_batches_test):
         (test_img_loss, test_state_loss, test_kl_loss, test_total_loss) = model.sess.run([
@@ -117,9 +121,9 @@ for epoch in range(epochs):
     # save model
     if total_epochs % 5 == 0 and epoch > 0:
         print('Saving weights to {}'.format(output_dir))
-        model.save_weights(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs))) 
+        model.save_weights(os.path.abspath(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs))))
 
-    # write to tensorboard
+        # write to tensorboard
     train_img_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss images", simple_value=train_img_loss)])
     metrics_writer.add_summary(train_img_summary, total_epochs)
     train_state_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss state", simple_value=train_state_loss)])
@@ -132,10 +136,10 @@ for epoch in range(epochs):
     metrics_writer.add_summary(test_state_summary, total_epochs)
     test_summary = tf.Summary(value=[tf.Summary.Value(tag="Validation loss", simple_value=test_total_loss)])
     metrics_writer.add_summary(test_summary, total_epochs)
-  
+
     print('Epoch {} | TRAIN: L_img: {}, L_state: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_state: {}, L_kl: {}, L_tot: {}'
-            .format(total_epochs, train_img_loss, train_state_loss, train_kl_loss, train_total_loss, 
-            test_img_loss, test_state_loss, test_kl_loss, test_total_loss))
+          .format(total_epochs, train_img_loss, train_state_loss, train_kl_loss, train_total_loss,
+                  test_img_loss, test_state_loss, test_kl_loss, test_total_loss))
 
 print('End of training, saving final model')
-model.save_weights(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs)))
+model.save_weights(os.path.abspath(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs))))

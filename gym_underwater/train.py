@@ -40,7 +40,7 @@ ALGOS = {
 }
 
 print("Loading environment configuration ...")
-with open('../Configs/env/config.yml', 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 parser = argparse.ArgumentParser()
@@ -171,7 +171,7 @@ else:
 
 # load hyperparameters from yaml file into dict 
 print("Loading hyperparameters ...")
-with open('../Configs/hyperparams/{}.yml'.format(env_config['algo']), 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'hyperparams', '{}.yml'.format(env_config['algo']))), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
 # this ordered (alphabetical) dict will be saved out alongside model so know which hyperparams were used for training
@@ -189,29 +189,30 @@ set_global_seeds(hyperparams.get('seed', 0))
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.join(env_config['base_filepath'], env_config['algo'])
+algo_specific_path = os.path.abspath(os.path.join(os.pardir, "Logs", env_config['algo']))
 run_id = 0
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
     run_num = path.split(os.sep)[-1]
     if run_num.isdigit() and int(run_num) > run_id:
         run_id = int(run_num)
-run_specific_path = os.path.join(algo_specific_path, str(run_id + 1))
+run_specific_path = os.path.abspath(os.path.join(algo_specific_path, str(run_id + 1)))
 os.makedirs(run_specific_path, exist_ok=True)
 
-print("Outputs and logs will be saved to {}/... ".format(run_specific_path))
+print("Outputs and logs will be saved to {}".format(run_specific_path))
 
 # generate path for tb files
 if not env_config['tb']:
     tb_path = None
 else:
-    tb_path = os.path.join(run_specific_path, 'tb_logs')
+    tb_path = os.path.abspath(run_specific_path)
 
 # generate path for Monitor logs
 if not env_config['monitor']:
-    log_dir = "/tmp/gym/{}/".format(int(time.time()))
+    log_dir = os.path.abspath(os.path.join('tmp', 'gym', '{}'.format(int(time.time()))))
 else:
-    log_dir = os.path.join(run_specific_path, 'monitor_logs')
+    log_dir = os.path.abspath(run_specific_path)
+
 os.makedirs(log_dir, exist_ok=True)
 
 if isinstance(hyperparams['learning_rate'], str):
@@ -287,10 +288,10 @@ env.reset()
 # exit scene?
 
 # Save trained model as .pkl - NOTE set cloudpickle to False to save model as json
-model.save(os.path.join(run_specific_path, 'model.pkl'), cloudpickle=True)
+model.save(os.path.abspath(os.path.join(run_specific_path, 'model.pkl')), cloudpickle=True)
 
 # Save hyperparams
-with open(os.path.join(run_specific_path, 'config.yml'), 'w') as f:
+with open(os.path.abspath(os.path.join(run_specific_path, 'config.yml')), 'w') as f:
     yaml.dump(saved_hyperparams, f)
 
 if normalize:

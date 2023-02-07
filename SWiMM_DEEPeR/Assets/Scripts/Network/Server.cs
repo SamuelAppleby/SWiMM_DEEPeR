@@ -2,8 +2,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Dynamic;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -15,11 +13,9 @@ using Task = System.Threading.Tasks.Task;
 
 public class Server
 {
-    public int episode_num = 0;
-    public int obsv_num = 0;
-    public int total_steps = 0;
-    public int action_num = 0;
     public int resets_received = 0;
+    public int episode_num = -1;
+    public int obsv_num = 0;
     public bool first_observation_sent = false;
     byte[] receive_buffer;
 
@@ -141,7 +137,6 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct PayloadDataToSend
     {
-        public int episode_num;
         public int obsv_num;
         public TelemetryData telemetry_data;
     }
@@ -284,7 +279,6 @@ public class Server
 
                 DataToSend current_msg = JsonConvert.DeserializeObject<DataToSend>(json_str_obsv);
 
-                current_msg.payload.episode_num = episode_num;
                 current_msg.payload.obsv_num = obsv_num;
 
                 UnityMainThreadDispatcher.Instance().Enqueue(FireSentEvents(current_msg));
@@ -295,7 +289,7 @@ public class Server
                 {
                     if (SimulationManager._instance.debug_logs)
                     {
-                       Task t = File.WriteAllTextAsync(SimulationManager._instance.packets_sent_dir.FullName + "episode_" + current_msg.payload.episode_num.ToString() + "_observation_" + current_msg.payload.obsv_num.ToString() + ".json", update_json_str);
+                       Task t = File.WriteAllTextAsync(Path.GetFullPath(Path.Combine(SimulationManager._instance.packets_sent_dir.FullName, "episode_" + episode_num.ToString() + "_observation_" + current_msg.payload.obsv_num.ToString() + ".json")), update_json_str);
                     }
 
                     Debug.Log("Sending: " + update_json_str);
@@ -310,6 +304,7 @@ public class Server
                         await stream.WriteAsync(_data, 0, _data.Length);
                     }
 
+                    obsv_num++;
                     json_str_obsv = null;
                 }
 
@@ -345,30 +340,23 @@ public class Server
                     Debug.Log("Received: " + current_json_action);
                     JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(current_json_action);
 
-                    episode_num = message.payload.episode_num;
-                    action_num = message.payload.action_num;
-
                     if(message.msgType == "reset_episode")
                     {
                         obsv_num = 0;
-                        resets_received++;
 
                         if (SimulationManager._instance.debug_logs)
                         {
-                            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+                            Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
                             {
-                                { SimulationManager._instance.image_dir.FullName, true },
-                                { SimulationManager._instance.packets_sent_dir.FullName, true },
-                                { SimulationManager._instance.packets_received_dir.FullName, true }
+                                { SimulationManager._instance.image_dir, true },
+                                { SimulationManager._instance.packets_sent_dir, true },
+                                { SimulationManager._instance.packets_received_dir, true }
                             });
-
-
-                            if (SimulationManager._instance.debug_logs)
-                            {
-                                Task t = File.WriteAllTextAsync(SimulationManager._instance.packets_received_dir.FullName + "episode_" + message.payload.episode_num.ToString() + "_packet_" + message.payload.action_num.ToString() + ".json", current_json_action);
-                            }
                         }
                     }
+
+                    episode_num = message.payload.episode_num;
+                    Task t = File.WriteAllTextAsync(Path.GetFullPath(Path.Combine(SimulationManager._instance.packets_received_dir.FullName, "episode_" + episode_num.ToString() + "_packet_" + message.payload.action_num.ToString() + ".json")), current_json_action);
 
                     switch (message.msgType)
                     {

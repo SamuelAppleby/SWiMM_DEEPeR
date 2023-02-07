@@ -87,27 +87,27 @@ public static class Utils
         return 0;
     }
 
-    public static void CleanAndCreateDirectories(Dictionary<string, bool> dir_paths)
+    public static void CleanAndCreateDirectories(Dictionary<DirectoryInfo, bool> dir_paths)
     {
-        foreach (KeyValuePair<string, bool> path in dir_paths)
+        foreach (KeyValuePair<DirectoryInfo, bool> path in dir_paths)
         {
             if (path.Key == null)
             {
                 continue;
             }
 
-            if (Directory.Exists(path.Key))
+            if (path.Key.Exists)
             {
                 if (path.Value)
                 {
-                    Directory.Delete(path.Key, true);
-                    Directory.CreateDirectory(path.Key);
+                    Directory.Delete(path.Key.FullName, true);
+                    Directory.CreateDirectory(path.Key.FullName);
                 }
             }
 
             else
             {
-                Directory.CreateDirectory(path.Key);
+                Directory.CreateDirectory(path.Key.FullName);
             }
         }
     }
@@ -122,7 +122,7 @@ public static class Utils
         Application.Quit();
     }
 
-    public static IEnumerator TakeScreenshot(Tuple<int, int> res, Camera cam, DirectoryInfo dir, System.Action<byte[]> callback = null)
+    public static IEnumerator TakeScreenshot(Resolution res, Camera cam, DirectoryInfo dir, System.Action<byte[]> callback = null)
     {
         RenderTexture prevRenderTexture = RenderTexture.active;
         RenderTexture prevCameraTargetTexture = cam.targetTexture;
@@ -131,12 +131,12 @@ public static class Utils
 
         yield return new WaitForEndOfFrame();
 
-        RenderTexture rt = RenderTexture.GetTemporary(res.Item1, res.Item2, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default, 1);
+        RenderTexture rt = RenderTexture.GetTemporary(res.width, res.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default, 1);
         cam.targetTexture = rt;
         cam.Render();
         RenderTexture.active = rt;
-        Texture2D screen_shot = new Texture2D(res.Item1, res.Item2, TextureFormat.RGB24, false);
-        screen_shot.ReadPixels(new Rect(0, 0, res.Item1, res.Item2), 0, 0);
+        Texture2D screen_shot = new Texture2D(res.width, res.height, TextureFormat.RGB24, false);
+        screen_shot.ReadPixels(new Rect(0, 0, res.width, res.height), 0, 0);
         screen_shot.Apply();
         cam.targetTexture = null;
         RenderTexture.active = null;
@@ -146,7 +146,7 @@ public static class Utils
 
         if (dir != null)
         {
-            File.WriteAllBytes(dir.FullName, byte_image);
+            File.WriteAllBytes(Path.GetFullPath(dir.FullName), byte_image);
         }
 
         if (callback != null)

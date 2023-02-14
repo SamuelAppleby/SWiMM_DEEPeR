@@ -1,8 +1,6 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -95,7 +93,7 @@ public class VAEImageGeneration : MonoBehaviour
 
         foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
         {
-            DirectoryInfo parent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(data_dir.FullName, res.width.ToString() + "x" + res.height.ToString())));
+            DirectoryInfo parent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(data_dir.FullName, res.ToString())));
             DirectoryInfo image_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(parent_dir.FullName, "images")));
 
             Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
@@ -145,7 +143,7 @@ public class VAEImageGeneration : MonoBehaviour
 
             foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
             {
-                DirectoryInfo parent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(data_dir.FullName, res.width.ToString() + "x" + res.height.ToString())));
+                DirectoryInfo parent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(data_dir.FullName, res.ToString())));
                 DirectoryInfo image_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(parent_dir.FullName, "images")));
 
                 yield return StartCoroutine(Utils.TakeScreenshot(res, track_camera, new DirectoryInfo(Path.GetFullPath(Path.Combine(image_dir.FullName, (Directory.GetFiles(image_dir.FullName).Length + 1).ToString() + ".jpg")))));
@@ -157,7 +155,7 @@ public class VAEImageGeneration : MonoBehaviour
 
         foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
         {
-            DirectoryInfo parent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(data_dir.FullName, res.width.ToString() + "x" + res.height.ToString())));
+            DirectoryInfo parent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(data_dir.FullName, res.ToString())));
             File.AppendAllText(Path.GetFullPath(Path.Combine(parent_dir.FullName, "state_data.csv")), csv.ToString());
         }
 

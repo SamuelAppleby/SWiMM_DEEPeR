@@ -78,7 +78,7 @@ public class ImageSampling : MonoBehaviour
         {
             Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
             {
-                { new DirectoryInfo(Path.GetFullPath(image_dir + res.width.ToString() + "x" + res.height.ToString())), true }
+                { new DirectoryInfo(Path.GetFullPath(image_dir + res.ToString())), true }
             });
         }
 
@@ -102,13 +102,13 @@ public class ImageSampling : MonoBehaviour
                 {
                     float start_time = Time.realtimeSinceStartup;
                     yield return StartCoroutine(Utils.TakeScreenshot(res, track_camera, 
-                        new DirectoryInfo(Path.GetFullPath(Path.Combine(image_dir.FullName, res.width.ToString() + "x" + res.height.ToString(), current_img.ToString() + ".jpg")))));
+                        new DirectoryInfo(Path.GetFullPath(Path.Combine(image_dir.FullName, res.ToString(), current_img.ToString() + ".jpg")))));
                     float time_taken = Time.realtimeSinceStartup - start_time;
 
                     /* Time to record time taken */
                     if (current_img == SimulationManager._instance.num_images - 1 && i != 0)      // Prioritising caching of the OS
                     {
-                        var newLine = $"{res.width.ToString() + "x" + res.height.ToString()},{graphics_pipeline},{time_taken}";
+                        var newLine = $"{res.ToString()},{graphics_pipeline},{time_taken}";
                         csv.AppendLine(newLine);
                     }
                 }

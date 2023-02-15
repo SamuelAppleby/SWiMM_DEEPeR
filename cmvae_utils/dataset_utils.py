@@ -76,7 +76,7 @@ def de_normalize_state(pose):
 
 def read_images(data_dir, res, max_size=None):
     print('Going to read image file list')
-    files_list = glob.glob(os.path.join(data_dir, 'images/' + os.sep + '*.jpg'))
+    files_list = glob.glob(os.path.abspath(os.path.join(data_dir, 'images', '*.jpg')))
     print('Done. Starting sorting.')
     # files_list.sort()  # make sure we're reading the images in order later
     files_list = natsorted(files_list)
@@ -91,7 +91,10 @@ def read_images(data_dir, res, max_size=None):
     for img_name in files_list:
         # read in image with cv2 (pixel order BGR)
         im = cv2.imread(img_name, cv2.IMREAD_COLOR)
-        im = cv2.resize(im, (res, res))
+
+        if im.shape[0] is not res or im.shape[1] is not res:
+            im = cv2.resize(im, (res, res))
+
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 10000 == 0:
@@ -121,7 +124,7 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
 
     print('Going to read csv file.')
     # prepare state R THETA PSI as np array reading from a file
-    raw_table = np.loadtxt(data_dir + 'state_data.csv', delimiter=',')  # changed name of csv and delimiter from space to comma
+    raw_table = np.loadtxt(os.path.abspath(os.path.join(data_dir, 'state_data.csv')), delimiter=',')  # changed name of csv and delimiter from space to comma
     raw_table = raw_table[:size_data, :]
 
     print('Done. Going to read images.')
@@ -130,7 +133,10 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
     for file in files_list:
         # read in image with cv2 (pixel order BGR)
         im = cv2.imread(file, cv2.IMREAD_COLOR)
-        im = cv2.resize(im, (res, res))
+
+        if im.shape[0] is not res or im.shape[1] is not res:
+            im = cv2.resize(im, (res, res))
+
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 10000 == 0:
@@ -176,7 +182,7 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
 
 def create_dataset_filepaths(data_dir, batch_size, res, max_size=None):
     print('Going to read file list')
-    files_list = glob.glob(os.path.join(data_dir, 'images' + os.sep + '*.jpg'))  # took out the preceding images dir
+    files_list = glob.glob(os.path.abspath(os.path.join(data_dir, 'images', '*.jpg')))  # took out the preceding images dir
     print('Done. Starting sorting.')
     # files_list.sort()  # make sure we're reading the images in order later
     files_list = natsorted(files_list)
@@ -257,7 +263,7 @@ def create_unsup_dataset_multiple_sources(data_dir_list, batch_size, res):
 def create_test_dataset_csv(data_dir, res, read_table=True):
     # prepare image dataset from a folder
     print('Going to read file list')
-    files_list = glob.glob(os.path.join(data_dir, 'images' + os.sep + '*.jpg'))  # took out the preceding images dir
+    files_list = glob.glob(os.path.abspath(os.path.join(data_dir, 'images', '*.jpg')))  # took out the preceding images dir
     print('Done. Starting sorting.')
     # files_list.sort()  # make sure we're reading the images in order later
     files_list = natsorted(files_list)
@@ -268,7 +274,10 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     for file in files_list:
         # read in image with cv2 (pixel order BGR)
         im = cv2.imread(file, cv2.IMREAD_COLOR)
-        im = cv2.resize(im, (res, res))
+
+        if im.shape[0] is not res or im.shape[1] is not res:
+            im = cv2.resize(im, (res, res))
+
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         idx = idx + 1
@@ -277,7 +286,7 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
         return images_np, None
 
     # prepare state R THETA PSI as np array reading from a file
-    raw_table = np.loadtxt(data_dir + os.sep + 'state_data.csv', delimiter=',')  # changed name of csv file and delimiter from space to comma
+    raw_table = np.loadtxt(os.path.abspath(os.path.join(data_dir, 'state_data.csv')), delimiter=',')  # changed name of csv file and delimiter from space to comma
     # sanity check
     if raw_table.shape[0] != images_np.shape[0]:
         raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(images_np.shape[0], raw_table.shape[0]))

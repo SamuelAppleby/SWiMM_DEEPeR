@@ -12,7 +12,6 @@ from datetime import datetime
 
 import tensorflow as tf
 import os
-import sys
 from tqdm import tqdm
 import numpy as np
 import random
@@ -32,15 +31,11 @@ if args.data_dir is "":
 
 # define training meta parameters
 data_dir = args.data_dir
-output_dir = os.path.join(data_dir,  datetime.now().strftime('%m/%d/%Y'))
+output_dir = os.path.join(data_dir,  datetime.now().strftime('%m-%d-%Y'))
 pretrained_model_path = args.model_dir
 
-# data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/dummy_images'
-# output_dir = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23'
-# pretrained_model_path = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23/cmvae_model_29.ckpt'
-
 batch_size = 32
-epochs = 30  # 15 #50
+epochs = 50  # 15 #50
 n_z = 10
 img_res = 64
 max_size = None
@@ -123,7 +118,7 @@ for epoch in range(epochs):
         print('Saving weights to {}'.format(output_dir))
         model.save_weights(os.path.abspath(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs))))
 
-        # write to tensorboard
+    # write to tensorboard
     train_img_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss images", simple_value=train_img_loss)])
     metrics_writer.add_summary(train_img_summary, total_epochs)
     train_state_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss state", simple_value=train_state_loss)])

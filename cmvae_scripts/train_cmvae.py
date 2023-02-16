@@ -18,6 +18,7 @@ import random
 import yaml
 
 # imports
+curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
 sys.path.insert(0, import_path)
 

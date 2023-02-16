@@ -83,7 +83,7 @@ if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
 # create tensorboard writer
-metrics_writer = tf.summary.FileWriter(output_dir, model.graph)
+metrics_writer = tf.compat.v1.summary.FileWriter(output_dir, model.graph)
 
 # train
 for epoch in range(epochs):

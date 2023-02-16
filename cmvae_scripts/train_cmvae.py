@@ -16,7 +16,7 @@ from tqdm import tqdm
 import numpy as np
 import random
 import yaml
-import cmvae_models.cmvae
+from cmvae_models import cmvae
 import cmvae_utils
 
 parser = argparse.ArgumentParser()

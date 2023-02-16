@@ -16,7 +16,12 @@ from tqdm import tqdm
 import numpy as np
 import random
 import yaml
-from cmvae_models import cmvae
+
+# imports
+import_path = os.path.join(curr_dir, '..')
+sys.path.insert(0, import_path)
+
+import cmvae_models.cmvae
 import cmvae_utils
 
 parser = argparse.ArgumentParser()

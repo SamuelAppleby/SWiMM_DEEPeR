@@ -190,10 +190,10 @@ class CmvaeDirect(object):
 
     def save_weights(self, save_path):
         with self.graph.as_default():
-            saver = tf.compat.v1.train.Saver(tf.global_variables())
+            saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables())
         saver.save(self.sess, save_path)
 
     def load_weights(self, weights_path):
         with self.graph.as_default():
-            saver = tf.train.Saver(tf.global_variables())
+            saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables())
         saver.restore(self.sess, weights_path)

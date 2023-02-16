@@ -55,11 +55,11 @@ class CmvaeDirect(object):
         # flag whether the img_data placeholder will be receiving images or filepaths to images
         self.big_data = big_data
 
-        with tf.compact.v1.variable_scope('cmvae_direct', reuse=False):
+        with tf.variable_scope('cmvae_direct', reuse=False):
             self._build_graph()
 
         with self.graph.as_default():
-            self.params = tf.compact.v1.trainable_variables()
+            self.params = tf.trainable_variables()
 
         self._init_session()
 
@@ -73,9 +73,9 @@ class CmvaeDirect(object):
             if self.big_data:
                 self.img_data = tf.placeholder(tf.string, shape=None)
             else:
-                self.img_data = tf.compact.v1.placeholder(tf.float32, shape=[None, self.res, self.res, 3])
-            self.state_data = tf.compact.v1.placeholder(tf.float64, shape=[None, self.state_dim])
-            self.batch_size = tf.compact.v1.placeholder(tf.int64)
+                self.img_data = tf.placeholder(tf.float32, shape=[None, self.res, self.res, 3])
+            self.state_data = tf.placeholder(tf.float64, shape=[None, self.state_dim])
+            self.batch_size = tf.placeholder(tf.int64)
 
             # convert to tf format dataset and prepare batches
             if self.big_data:
@@ -84,7 +84,7 @@ class CmvaeDirect(object):
                 dataset = tf.data.Dataset.from_tensor_slices((self.img_data, self.state_data)).batch(self.batch_size)
 
             # create iterator of the correct shape and type
-            iterator = tf.compact.v1.data.Iterator.from_structure(dataset.output_types, dataset.output_shapes)
+            iterator = tf.data.Iterator.from_structure(dataset.output_types, dataset.output_shapes)
 
             # create the initialisation operation
             self.init_op = iterator.make_initializer(dataset)
@@ -113,8 +113,8 @@ class CmvaeDirect(object):
                 self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
                 # calculate losses
-                self.img_loss = tf.compact.v1.losses.mean_squared_error(self.img_gt, self.img_recon)
-                self.state_loss = tf.compact.v1.losses.mean_squared_error(self.state_gt, self.state_recon)
+                self.img_loss = tf.losses.mean_squared_error(self.img_gt, self.img_recon)
+                self.state_loss = tf.losses.mean_squared_error(self.state_gt, self.state_recon)
                 self.kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum((1 + self.stddev - tf.math.pow(self.means, 2) - tf.math.exp(self.stddev)), axis=1))
 
                 # update running averages
@@ -127,17 +127,17 @@ class CmvaeDirect(object):
 
                 # training
                 self.lr = tf.Variable(self.learning_rate, trainable=False)
-                self.optimizer = tf.compact.v1.train.AdamOptimizer(self.lr)
+                self.optimizer = tf.train.AdamOptimizer(self.lr)
                 grads = self.optimizer.compute_gradients(self.total_loss)
                 self.train_op = self.optimizer.apply_gradients(
                     grads, global_step=self.global_step, name='train_step')
 
             # initialize vars
-            self.init = tf.compact.v1.global_variables_initializer()
+            self.init = tf.global_variables_initializer()
 
     def _init_session(self):
         """Launch tensorflow session and initialize variables"""
-        self.sess = tf.compact.v1.Session(graph=self.graph)
+        self.sess = tf.Session(graph=self.graph)
         self.sess.run(self.init)
 
     def close_sess(self):
@@ -190,7 +190,7 @@ class CmvaeDirect(object):
 
     def save_weights(self, save_path):
         with self.graph.as_default():
-            saver = tf.compact.v1.train.Saver(tf.global_variables())
+            saver = tf.train.Saver(tf.global_variables())
         saver.save(self.sess, save_path)
 
     def load_weights(self, weights_path):

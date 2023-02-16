@@ -126,17 +126,17 @@ for epoch in range(epochs):
         model.save_weights(os.path.abspath(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs))))
 
     # write to tensorboard
-    train_img_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss images", simple_value=train_img_loss)])
+    train_img_summary = tf.compat.v1.Summary(value=[tf.Summary.Value(tag="Training loss images", simple_value=train_img_loss)])
     metrics_writer.add_summary(train_img_summary, total_epochs)
-    train_state_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss state", simple_value=train_state_loss)])
+    train_state_summary = tf.compat.v1.Summary(value=[tf.Summary.Value(tag="Training loss state", simple_value=train_state_loss)])
     metrics_writer.add_summary(train_state_summary, total_epochs)
-    train_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss", simple_value=train_total_loss)])
+    train_summary = tf.compat.v1.Summary(value=[tf.Summary.Value(tag="Training loss", simple_value=train_total_loss)])
     metrics_writer.add_summary(train_summary, total_epochs)
-    test_img_summary = tf.Summary(value=[tf.Summary.Value(tag="Validation loss images", simple_value=test_img_loss)])
+    test_img_summary = tf.compat.v1.Summary(value=[tf.Summary.Value(tag="Validation loss images", simple_value=test_img_loss)])
     metrics_writer.add_summary(test_img_summary, total_epochs)
-    test_state_summary = tf.Summary(value=[tf.Summary.Value(tag="Validation loss state", simple_value=test_state_loss)])
+    test_state_summary = tf.compat.v1.Summary(value=[tf.Summary.Value(tag="Validation loss state", simple_value=test_state_loss)])
     metrics_writer.add_summary(test_state_summary, total_epochs)
-    test_summary = tf.Summary(value=[tf.Summary.Value(tag="Validation loss", simple_value=test_total_loss)])
+    test_summary = tf.compat.v1.Summary(value=[tf.Summary.Value(tag="Validation loss", simple_value=test_total_loss)])
     metrics_writer.add_summary(test_summary, total_epochs)
 
     print('Epoch {} | TRAIN: L_img: {}, L_state: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_state: {}, L_kl: {}, L_tot: {}'

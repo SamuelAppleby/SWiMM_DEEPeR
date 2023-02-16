@@ -54,7 +54,7 @@ with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml'
 
 # seeding for reproducability
 seed = env_config['seed']
-tf.set_random_seed(seed)
+tf.compat.v1.set_random_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
 

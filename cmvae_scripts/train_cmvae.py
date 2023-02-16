@@ -121,7 +121,7 @@ for epoch in range(epochs):
         total_epochs = epoch
 
     # save model
-    if total_epochs % 5 == 0 and epoch > 0:
+    if total_epochs % 5 == 0:
         print('Saving weights to {}'.format(output_dir))
         model.save_weights(os.path.abspath(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs))))
 

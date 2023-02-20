@@ -4,5 +4,5 @@ CALL .\.venv\Scripts\activate.bat
 cd gym_underwater
 START python train.py
 cd ..\SWiMM_DEEPeR\Builds\Windows
-START SWiMM_DEEPeR.exe training
+START SWiMM_DEEPeR.exe training -batchmode
 EXIT

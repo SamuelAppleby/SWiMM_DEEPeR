@@ -438,6 +438,42 @@ public class SimulationManager : Singleton<SimulationManager>
             Debug.LogException(e);
         }
 
+#if false
+        _instance.game_state = E_Game_State.IMAGE_SAMPLING;
+        _instance.num_images = 360;
+        _instance.image_generation_resolutions = new List<Resolution>()
+        {
+            new Resolution
+            {
+                width = 640,
+                height = 360
+            },
+            new Resolution
+            {
+                width = 1920,
+                height = 1080
+            }
+        };
+#endif
+
+#if false
+        _instance.game_state = E_Game_State.VAE_GEN;
+        _instance.num_images = 10;
+        _instance.image_generation_resolutions = new List<Resolution>()
+        {
+            new Resolution
+            {
+                width = 640,
+                height = 360
+            },
+            new Resolution
+            {
+                width = 1920,
+                height = 1080
+            }
+        };
+#endif
+
         switch (_instance.game_state)
         {
             case E_Game_State.AUTOMATION_TRAINING:

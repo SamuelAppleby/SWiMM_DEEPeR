@@ -30,10 +30,10 @@ seed: 31
 # The following are environment parameters
 
 # Observation type. CHOICES: 'image', 'vector', 'vae'
-obs: 'vector'
+obs: 'vae'
 
 # If using image obs, declare desired output size of scaling function
-img_scale: !!python/tuple [ 84,84,3]
+img_scale: !!python/tuple [ 64,64,3]
 
 # Used to express the optimal tracking position. This value is subtracted from the z-coordinate of the target's position 
 # i.e. how far set back from the target do you want the AUV to position itself

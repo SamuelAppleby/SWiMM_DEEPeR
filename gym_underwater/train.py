@@ -43,20 +43,6 @@ print("Loading environment configuration ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
-parser.add_argument('--obs', help='Observation type', default='image', type=str, required=False, choices=list(env_config['obs']))
-parser.add_argument('--img_scale', help='Image scale', default=[64, 64, 3], nargs='+', type=int, required=False, choices=list(env_config['obs']))
-parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
-parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default=os.path.join('gym_underwater' + os.sep, 'Logs'), type=str)
-parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', action='store_true')
-parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
-parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
-parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
-args = parser.parse_args()
-args.img_scale = tuple(args.img_scale)
-
-
 # --------------------------- Utils ------------------------#
 
 def make_env(vae, obs, opt_d, max_d, img_scale, debug_logs, log_d, seed=None):

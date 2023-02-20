@@ -17,6 +17,12 @@ from tqdm import tqdm
 import numpy as np
 import random
 import yaml
+
+# imports
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+import_path = os.path.join(curr_dir, '..')
+sys.path.insert(0, import_path)
+
 import cmvae_models.cmvae
 import cmvae_utils
 
@@ -24,6 +30,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', help='Directory where the images/state data is contained', default="", type=str)
 parser.add_argument('--model_dir', help='Directory where the pretrained model is', default="", type=str)
 parser.add_argument('--big_data', help='Directory where the pretrained model is', action='store_true')
+parser.add_argument('--n_z', help='Number of features to encode to', default=10, type=int)
+parser.add_argument('--epochs', help='Number of epochs for the training run', default=30, type=int)
 args = parser.parse_args()
 
 if args.data_dir is "":
@@ -32,16 +40,12 @@ if args.data_dir is "":
 
 # define training meta parameters
 data_dir = args.data_dir
-output_dir = os.path.join(data_dir,  datetime.now().strftime('%m/%d/%Y'))
+output_dir = os.path.join(data_dir,  datetime.now().strftime('%m-%d-%Y'))
 pretrained_model_path = args.model_dir
 
-# data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/dummy_images'
-# output_dir = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23'
-# pretrained_model_path = '/home/campus.ncl.ac.uk/b3024896/Projects/RLNet/Logs/vae/1920x1080/cmvae_run_10_01_23/cmvae_model_29.ckpt'
-
 batch_size = 32
-epochs = 30  # 15 #50
-n_z = 10
+epochs = args.epochs
+n_z = args.n_z
 img_res = 64
 max_size = None
 learning_rate = 1e-4
@@ -52,7 +56,7 @@ with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml'
 
 # seeding for reproducability
 seed = env_config['seed']
-tf.set_random_seed(seed)
+tf.compat.v1.set_random_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
 
@@ -81,7 +85,7 @@ if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
 # create tensorboard writer
-metrics_writer = tf.summary.FileWriter(output_dir, model.graph)
+metrics_writer = tf.compat.v1.summary.FileWriter(output_dir, model.graph)
 
 # train
 for epoch in range(epochs):
@@ -119,22 +123,22 @@ for epoch in range(epochs):
         total_epochs = epoch
 
     # save model
-    if total_epochs % 5 == 0 and epoch > 0:
+    if total_epochs % 5 == 0:
         print('Saving weights to {}'.format(output_dir))
         model.save_weights(os.path.abspath(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(total_epochs))))
 
-        # write to tensorboard
-    train_img_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss images", simple_value=train_img_loss)])
+    # write to tensorboard
+    train_img_summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag="Training loss images", simple_value=train_img_loss)])
     metrics_writer.add_summary(train_img_summary, total_epochs)
-    train_state_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss state", simple_value=train_state_loss)])
+    train_state_summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag="Training loss state", simple_value=train_state_loss)])
     metrics_writer.add_summary(train_state_summary, total_epochs)
-    train_summary = tf.Summary(value=[tf.Summary.Value(tag="Training loss", simple_value=train_total_loss)])
+    train_summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag="Training loss", simple_value=train_total_loss)])
     metrics_writer.add_summary(train_summary, total_epochs)
-    test_img_summary = tf.Summary(value=[tf.Summary.Value(tag="Validation loss images", simple_value=test_img_loss)])
+    test_img_summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag="Validation loss images", simple_value=test_img_loss)])
     metrics_writer.add_summary(test_img_summary, total_epochs)
-    test_state_summary = tf.Summary(value=[tf.Summary.Value(tag="Validation loss state", simple_value=test_state_loss)])
+    test_state_summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag="Validation loss state", simple_value=test_state_loss)])
     metrics_writer.add_summary(test_state_summary, total_epochs)
-    test_summary = tf.Summary(value=[tf.Summary.Value(tag="Validation loss", simple_value=test_total_loss)])
+    test_summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag="Validation loss", simple_value=test_total_loss)])
     metrics_writer.add_summary(test_summary, total_epochs)
 
     print('Epoch {} | TRAIN: L_img: {}, L_state: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_state: {}, L_kl: {}, L_tot: {}'

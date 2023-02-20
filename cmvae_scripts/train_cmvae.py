@@ -30,6 +30,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', help='Directory where the images/state data is contained', default="", type=str)
 parser.add_argument('--model_dir', help='Directory where the pretrained model is', default="", type=str)
 parser.add_argument('--big_data', help='Directory where the pretrained model is', action='store_true')
+parser.add_argument('--n_z', help='Number of features to encode to', default=10, type=int)
+parser.add_argument('--epochs', help='Number of epochs for the training run', default=30, type=int)
 args = parser.parse_args()
 
 if args.data_dir is "":
@@ -42,8 +44,8 @@ output_dir = os.path.join(data_dir,  datetime.now().strftime('%m-%d-%Y'))
 pretrained_model_path = args.model_dir
 
 batch_size = 32
-epochs = 50  # 15 #50
-n_z = 10
+epochs = args.epochs
+n_z = args.n_z
 img_res = 64
 max_size = None
 learning_rate = 1e-4

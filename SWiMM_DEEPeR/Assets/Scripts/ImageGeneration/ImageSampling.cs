@@ -57,12 +57,12 @@ public class ImageSampling : MonoBehaviour
 
         if (data_dir == null)
         {
-            DirectoryInfo di = new DirectoryInfo(Path.GetFullPath(System.IO.Directory.GetCurrentDirectory()));
+            DirectoryInfo di = new DirectoryInfo(Path.GetFullPath(Directory.GetCurrentDirectory()));
 
 #if UNITY_EDITOR
-            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.FullName + "image_generation", "sampling")));
+            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.FullName, "image_generation", "sampling")));
 #else
-            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.Parent.FullName + "image_generation", "sampling")));
+            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.Parent.FullName, "image_generation", "sampling")));
 #endif
         }
 
@@ -78,7 +78,7 @@ public class ImageSampling : MonoBehaviour
         {
             Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
             {
-                { new DirectoryInfo(Path.GetFullPath(image_dir + res.ToString())), true }
+                { new DirectoryInfo(Path.GetFullPath(Path.Combine(image_dir.FullName, res.ToString()))), true }
             });
         }
 
@@ -108,14 +108,14 @@ public class ImageSampling : MonoBehaviour
                     /* Time to record time taken */
                     if (current_img == SimulationManager._instance.num_images - 1 && i != 0)      // Prioritising caching of the OS
                     {
-                        var newLine = $"{res.ToString()},{graphics_pipeline},{time_taken}";
+                        var newLine = $"{res},{graphics_pipeline},{time_taken}";
                         csv.AppendLine(newLine);
                     }
                 }
             }
         }
 
-        File.AppendAllText(Path.GetFullPath(data_dir + "timings.csv"), csv.ToString());
+        File.AppendAllText(Path.GetFullPath(Path.Combine(data_dir.FullName, "timings.csv")), csv.ToString());
 
         Destroy(target_trans.gameObject);
 

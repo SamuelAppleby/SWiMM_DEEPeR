@@ -82,12 +82,12 @@ public class VAEImageGeneration : MonoBehaviour
 
         if (data_dir == null)
         {
-            DirectoryInfo di = new DirectoryInfo(Path.GetFullPath(System.IO.Directory.GetCurrentDirectory()));
+            DirectoryInfo di = new DirectoryInfo(Path.GetFullPath(Directory.GetCurrentDirectory()));
 
 #if UNITY_EDITOR
-            data_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.FullName + "image_generation", "vae")));
+            data_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.FullName, "image_generation", "vae")));
 #else
-            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.Parent.FullName + "image_generation", "vae")));
+            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.Parent.FullName, "image_generation", "vae")));
 #endif     
         }
 

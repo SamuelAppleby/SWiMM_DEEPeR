@@ -1,7 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using static Enums;
+using static Server;
 
 public class GameUI : MonoBehaviour
 {
@@ -22,9 +25,6 @@ public class GameUI : MonoBehaviour
 
     [SerializeField]
     private TextMeshProUGUI observations_sent;
-
-    [SerializeField]
-    private TextMeshProUGUI total_steps;
 
     [SerializeField]
     private TextMeshProUGUI actions_received;
@@ -75,26 +75,24 @@ public class GameUI : MonoBehaviour
     {
         if (SimulationManager._instance.server != null)
         {
-            observations_sent.text = SimulationManager._instance.server.obsv_num.ToString();
-            actions_received.text = SimulationManager._instance.server.action_num.ToString();
-            resets_received.text = SimulationManager._instance.server.resets_received.ToString();
             episode_num.text = SimulationManager._instance.server.episode_num.ToString();
-            total_steps.text = SimulationManager._instance.server.total_steps.ToString();
+            resets_received.text = SimulationManager._instance.server.resets_received.ToString();
         }
+    }
+
+    public void OnActionReceived(JsonMessage param)
+    {
+        actions_received.text = (int.Parse(actions_received.text)+1).ToString();
+    }
+
+    public void OnObservationSent()
+    {
+        observations_sent.text = SimulationManager._instance.server.obsv_num.ToString();
     }
 
     void FixedUpdate()
     {
         fps_value_text.text = SimulationManager._instance.avgFrameRate.ToString();
-
-        if (SimulationManager._instance.server != null)
-        {
-            episode_num.text = SimulationManager._instance.server.episode_num.ToString();
-            observations_sent.text = SimulationManager._instance.server.obsv_num.ToString();
-            total_steps.text = SimulationManager._instance.server.total_steps.ToString();
-            actions_received.text = SimulationManager._instance.server.action_num.ToString();
-            resets_received.text = SimulationManager._instance.server.resets_received.ToString();
-        }
 
         position_value_text.text = third_person_movement.transform.position.ToString();
         orienation_value_text.text = third_person_movement.transform.rotation.eulerAngles.ToString();

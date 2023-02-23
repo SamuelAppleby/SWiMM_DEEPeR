@@ -17,10 +17,6 @@ public class ImageSampling : MonoBehaviour
     [SerializeField]
     private Camera track_camera;
 
-    private string image_dir;
-
-    private string data_dir;
-
     [SerializeField]
     private float distance;
 
@@ -57,39 +53,32 @@ public class ImageSampling : MonoBehaviour
         target_trans.GetComponent<Animator>().enabled = false;
 
         var csv = new StringBuilder();
+        DirectoryInfo data_dir = SimulationManager._instance.data_dir;
 
-        if (SimulationManager._instance.data_dir == null)
+        if (data_dir == null)
         {
-            data_dir = ".." + Path.DirectorySeparatorChar;
+            DirectoryInfo di = new DirectoryInfo(Path.GetFullPath(Directory.GetCurrentDirectory()));
+
 #if UNITY_EDITOR
-            data_dir +=  "image_generation" + Path.DirectorySeparatorChar + "sampling" + Path.DirectorySeparatorChar;
+            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.FullName, "image_generation", "sampling")));
 #else
-            data_dir += ".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "image_generation" + Path.DirectorySeparatorChar + "sampling" + Path.DirectorySeparatorChar;
+            data_dir  = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.Parent.FullName, "image_generation", "sampling")));
 #endif
         }
 
-        else
-        {
-            data_dir = SimulationManager._instance.data_dir;
-        }
-
-        Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+        Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
         {
             { data_dir, true }
         });
 
-        image_dir = data_dir + "images" + Path.DirectorySeparatorChar;
-
-        string graphics_pipeline = GraphicsSettings.defaultRenderPipeline == null ? "built_in" + Path.DirectorySeparatorChar : "hdrp" + Path.DirectorySeparatorChar;
-        image_dir += graphics_pipeline;
+        string graphics_pipeline = GraphicsSettings.defaultRenderPipeline == null ? "built_in" : "hdrp";
+        DirectoryInfo image_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(data_dir.FullName, "images", graphics_pipeline)));
 
         foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
         {
-            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
-
-            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+            Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
             {
-                { res_path, true }
+                { new DirectoryInfo(Path.GetFullPath(Path.Combine(image_dir.FullName, res.ToString()))), true }
             });
         }
 
@@ -97,8 +86,6 @@ public class ImageSampling : MonoBehaviour
 
         foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
         {
-            string res_path = image_dir + res.width.ToString() + "x" + res.height.ToString() + Path.DirectorySeparatorChar;
-
             for (int current_img = 0; current_img < SimulationManager._instance.num_images; ++current_img)
             {
                 /* Manual calculation */
@@ -114,20 +101,21 @@ public class ImageSampling : MonoBehaviour
                 for (int i = current_img == current_img - 1 ? 0 : num_iters; i < num_iters + 1; ++i)
                 {
                     float start_time = Time.realtimeSinceStartup;
-                    yield return StartCoroutine(Utils.TakeScreenshot(new Tuple<int, int>(res.width, res.height), track_camera, new DirectoryInfo(res_path + current_img.ToString() + ".jpg")));
+                    yield return StartCoroutine(Utils.TakeScreenshot(res, track_camera, 
+                        new DirectoryInfo(Path.GetFullPath(Path.Combine(image_dir.FullName, res.ToString(), current_img.ToString() + ".jpg")))));
                     float time_taken = Time.realtimeSinceStartup - start_time;
 
                     /* Time to record time taken */
                     if (current_img == SimulationManager._instance.num_images - 1 && i != 0)      // Prioritising caching of the OS
                     {
-                        var newLine = $"{res.width.ToString() + "x" + res.height.ToString()},{graphics_pipeline},{time_taken}";
+                        var newLine = $"{res},{graphics_pipeline},{time_taken}";
                         csv.AppendLine(newLine);
                     }
                 }
             }
         }
 
-        File.AppendAllText(data_dir + "timings.csv", csv.ToString());
+        File.AppendAllText(Path.GetFullPath(Path.Combine(data_dir.FullName, "timings.csv")), csv.ToString());
 
         Destroy(target_trans.gameObject);
 

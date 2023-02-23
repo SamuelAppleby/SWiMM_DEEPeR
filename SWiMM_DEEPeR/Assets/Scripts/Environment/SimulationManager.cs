@@ -30,7 +30,7 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public int num_images;
 
-    public string data_dir;
+    public DirectoryInfo data_dir;
 
     public EventMaster event_master;
 
@@ -56,7 +56,7 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public bool in_manual_mode;
 
-    private string network_config_dir;
+    private DirectoryInfo network_config_dir;
 
     [HideInInspector]
     public Server server;
@@ -95,22 +95,10 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void OnObservationSent()
     {
-        _instance.server.obsv_num++;
-
         if (action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == E_Action_Inference.FREEZE ||
             action_inference_mapping[_instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == E_Action_Inference.MAINTAIN_FREEZE)
         {
             Time.timeScale = 0;
-        }
-    }
-
-    public void OnActionReceived(JsonMessage param)
-    {
-        _instance.server.total_steps++;
-
-        if (Time.timeScale == 0)
-        {
-            Time.timeScale = 1;
         }
     }
 
@@ -138,34 +126,29 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void EpisodeReset(bool in_manual)
     {
-        if(_instance.server != null)
-        {
-            switch (current_scene_index)
-            {
-                case E_SceneIndices.MAIN_MENU:
-                    _instance.processing_obj.SetActive(false);
-                    break;
-                case E_SceneIndices.SIMULATION:
-                    if (!in_manual)
-                    {
-                        Time.timeScale = 0;
-                    }
+        _instance.server.resets_received++;
 
-                    break;
-            }
+        switch (current_scene_index)
+        {
+            case E_SceneIndices.MAIN_MENU:
+                _instance.processing_obj.SetActive(false);
+                break;
+            case E_SceneIndices.SIMULATION:
+                Time.timeScale = 0;
+                break;
         }
 
-        _instance.MoveToScene(Enums.E_SceneIndices.SIMULATION, in_manual);
+        _instance.MoveToScene(E_SceneIndices.SIMULATION, in_manual);
     }
 
     public void ExitCurrentScene()
     {
-        _instance.MoveToScene(Enums.E_SceneIndices.SIMULATION);       // In this case will unload and reload as intended
+        _instance.MoveToScene(E_SceneIndices.SIMULATION);       // In this case will unload and reload as intended
     }
 
     public void EndSimulation()
     {
-        _instance.MoveToScene(Enums.E_SceneIndices.EXIT);       // As above
+        _instance.MoveToScene(E_SceneIndices.EXIT);       // As above
     }
 
     public void OnROVInitialised(GameObject rov)
@@ -189,17 +172,17 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private void Start()
     {
-        debug_logs = false;
+        DirectoryInfo di = new DirectoryInfo(Path.GetFullPath(System.IO.Directory.GetCurrentDirectory()));
 
 #if UNITY_EDITOR
-        _instance.debug_output_dir = new DirectoryInfo("Logs" + Path.DirectorySeparatorChar);
+        _instance.debug_output_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.FullName, "Logs")));
 #else
-        _instance.debug_output_dir = new DirectoryInfo(".." + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "Logs" + Path.DirectorySeparatorChar);
+        _instance.debug_output_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.Parent.FullName, "Logs")));
 #endif
 
-        _instance.image_dir = new DirectoryInfo(_instance.debug_output_dir + "images" + Path.DirectorySeparatorChar);
-        _instance.packets_sent_dir = new DirectoryInfo(_instance.debug_output_dir + "packets_sent" + Path.DirectorySeparatorChar);
-        _instance.packets_received_dir = new DirectoryInfo(_instance.debug_output_dir + "packets_received" + Path.DirectorySeparatorChar);
+        _instance.image_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(_instance.debug_output_dir.FullName, "images")));
+        _instance.packets_sent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(_instance.debug_output_dir.FullName, "packets_sent")));
+        _instance.packets_received_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(_instance.debug_output_dir.FullName, "packets_received")));
 
         _instance.num_images = 0;
         _instance.data_dir = null;
@@ -211,43 +194,21 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.InvokeRepeating("UpdateFPS", 0f, 1);
 
-        int final_index = 0;
-
 #if UNITY_EDITOR
-                final_index = 2;
+        _instance.network_config_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.FullName, "Configs", "json", "network_config.json")));
 #else
-                final_index = 4;
+        _instance.network_config_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.Parent.Parent.FullName, "Configs", "json", "network_config.json")));
 #endif
-
-        DirectoryInfo di = new DirectoryInfo(@System.IO.Directory.GetCurrentDirectory());
-
-        List<DirectoryInfo> parts = Utils.Split(di);
-
-        string result = "";
-        foreach(DirectoryInfo part in parts)
-        {
-            if(part.Name.Length > 0)
-            {
-                result += part.Name + Path.DirectorySeparatorChar;
-
-                if(part == parts[parts.Count - final_index])
-                {
-                    break;
-                }
-            }
-        }
-
-        _instance.network_config_dir = result + "Configs" + Path.DirectorySeparatorChar + "json" + Path.DirectorySeparatorChar + "network_config.json";
 
         _instance.network_config = _instance.ProcessConfig<NetworkConfig>(_instance.network_config_dir);
 
         if (debug_logs)
         {
-            Utils.CleanAndCreateDirectories(new Dictionary<string, bool>()
+            Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
                 {
-                    { _instance.image_dir.FullName, true },
-                    { _instance.packets_sent_dir.FullName, true },
-                    { _instance.packets_received_dir.FullName, true }
+                    { _instance.image_dir, true },
+                    { _instance.packets_sent_dir, true },
+                    { _instance.packets_received_dir, true }
                 });
         }
 
@@ -424,9 +385,9 @@ public class SimulationManager : Singleton<SimulationManager>
         globalControls.Update(_instance.in_manual_mode);
     }
 
-    public T ProcessConfig<T>(string dir)
+    public T ProcessConfig<T>(DirectoryInfo dir)
     {
-        using (StreamReader r = new StreamReader(dir))
+        using (StreamReader r = new StreamReader(dir.FullName))
         {
             string json = r.ReadToEnd();
             return JsonConvert.DeserializeObject<T>(json);
@@ -454,7 +415,7 @@ public class SimulationManager : Singleton<SimulationManager>
                         _instance.num_images = int.Parse(args[++i]);
                         break;
                     case "data_dir":
-                        _instance.data_dir = args[++i];
+                        _instance.data_dir = new DirectoryInfo(args[++i]);
                         break;
                     case "resolutions":
                         while (i < args.Length && int.Parse(args[i + 1]) != 0)
@@ -476,6 +437,42 @@ public class SimulationManager : Singleton<SimulationManager>
         {
             Debug.LogException(e);
         }
+
+#if false
+        _instance.game_state = E_Game_State.IMAGE_SAMPLING;
+        _instance.num_images = 360;
+        _instance.image_generation_resolutions = new List<Resolution>()
+        {
+            new Resolution
+            {
+                width = 640,
+                height = 360
+            },
+            new Resolution
+            {
+                width = 1920,
+                height = 1080
+            }
+        };
+#endif
+
+#if false
+        _instance.game_state = E_Game_State.VAE_GEN;
+        _instance.num_images = 10;
+        _instance.image_generation_resolutions = new List<Resolution>()
+        {
+            new Resolution
+            {
+                width = 640,
+                height = 360
+            },
+            new Resolution
+            {
+                width = 1920,
+                height = 1080
+            }
+        };
+#endif
 
         switch (_instance.game_state)
         {

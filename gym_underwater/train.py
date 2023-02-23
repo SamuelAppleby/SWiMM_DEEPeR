@@ -40,22 +40,8 @@ ALGOS = {
 }
 
 print("Loading environment configuration ...")
-with open('../Configs/env/config.yml', 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--algo', help='RL Algorithm', default='sac', type=str, required=False, choices=list(ALGOS.keys()))
-parser.add_argument('--obs', help='Observation type', default='image', type=str, required=False, choices=list(env_config['obs']))
-parser.add_argument('--img_scale', help='Image scale', default=[64, 64, 3], nargs='+', type=int, required=False, choices=list(env_config['obs']))
-parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training', default='', type=str)
-parser.add_argument('-f', '--base-filepath', help='Base filepath for saving outputs and logs', default=os.path.join('gym_underwater' + os.sep, 'Logs'), type=str)
-parser.add_argument('-tb', '--tensorboard', help='Turn on/off Tensorboard logging', action='store_true')
-parser.add_argument('-l', '--logging', help='Turn on/off saving out Monitor logs NB off still writes but to tmp', default=True, type=bool)
-parser.add_argument('--log-interval', help='Override log interval (default: -1, no change)', default=-1, type=int)
-parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
-args = parser.parse_args()
-args.img_scale = tuple(args.img_scale)
-
 
 # --------------------------- Utils ------------------------#
 
@@ -171,7 +157,7 @@ else:
 
 # load hyperparameters from yaml file into dict 
 print("Loading hyperparameters ...")
-with open('../Configs/hyperparams/{}.yml'.format(env_config['algo']), 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'hyperparams', '{}.yml'.format(env_config['algo']))), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
 # this ordered (alphabetical) dict will be saved out alongside model so know which hyperparams were used for training
@@ -189,29 +175,30 @@ set_global_seeds(hyperparams.get('seed', 0))
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.join(env_config['base_filepath'], env_config['algo'])
+algo_specific_path = os.path.abspath(os.path.join(os.pardir, "Logs", env_config['algo']))
 run_id = 0
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
     run_num = path.split(os.sep)[-1]
     if run_num.isdigit() and int(run_num) > run_id:
         run_id = int(run_num)
-run_specific_path = os.path.join(algo_specific_path, str(run_id + 1))
+run_specific_path = os.path.abspath(os.path.join(algo_specific_path, str(run_id + 1)))
 os.makedirs(run_specific_path, exist_ok=True)
 
-print("Outputs and logs will be saved to {}/... ".format(run_specific_path))
+print("Outputs and logs will be saved to {}".format(run_specific_path))
 
 # generate path for tb files
 if not env_config['tb']:
     tb_path = None
 else:
-    tb_path = os.path.join(run_specific_path, 'tb_logs')
+    tb_path = os.path.abspath(run_specific_path)
 
 # generate path for Monitor logs
 if not env_config['monitor']:
-    log_dir = "/tmp/gym/{}/".format(int(time.time()))
+    log_dir = os.path.abspath(os.path.join('tmp', 'gym', '{}'.format(int(time.time()))))
 else:
-    log_dir = os.path.join(run_specific_path, 'monitor_logs')
+    log_dir = os.path.abspath(run_specific_path)
+
 os.makedirs(log_dir, exist_ok=True)
 
 if isinstance(hyperparams['learning_rate'], str):
@@ -287,10 +274,10 @@ env.reset()
 # exit scene?
 
 # Save trained model as .pkl - NOTE set cloudpickle to False to save model as json
-model.save(os.path.join(run_specific_path, 'model.pkl'), cloudpickle=True)
+model.save(os.path.abspath(os.path.join(run_specific_path, 'model.pkl')), cloudpickle=True)
 
 # Save hyperparams
-with open(os.path.join(run_specific_path, 'config.yml'), 'w') as f:
+with open(os.path.abspath(os.path.join(run_specific_path, 'config.yml')), 'w') as f:
     yaml.dump(saved_hyperparams, f)
 
 if normalize:

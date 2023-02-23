@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using static Server;
@@ -28,7 +29,7 @@ public class ROVController : MonoBehaviour
     [HideInInspector]
     public bool is_underwater;
 
-    public Tuple<int, int> resolution;
+    public Resolution cam_resolution;
 
     public Material underwater_skybox_mat;
     public Material ground_skybox_mat;
@@ -44,16 +45,17 @@ public class ROVController : MonoBehaviour
 
     private int manual_screenshot_count = 0;
 
-    Tuple<int, int> manual_screenshot_res = new Tuple<int, int>(1920, 1080);
-
     public Camera first_person_cam;
 
-    public void OnJsonControls(JsonMessage param)
+    public void OnActionReceived(JsonMessage param)
     {
-        if (SimulationManager._instance.server != null && SimulationManager._instance.server.IsConnectionValid() && !SimulationManager._instance.in_manual_mode)
+        /* For freeze/hybrid, allow physics */
+        if (Time.timeScale == 0)
         {
-            StartCoroutine(SendImageData());
+            Time.timeScale = 1;
         }
+
+        StartCoroutine(SendImageData());
     }
 
     private void Start()
@@ -73,11 +75,20 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN)
             m_rb.isKinematic = true;
         }
 
-        resolution = new Tuple<int, int>(2048,2048);
+        cam_resolution = new Resolution()
+        {
+            width = 1920,
+            height = 1080
+        };
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
-            resolution = new Tuple<int, int>(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0], SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]);
+            cam_resolution = new Resolution()
+            {
+                width = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[0],
+                height = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.resolution[1]
+            };
+
             m_rb.mass += SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.structureConfig.ballastMass;
         }
 
@@ -91,7 +102,7 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN)
 
         if (Input.GetKeyUp(KeyCode.F11))
         {
-            StartCoroutine(Utils.TakeScreenshot(manual_screenshot_res, first_person_cam, new DirectoryInfo(SimulationManager._instance.image_dir.FullName + "image_" + manual_screenshot_count + ".jpg")));
+            StartCoroutine(Utils.TakeScreenshot(cam_resolution, first_person_cam, new DirectoryInfo(Path.GetFullPath(Path.Combine(SimulationManager._instance.image_dir.FullName, manual_screenshot_count + ".jpg")))));
             manual_screenshot_count++;
         }
     }
@@ -117,10 +128,10 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN)
     private IEnumerator SendImageData()
     {
         DirectoryInfo image_dir = SimulationManager._instance.debug_logs ?
-            new DirectoryInfo(SimulationManager._instance.image_dir.FullName + "episode_" +
-            SimulationManager._instance.server.episode_num.ToString() + "_image_" + SimulationManager._instance.server.obsv_num.ToString() + ".jpg") : null;
+            new DirectoryInfo(Path.GetFullPath(Path.Combine(SimulationManager._instance.image_dir.FullName, "episode_" +
+            SimulationManager._instance.server.episode_num.ToString() + "_image_" + SimulationManager._instance.server.obsv_num.ToString() + ".jpg"))) : null;
             
-        yield return StartCoroutine(Utils.TakeScreenshot(resolution, first_person_cam, image_dir, byte_image =>
+        yield return StartCoroutine(Utils.TakeScreenshot(cam_resolution, first_person_cam, image_dir, byte_image =>
         {
             TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
             int pos = 0;

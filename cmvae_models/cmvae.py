@@ -16,12 +16,13 @@ from cmvae_models import dronet
 from cmvae_models import decoders
 from cmvae_models import transformer
 
+
 # model definition class
 class CmvaeDirect(object):
-    def __init__(self, n_z=10, state_dim=3, res=64, learning_rate=None, beta=None, trainable_model=True, big_data=False): 
+    def __init__(self, n_z=10, state_dim=3, res=64, learning_rate=None, beta=None, trainable_model=True, big_data=False):
         super(CmvaeDirect, self).__init__()
         # create the base models:
-        self.q_img = dronet.Dronet(num_outputs=n_z*2)
+        self.q_img = dronet.Dronet(num_outputs=n_z * 2)
         self.p_img = decoders.ImgDecoder()
         self.p_R = transformer.NonLinearTransformer()
         self.p_Theta = transformer.NonLinearTransformer()
@@ -30,7 +31,7 @@ class CmvaeDirect(object):
         self.mean_params = Lambda(lambda x: x[:, : n_z])
         self.stddev_params = Lambda(lambda x: x[:, n_z:])
         self.R_params = Lambda(lambda x: x[:, 0])
-        self.Theta_params = Lambda(lambda x: x[:, 1]) 
+        self.Theta_params = Lambda(lambda x: x[:, 1])
         self.Psi_params = Lambda(lambda x: x[:, 2])
         # initialize graph as instance variable
         self.graph = None
@@ -40,9 +41,9 @@ class CmvaeDirect(object):
         self.img_recon = None
         self.state_recon = None
         self.init_op = None
-        self.img_data = None 
+        self.img_data = None
         self.state_data = None
-        self.batch_size = None 
+        self.batch_size = None
         # set z_size, learning rate, beta, res and state_dim
         self.z_size = n_z
         self.learning_rate = learning_rate
@@ -54,11 +55,11 @@ class CmvaeDirect(object):
         # flag whether the img_data placeholder will be receiving images or filepaths to images
         self.big_data = big_data
 
-        with tf.variable_scope('cmvae_direct', reuse=False):      
+        with tf.compat.v1.variable_scope('cmvae_direct', reuse=False):
             self._build_graph()
 
         with self.graph.as_default():
-            self.params = tf.trainable_variables()
+            self.params = tf.compat.v1.trainable_variables()
 
         self._init_session()
 
@@ -72,18 +73,18 @@ class CmvaeDirect(object):
             if self.big_data:
                 self.img_data = tf.placeholder(tf.string, shape=None)
             else:
-                self.img_data = tf.placeholder(tf.float32, shape=[None, self.res, self.res, 3])
-            self.state_data = tf.placeholder(tf.float64, shape=[None, self.state_dim])
-            self.batch_size = tf.placeholder(tf.int64)
+                self.img_data = tf.compat.v1.placeholder(tf.float32, shape=[None, self.res, self.res, 3])
+            self.state_data = tf.compat.v1.placeholder(tf.float64, shape=[None, self.state_dim])
+            self.batch_size = tf.compat.v1.placeholder(tf.int64)
 
             # convert to tf format dataset and prepare batches
             if self.big_data:
                 dataset = tf.data.Dataset.from_tensor_slices((self.img_data, self.state_data)).map(self.load_images).batch(self.batch_size)
             else:
                 dataset = tf.data.Dataset.from_tensor_slices((self.img_data, self.state_data)).batch(self.batch_size)
-            
+
             # create iterator of the correct shape and type
-            iterator = tf.data.Iterator.from_structure(dataset.output_types,dataset.output_shapes)
+            iterator = tf.compat.v1.data.Iterator.from_structure(dataset.output_types, dataset.output_shapes)
 
             # create the initialisation operation
             self.init_op = iterator.make_initializer(dataset)
@@ -103,42 +104,40 @@ class CmvaeDirect(object):
             self.z = self.means + self.eps * self.stddev
 
             # decoders
-            self.r_params, self.theta_params, self.psi_params = self.extract_state_params(self.z) 
-            self.state_recon = tf.keras.layers.concatenate([self.p_R(self.r_params), self.p_Theta(self.theta_params), self.p_Psi(self.psi_params)], axis=1) 
+            self.r_params, self.theta_params, self.psi_params = self.extract_state_params(self.z)
+            self.state_recon = tf.keras.layers.concatenate([self.p_R(self.r_params), self.p_Theta(self.theta_params), self.p_Psi(self.psi_params)], axis=1)
             self.img_recon = self.p_img(self.z)
 
             # train / test ops
             if self.is_training:
-
                 self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
                 # calculate losses
-                self.img_loss = tf.losses.mean_squared_error(self.img_gt, self.img_recon)
-                self.state_loss = tf.losses.mean_squared_error(self.state_gt, self.state_recon)
+                self.img_loss = tf.compat.v1.losses.mean_squared_error(self.img_gt, self.img_recon)
+                self.state_loss = tf.compat.v1.losses.mean_squared_error(self.state_gt, self.state_recon)
                 self.kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum((1 + self.stddev - tf.math.pow(self.means, 2) - tf.math.exp(self.stddev)), axis=1))
 
                 # update running averages
                 self.img_loss = tf.reduce_mean(self.img_loss)
                 self.state_loss = tf.reduce_mean(self.state_loss)
                 self.kl_loss = tf.reduce_mean(self.kl_loss)
-                
+
                 # combine loss components
-                self.total_loss = self.img_loss + self.state_loss + self.beta*self.kl_loss
+                self.total_loss = self.img_loss + self.state_loss + self.beta * self.kl_loss
 
                 # training
-                self.lr = tf.Variable(self.learning_rate, trainable=False)            
-                self.optimizer = tf.train.AdamOptimizer(self.lr)
-                grads = self.optimizer.compute_gradients(self.total_loss)  
+                self.lr = tf.Variable(self.learning_rate, trainable=False)
+                self.optimizer = tf.compat.v1.train.AdamOptimizer(self.lr)
+                grads = self.optimizer.compute_gradients(self.total_loss)
                 self.train_op = self.optimizer.apply_gradients(
                     grads, global_step=self.global_step, name='train_step')
 
             # initialize vars
-            self.init = tf.global_variables_initializer()           
-
+            self.init = tf.compat.v1.global_variables_initializer()
 
     def _init_session(self):
         """Launch tensorflow session and initialize variables"""
-        self.sess = tf.Session(graph=self.graph)
+        self.sess = tf.compat.v1.Session(graph=self.graph)
         self.sess.run(self.init)
 
     def close_sess(self):
@@ -191,10 +190,10 @@ class CmvaeDirect(object):
 
     def save_weights(self, save_path):
         with self.graph.as_default():
-            saver = tf.train.Saver(tf.global_variables())
+            saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables())
         saver.save(self.sess, save_path)
 
     def load_weights(self, weights_path):
         with self.graph.as_default():
-            saver = tf.train.Saver(tf.global_variables())
+            saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables())
         saver.restore(self.sess, weights_path)

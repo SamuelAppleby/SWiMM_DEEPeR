@@ -12,9 +12,6 @@ model: ''
 # If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
 vae_path: ''
 
-# Base filepath for saving outputs and logs
-base_filepath: 'Logs'
-
 # Whether or not to use Tensorboard NOTE: resulting event files are large
 tb: True
 
@@ -33,10 +30,10 @@ seed: 31
 # The following are environment parameters
 
 # Observation type. CHOICES: 'image', 'vector', 'vae'
-obs: 'vector'
+obs: 'vae'
 
 # If using image obs, declare desired output size of scaling function
-img_scale: !!python/tuple [ 84,84,3]
+img_scale: !!python/tuple [ 64,64,3]
 
 # Used to express the optimal tracking position. This value is subtracted from the z-coordinate of the target's position 
 # i.e. how far set back from the target do you want the AUV to position itself
@@ -45,4 +42,5 @@ opt_d: 10
 # At what radial distance should the episode terminate (FROM THE OPTIMAL TRACKING POSITION, NOT THE TARGET POSITION)
 max_d: 30
 
+# Do we want to ouput the packet information and save images
 debug_logs: True

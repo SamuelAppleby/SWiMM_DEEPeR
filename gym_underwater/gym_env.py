@@ -4,6 +4,7 @@ import gym
 import numpy as np
 import cv2
 from gym import spaces
+from gym.utils import seeding
 from sim_comms import UnitySimHandler
 
 warnings.filterwarnings("ignore", category=UserWarning, module='gym')
@@ -54,9 +55,6 @@ class UnderwaterEnv(gym.Env):
         else:
             raise ValueError('Invalid observation type: {}'.format(obs))
 
-        #     # seed environment
-        #     #self.seed()
-
         # wait until connection established 
         self.handler.wait_until_loaded()
         self.handler.send_server_config()
@@ -65,9 +63,11 @@ class UnderwaterEnv(gym.Env):
     def close(self):
         self.handler.quit()
 
-    # #def seed(self, seed=None):
-    #     #self.np_random, seed = seeding.np_random(seed)
-    #     #return [seed]
+    # calls a Gym utility function which generates a random number generator from the seed and returns the generator and seed
+    # although stable baselines utility function seeds tf, np and random, I think this just ensures nothing is missed if env uses anything else
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
 
     def step(self, action):
         # send action decision to handler to send off to sim

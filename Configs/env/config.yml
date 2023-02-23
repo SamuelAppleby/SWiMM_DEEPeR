@@ -9,6 +9,11 @@ algo: 'sac'
 # If want to train on top of an existing model, provide filepath, else pass empty string
 model: ''
 
+# When training a new model tb_path is always auto generated, but if training on top of an existing model,
+# pass an empty string if want to create new TB graph, or provide filepath to existing TB events file if want to,
+# continue logging to same graph
+tb_path: ''
+
 # If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
 vae_path: ''
 
@@ -33,7 +38,7 @@ seed: 31
 obs: 'vae'
 
 # If using image obs, declare desired output size of scaling function
-img_scale: !!python/tuple [ 64,64,3]
+img_scale: !!python/tuple [64,64,3]
 
 # Used to express the optimal tracking position. This value is subtracted from the z-coordinate of the target's position 
 # i.e. how far set back from the target do you want the AUV to position itself

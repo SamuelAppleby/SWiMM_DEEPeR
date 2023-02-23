@@ -86,7 +86,7 @@ def read_images(data_dir, res, max_size=None):
     for img_name in files_list:
         # read in image with cv2 (pixel order BGR)
         im = cv2.imread(img_name, cv2.IMREAD_COLOR)        
-        im = cv2.resize(im, (res, res))
+        #im = cv2.resize(im, (res, res))
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 10000 == 0:
@@ -124,7 +124,7 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
     for file in files_list:
         # read in image with cv2 (pixel order BGR)
         im = cv2.imread(file, cv2.IMREAD_COLOR)         
-        im = cv2.resize(im, (res, res))
+        #im = cv2.resize(im, (res, res))
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 10000 == 0:
@@ -259,7 +259,7 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     for file in files_list:
         # read in image with cv2 (pixel order BGR)
         im = cv2.imread(file, cv2.IMREAD_COLOR)         
-        im = cv2.resize(im, (res, res))
+        #im = cv2.resize(im, (res, res))
         im = im/255.0*2.0-1.0
         images_np[idx, :] = im
         idx = idx + 1

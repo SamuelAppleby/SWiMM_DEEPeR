@@ -27,11 +27,11 @@ import cmvae_models.cmvae
 import cmvae_utils
 
 # define testing meta parameters
-data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/64x64_50'
-output_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_02_16_2023_nz_10/'
+data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/64x64'
+output_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_02_20_2023_nz_20/'
 model_to_eval = 'cmvae_model_49.ckpt'
 
-n_z = 10
+n_z = 20
 img_res = 64
 learning_rate = 1e-4
 beta = 8.0

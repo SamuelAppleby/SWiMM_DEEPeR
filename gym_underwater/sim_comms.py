@@ -143,12 +143,12 @@ class UnitySimHandler:
             math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
 
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        reward = 1.0 - ((math.sqrt(self.d - self.opt_d) / math.sqrt(self.max_d)) + (math.fabs(self.a) / 180))
+        reward = 1.0 - ((math.pow(self.d - self.opt_d) / math.pow(self.max_d)) + (math.fabs(self.a) / 180))
 
         return reward
 
     def determine_episode_over(self):
-        if self.d > self.max_d:
+        if math.fabs(self.d - self.opt_d) > self.max_d:
             print("Episode terminated as target out of range {}".format(self.d))
             logger.debug(f"game over: distance {self.d}")
             return True

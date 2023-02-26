@@ -62,7 +62,8 @@ class PythonServer:
         self.network_config = None
         self.protocol = None
         self.server_config = None
-        self.receive_buffer_size = None
+        self.action_buffer_size = None
+        self.observation_buffer_size = None
         self.episode_num = -1
         self.action_num = 0
 
@@ -75,7 +76,7 @@ class PythonServer:
         self.network_config = conf_arr.pop()
         self.protocol = protocol_mapping[self.network_config["protocol"]]
         self.address = (self.network_config["host"], self.network_config["port"])
-        self.receive_buffer_size = self.network_config["buffers"]["server_receive_buffer_size_kb"]
+        self.observation_buffer_size = self.network_config["buffers"]["observation_buffer_size"]
 
         if self.handler.debug_logs:
             self.handler.clean_and_create_debug_directories()
@@ -123,9 +124,9 @@ class PythonServer:
             # print('Waiting to receive message')
             # receive packets/datagrams
             if self.protocol == Protocol.UDP:
-                data, self.addr = self.sock.recvfrom(1024 * self.receive_buffer_size)
+                data, self.addr = self.sock.recvfrom(self.observation_buffer_size)
             else:
-                data = self.conn.recv(1024 * self.receive_buffer_size)
+                data = self.conn.recv(self.observation_buffer_size)
 
             if not data:
                 print("[-] Invalid json")

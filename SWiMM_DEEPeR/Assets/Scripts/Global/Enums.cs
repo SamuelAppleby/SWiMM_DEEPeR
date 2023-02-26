@@ -8,7 +8,8 @@ public static class Enums
         PERSISTENT_SCENE = 0,
         MAIN_MENU = 1,
         SIMULATION = 2,
-        EXIT = 3
+        SCREENSHOT = 3,
+        EXIT = 4
     }
 
     public enum E_LevelType
@@ -73,6 +74,7 @@ public static class Enums
         REGULAR = 0,
         AUTOMATION_TRAINING = 1,
         IMAGE_SAMPLING = 2,
-        VAE_GEN = 3
+        VAE_GEN = 3,
+        SCREENSHOT = 4
     }
 }

@@ -15,7 +15,7 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
   m_Fog: 1
-  m_FogColor: {r: 0, g: 0.6156863, b: 0.654902, a: 1}
+  m_FogColor: {r: 0.09411765, g: 0.5294118, b: 0.56078434, a: 1}
   m_FogMode: 2
   m_FogDensity: 0.001
   m_LinearFogStart: 70.5
@@ -25,7 +25,7 @@ RenderSettings:
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
   m_AmbientMode: 0
-  m_SubtractiveShadowColor: {r: 0.63529414, g: 0.63529414, b: 0.63529414, a: 1}
+  m_SubtractiveShadowColor: {r: 0.41960785, g: 0.47843137, b: 0.627451, a: 1}
   m_SkyboxMaterial: {fileID: 2100000, guid: 507312846abc13d45a396f47ca8326ea, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
@@ -33,7 +33,7 @@ RenderSettings:
   m_HaloTexture: {fileID: 0}
   m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
   m_DefaultReflectionMode: 0
-  m_DefaultReflectionResolution: 256
+  m_DefaultReflectionResolution: 128
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 0.65
   m_CustomReflection: {fileID: 0}
@@ -70,7 +70,7 @@ LightmapSettings:
     m_FinalGather: 0
     m_FinalGatherFiltering: 1
     m_FinalGatherRayCount: 256
-    m_ReflectionCompression: 0
+    m_ReflectionCompression: 2
     m_MixedBakeMode: 2
     m_BakeBackend: 1
     m_PVRSampling: 1
@@ -192,7 +192,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 46759403}
-  m_LocalRotation: {x: 0.017135233, y: -0.000000021511894, z: 0.000000012410854, w: 0.99985325}
+  m_LocalRotation: {x: 0.017135233, y: 0.000000021511894, z: -0.000000012410854, w: 0.99985325}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2923,7 +2923,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566393372}
-  m_LocalRotation: {x: 0.2503809, y: -0.000000014426523, z: 0.0000000037309666, w: 0.96814746}
+  m_LocalRotation: {x: 0.2503809, y: 0.000000014426523, z: -0.0000000037309666, w: 0.96814746}
   m_LocalPosition: {x: 0, y: 3, z: -5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -4482,7 +4482,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 971115819}
-  m_LocalRotation: {x: -0.017095206, y: -0.000000013154432, z: 0.000000007000396, w: 0.99985385}
+  m_LocalRotation: {x: -0.017095206, y: 0.000000013154432, z: -0.000000007000396, w: 0.99985385}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5398,7 +5398,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1227436917}
-  m_LocalRotation: {x: -0.000000029802319, y: -0.000000013032837, z: 0.0000000072242505, w: 1}
+  m_LocalRotation: {x: -0.000000029802319, y: 0.000000013032837, z: -0.0000000072242505, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6348,6 +6348,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 16
   is_underwater: 0
+  cam_resolution:
+    width: 0
+    height: 0
   underwater_skybox_mat: {fileID: 2100000, guid: 507312846abc13d45a396f47ca8326ea, type: 2}
   ground_skybox_mat: {fileID: 2100000, guid: 14e1fd0506b8e2047afeaf0b55606197, type: 2}
   volume: {fileID: 50173731}

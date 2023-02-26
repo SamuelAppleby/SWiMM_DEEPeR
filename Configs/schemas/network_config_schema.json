@@ -10,12 +10,10 @@
         "buffers": {
             "type": "object",
             "properties": {
-                "server_send_buffer_size_kb": {"type": "number"},
-                "client_receive_buffer_size_kb": {"type": "number"},
-                "client_send_buffer_size_kb": {"type": "number"},
-                "server_receive_buffer_size_kb": {"type": "number"}
+                "channel_action": {"type": "number"},
+                "channel_observation": {"type": "number"}
             },
-            "required": ["server_send_buffer_size_kb", "client_receive_buffer_size_kb", "client_send_buffer_size_kb", "server_receive_buffer_size_kb"]
+            "required": ["channel_action", "channel_observation"]
         }
     },
 

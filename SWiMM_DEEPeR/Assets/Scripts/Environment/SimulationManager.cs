@@ -16,6 +16,10 @@ using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
+    public Vector3 target_pos;
+
+    public Vector3 target_rot;
+
     public bool debug_logs;
 
     public DirectoryInfo debug_output_dir;
@@ -66,9 +70,6 @@ public class SimulationManager : Singleton<SimulationManager>
 
     [HideInInspector]
     public int avgFrameRate;
-
-    private FullScreenMode[] screenmodes;
-    private int screenIndex;
 
     static public GlobalControlSettings globalControls = new GlobalControlSettings();
 
@@ -172,6 +173,11 @@ public class SimulationManager : Singleton<SimulationManager>
 
     private void Start()
     {
+        _instance.InvokeRepeating("UpdateFPS", 0f, 1);
+        
+        _instance.server = null;
+        _instance.in_manual_mode = true;
+
         DirectoryInfo di = new DirectoryInfo(Path.GetFullPath(System.IO.Directory.GetCurrentDirectory()));
 
 #if UNITY_EDITOR
@@ -184,16 +190,6 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.packets_sent_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(_instance.debug_output_dir.FullName, "packets_sent")));
         _instance.packets_received_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(_instance.debug_output_dir.FullName, "packets_received")));
 
-        _instance.num_images = 0;
-        _instance.data_dir = null;
-        _instance.image_generation_resolutions = new List<Resolution> { };
-        _instance.game_state = E_Game_State.REGULAR;
-
-        _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
-        _instance.debug_logs = true;
-
-        _instance.InvokeRepeating("UpdateFPS", 0f, 1);
-
 #if UNITY_EDITOR
         _instance.network_config_dir = new DirectoryInfo(Path.GetFullPath(Path.Combine(di.Parent.FullName, "Configs", "json", "network_config.json")));
 #else
@@ -201,6 +197,13 @@ public class SimulationManager : Singleton<SimulationManager>
 #endif
 
         _instance.network_config = _instance.ProcessConfig<NetworkConfig>(_instance.network_config_dir);
+
+        _instance.num_images = 0;
+        _instance.data_dir = null;
+        _instance.image_generation_resolutions = new List<Resolution> { };
+        _instance.game_state = E_Game_State.REGULAR;
+
+        _instance.debug_logs = true;
 
         if (debug_logs)
         {
@@ -212,13 +215,67 @@ public class SimulationManager : Singleton<SimulationManager>
                 });
         }
 
-        _instance.screenmodes = new FullScreenMode[] { FullScreenMode.MaximizedWindow, FullScreenMode.FullScreenWindow, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
-        Screen.fullScreenMode = _instance.screenmodes[screenIndex];
+        _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
-        _instance.server = null;
-        _instance.in_manual_mode = true;
+#if false
+        _instance.game_state = E_Game_State.IMAGE_SAMPLING;
+        _instance.num_images = 360;
+        _instance.image_generation_resolutions = new List<Resolution>()
+        {
+            new Resolution
+            {
+                width = 640,
+                height = 360
+            },
+            new Resolution
+            {
+                width = 1920,
+                height = 1080
+            }
+        };
+#endif
 
-        _instance.MoveToScene(E_SceneIndices.MAIN_MENU);
+#if false
+        _instance.game_state = E_Game_State.VAE_GEN;
+        _instance.num_images = 10;
+        _instance.image_generation_resolutions = new List<Resolution>()
+        {
+            new Resolution
+            {
+                width = 640,
+                height = 360
+            },
+            new Resolution
+            {
+                width = 1920,
+                height = 1080
+            }
+        };
+#endif
+
+        switch (_instance.game_state)
+        {
+            case E_Game_State.AUTOMATION_TRAINING:
+            case E_Game_State.IMAGE_SAMPLING:
+            case E_Game_State.VAE_GEN:
+            case E_Game_State.REGULAR:
+                if(_instance.game_state == E_Game_State.AUTOMATION_TRAINING)
+                {
+                    _instance.GetComponent<AutomationTraining>().enabled = true;
+                }
+                else if (_instance.game_state == E_Game_State.IMAGE_SAMPLING || _instance.game_state == E_Game_State.VAE_GEN)
+                {
+                    _instance.GetComponent<AutomationImageSampling>().enabled = true;
+                }
+
+                _instance.MoveToScene(E_SceneIndices.MAIN_MENU);
+                break;
+            case E_Game_State.SCREENSHOT:
+                _instance.MoveToScene(E_SceneIndices.SCREENSHOT);
+                break;
+            default:
+                break;
+        }
     }
 
     protected override void Awake()
@@ -263,6 +320,7 @@ public class SimulationManager : Singleton<SimulationManager>
         SceneManager.LoadSceneAsync((int)to, LoadSceneMode.Additive).completed += handle =>
         {
             event_master.scene_changed_event.Raise(to);
+            SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex((int)to));
         };
     }
 
@@ -338,12 +396,6 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.current_scene_index = to;
     }
 
-    public void IndexWindow()
-    {
-        _instance.screenIndex = _instance.screenIndex == screenmodes.Length - 1 ? 0 : screenIndex + 1;
-        Screen.fullScreenMode = _instance.screenmodes[screenIndex];
-    }
-
     public void IndexCursor()
     {
         Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
@@ -402,14 +454,17 @@ public class SimulationManager : Singleton<SimulationManager>
             {
                 switch (args[i])
                 {
-                    case "training":
+                    case "mode_training":
                         _instance.game_state = E_Game_State.AUTOMATION_TRAINING;
                         break;
-                    case "sample_gen":
+                    case "mode_sample_gen":
                         _instance.game_state = E_Game_State.IMAGE_SAMPLING;
                         break;
-                    case "vae_gen":
+                    case "mode_vae_gen":
                         _instance.game_state = E_Game_State.VAE_GEN;
+                        break;
+                    case "mode_screenshot":
+                        _instance.game_state = E_Game_State.SCREENSHOT;
                         break;
                     case "num_images":
                         _instance.num_images = int.Parse(args[++i]);
@@ -430,61 +485,34 @@ public class SimulationManager : Singleton<SimulationManager>
                     case "debug_logs":
                         _instance.debug_logs = true;
                         break;
+                    case "target_pos":
+                    case "target_rot":
+                        string type = args[i];
+
+                        float[] nums = new float[3];
+
+                        int pos = 0;
+                        while (i < args.Length && int.Parse(args[i + 1]) != 0)
+                        {
+                            nums[pos] = int.Parse(args[++i]);
+                            pos++;
+                        }
+
+                        if (type == "target_pos")
+                        {
+                            _instance.target_pos = Utils.FloatArrayToVector3(nums);
+                        }
+                        else
+                        {
+                            _instance.target_rot = Utils.FloatArrayToVector3(nums);
+                        }
+                        break;
                 }
             }
         }
         catch(Exception e)
         {
             Debug.LogException(e);
-        }
-
-#if false
-        _instance.game_state = E_Game_State.IMAGE_SAMPLING;
-        _instance.num_images = 360;
-        _instance.image_generation_resolutions = new List<Resolution>()
-        {
-            new Resolution
-            {
-                width = 640,
-                height = 360
-            },
-            new Resolution
-            {
-                width = 1920,
-                height = 1080
-            }
-        };
-#endif
-
-#if false
-        _instance.game_state = E_Game_State.VAE_GEN;
-        _instance.num_images = 10;
-        _instance.image_generation_resolutions = new List<Resolution>()
-        {
-            new Resolution
-            {
-                width = 640,
-                height = 360
-            },
-            new Resolution
-            {
-                width = 1920,
-                height = 1080
-            }
-        };
-#endif
-
-        switch (_instance.game_state)
-        {
-            case E_Game_State.AUTOMATION_TRAINING:
-                _instance.GetComponent<AutomationTraining>().enabled = true;
-                break;
-            case E_Game_State.IMAGE_SAMPLING:
-            case E_Game_State.VAE_GEN:
-                _instance.GetComponent<AutomationImageSampling>().enabled = true;
-                break;
-            default:
-                break;
         }
     }
 

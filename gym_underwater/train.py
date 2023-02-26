@@ -43,6 +43,7 @@ print("Loading environment configuration ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
+
 # --------------------------- Utils ------------------------#
 
 def make_env(vae, obs, opt_d, max_d, img_scale, debug_logs, log_d, seed=None):
@@ -147,15 +148,19 @@ if env_config['model'] != "":
         "The argument trained_agent must be a valid path to a .pkl file"
 
 # if using pretrained vae, create instance of vae object and load trained weights from path provided
+print("Obs: {}".format(env_config['obs']))
 vae = None
-if env_config['vae_path'] != '':
+if env_config['obs'] == 'vae':
+
+    if env_config['vae_path'] is '':
+        print('For vae training, must provide a valid vae path!')
+        quit()
+
     print("Loading VAE ...")
     vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
     vae.load_weights(env_config['vae_path'])
-else:
-    print("Learning from pixels...")
 
-# load hyperparameters from yaml file into dict 
+# load hyperparameters from yaml file into dict
 print("Loading hyperparameters ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'hyperparams', '{}.yml'.format(env_config['algo']))), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']

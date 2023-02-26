@@ -19,8 +19,8 @@
         },
         "camConfig": {
           "resolution": [
-            640,
-            360
+            64,
+            64
           ],
           "fov": 100
         },

@@ -70,7 +70,7 @@ public class ROVController : MonoBehaviour
         m_rb.angularDrag = angular_air_drag;
 
         if (SimulationManager._instance.game_state == Enums.E_Game_State.IMAGE_SAMPLING ||
-SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN)
+SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || SimulationManager._instance.game_state == Enums.E_Game_State.SCREENSHOT)
         {
             m_rb.isKinematic = true;
         }
@@ -100,7 +100,7 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN)
         m_distance_undewater = water_trans.position.y - transform.position.y;
         CheckCameraEffects();
 
-        if (Input.GetKeyUp(KeyCode.F11))
+        if (Input.GetKeyDown(GlobalControlMap.Key_Screenshot))
         {
             StartCoroutine(Utils.TakeScreenshot(cam_resolution, first_person_cam, new DirectoryInfo(Path.GetFullPath(Path.Combine(SimulationManager._instance.image_dir.FullName, manual_screenshot_count + ".jpg")))));
             manual_screenshot_count++;

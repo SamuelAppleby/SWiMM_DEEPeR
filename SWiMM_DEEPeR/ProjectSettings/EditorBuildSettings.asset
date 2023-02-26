@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/UnderwaterScene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Scenes/Screenshot.unity
+    guid: bfc570d9a39c5c24eb4a0c87019b3e2b
   m_configObjects: {}

@@ -10,7 +10,7 @@ algo: 'sac'
 model: ''
 
 # If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
-vae_path: ''
+vae_path: 'C:\Users\sambu\Downloads\cmvae_02_16_2020_nz_10\cmvae_model_49.ckpt'
 
 # Whether or not to use Tensorboard NOTE: resulting event files are large
 tb: True

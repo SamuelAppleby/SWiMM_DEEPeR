@@ -121,10 +121,8 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct Buffers
     {
-        public int server_send_buffer_size_kb;
-        public int client_receive_buffer_size_kb;
-        public int server_receive_buffer_size_kb;
-        public int client_send_buffer_size_kb;
+        public int channel_action;
+        public int channel_observation;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
@@ -215,8 +213,8 @@ public class Server
             if (Enums.protocol_mapping[network_config.protocol] == Enums.E_Protocol.UDP)
             {
                 udp_client = new UdpClient();
-                udp_client.Client.ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024;
-                udp_client.Client.SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024;
+                udp_client.Client.ReceiveBufferSize = network_config.buffers.channel_action;
+                udp_client.Client.SendBufferSize = network_config.buffers.channel_observation;
                 udp_client.Connect(ipEndPoint);
                 return new Tuple<Server, Exception>(this, null);
             }
@@ -225,8 +223,8 @@ public class Server
             {
                 tcp_client = new TcpClient
                 {
-                    ReceiveBufferSize = network_config.buffers.client_receive_buffer_size_kb * 1024,
-                    SendBufferSize = network_config.buffers.client_send_buffer_size_kb * 1024,
+                    ReceiveBufferSize = network_config.buffers.channel_action,
+                    SendBufferSize = network_config.buffers.channel_observation,
                 };
 
                 receive_buffer = new byte[tcp_client.ReceiveBufferSize];

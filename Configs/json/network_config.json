@@ -1,12 +1,10 @@
 {
-    "protocol" : "udp",
+    "protocol" : "tcp",
     "host" : "127.0.0.1",
     "port" : 60260,
 
     "buffers": {
-        "server_send_buffer_size_kb" : 2048,
-        "client_receive_buffer_size_kb" : 2048,
-        "client_send_buffer_size_kb" : 2048,
-        "server_receive_buffer_size_kb" : 2048
+        "channel_action" : 8192,
+        "channel_observation" : 8192
     }
 }

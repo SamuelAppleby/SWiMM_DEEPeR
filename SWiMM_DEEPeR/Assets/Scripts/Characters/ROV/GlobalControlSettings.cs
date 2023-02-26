@@ -1,14 +1,14 @@
 using System;
-using Unity.VisualScripting;
+using System.IO;
 using UnityEngine;
 
 static class GlobalControlMap
 {
-    public static KeyCode QuitKey = KeyCode.Escape;
-    public static KeyCode ChangeWindowKey = KeyCode.P;
-    public static KeyCode ReloadKey = KeyCode.R;
-    public static KeyCode CursorLock = KeyCode.L;
-    public static KeyCode ResetNPCs = KeyCode.F12;
+    public static KeyCode Key_Quit = KeyCode.Escape;
+    public static KeyCode Key_Reload = KeyCode.R;
+    public static KeyCode Key_Cursor_Lock = KeyCode.L;
+    public static KeyCode Key_Screenshot = KeyCode.F12;
+    public static KeyCode Key_Reset_NPCs = KeyCode.F12;
 }
 
 [Serializable]
@@ -18,13 +18,13 @@ public class GlobalControlSettings
     {
         if (manual_controls)
         {
-            if (Input.GetKeyUp(GlobalControlMap.ReloadKey))
+            if (Input.GetKeyUp(GlobalControlMap.Key_Reload))
             {
                 SimulationManager._instance.EpisodeReset(true);
             }
         }
 
-        if (Input.GetKeyUp(GlobalControlMap.QuitKey))
+        if (Input.GetKeyUp(GlobalControlMap.Key_Quit))
         {
             switch (SimulationManager._instance.current_scene_index)
             {
@@ -40,17 +40,12 @@ public class GlobalControlSettings
             }
         }
 
-        if (Input.GetKeyDown(GlobalControlMap.ChangeWindowKey))
-        {
-            SimulationManager._instance.IndexWindow();
-        }
-
-        if (Input.GetKeyDown(GlobalControlMap.CursorLock))
+        if (Input.GetKeyDown(GlobalControlMap.Key_Cursor_Lock))
         {
             SimulationManager._instance.IndexCursor();
         }
 
-        if (Input.GetKeyDown(GlobalControlMap.ResetNPCs))
+        if (Input.GetKeyDown(GlobalControlMap.Key_Reset_NPCs))
         {
             SimulationManager._instance.ResetNPCs();
         }

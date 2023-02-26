@@ -3,7 +3,6 @@ Parent script for initiating a training run
 """
 
 # generic imports
-import argparse
 import glob
 import os
 import warnings
@@ -15,7 +14,6 @@ import sys
 # specialist imports
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.schedules import constfn
-from stable_baselines.bench import Monitor
 from stable_baselines.common.vec_env import VecNormalize, DummyVecEnv
 
 # code to go up a directory so higher level modules can be imported
@@ -25,7 +23,7 @@ sys.path.insert(0, import_path)
 
 # local imports
 from gym_underwater.algos import SAC
-from gym_underwater.gym_env import UnderwaterEnv
+from gym_underwater.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, create_callback
 import cmvae_models.cmvae
 
 # remove warnings
@@ -42,105 +40,6 @@ ALGOS = {
 print("Loading environment configuration ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-
-
-# --------------------------- Utils ------------------------#
-
-def make_env(vae, obs, opt_d, max_d, img_scale, debug_logs, log_d, seed=None):
-    """
-    Makes instance of environment, seeds and wraps with Monitor
-    """
-
-    def _init():
-        # TODO: is below needed again?
-        set_global_seeds(seed)
-        # create instance of environment
-        env_inst = UnderwaterEnv(vae, obs, opt_d, max_d, img_scale, debug_logs)
-        print("Environment ready")
-        # environment seeded with randomly generated seed on initialisation but overwrite if seed provided in yaml 
-        if seed > 0:
-            # TODO: what is this doing and how is it different to set_global_seeds
-            env_inst.seed(seed)
-        # wrap environment with SB's Monitor wrapper
-        wrapped_env = Monitor(env_inst, log_d, allow_early_resets=True)
-        return wrapped_env
-
-    return _init
-
-
-def linear_schedule(initial_value):
-    """
-    Linear learning rate schedule.
-
-    :param initial_value: (float or str)
-    :return: (function)
-    """
-    if isinstance(initial_value, str):
-        initial_value = float(initial_value)
-
-    def func(progress, _):
-        """
-        Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
-        :return: (float)
-        """
-        return progress * initial_value
-
-    return func
-
-
-def middle_drop(initial_value):
-    """
-    Similar to stable_baselines.common.schedules middle_drop, but func returns actual LR value not multiplier.
-    Produces linear schedule but with a drop half way through training to a constant schedule at 1/10th initial value.
-
-    :param initial_value: (float or str)
-    :return: (function)
-    """
-    if isinstance(initial_value, str):
-        initial_value = float(initial_value)
-
-    def func(progress, _):
-        """
-        Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
-        :return: (float)
-        """
-        eps = 0.5
-        if progress < eps:
-            return initial_value * 0.1
-        return progress * initial_value
-
-    return func
-
-
-def accelerated_schedule(initial_value):
-    """
-    Custom schedule, starts as linear schedule but once mean_reward (episodic reward averaged over the last 100 episodes)
-    surpasses a threshold, schedule remains annealing but at the tail end toward an LR of zero, by taking
-    1/10th of the progress before multiplying.
-
-    :param initial_value: (float or str)
-    :return: (function)
-    """
-    if isinstance(initial_value, str):
-        initial_value = float(initial_value)
-
-    def func(progress, mean_reward):
-        """
-        Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
-        :return: (float)
-        """
-        rew_threshold = 1000
-        if mean_reward >= rew_threshold:
-            return (progress * 0.1) * initial_value
-        return progress * initial_value
-
-    return func
-
-
-# ---------------------------- Main script ----------------------------------#
 
 # early check on path to trained model if -i arg passed
 if env_config['model'] != "":
@@ -165,6 +64,9 @@ print("Loading hyperparameters ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'hyperparams', '{}.yml'.format(env_config['algo']))), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
+# add seed provided by config
+hyperparams['seed'] = env_config['seed']
+
 # this ordered (alphabetical) dict will be saved out alongside model so know which hyperparams were used for training
 # the reason for a second variable is that certain keys will be dropped from 'hyperparams' in prep for passing to model initialiser
 saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyperparams.keys())])
@@ -174,9 +76,10 @@ if vae is not None:
     saved_hyperparams['vae_path'] = env_config['vae_path']
     saved_hyperparams['z_size'] = vae.z_size
 
-# TODO: look into what this actually does, whether it is different to env.seed, how many times has to be called etc
-# if seed provided in yaml, use it, otherwise use zero
-set_global_seeds(hyperparams.get('seed', 0))
+# if seed provided, use it, otherwise use zero
+# Note: this stable baselines utility function seeds tensorflow, np.random, and random
+seed = hyperparams.get('seed', 0)
+set_global_seeds(seed)
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
@@ -236,7 +139,7 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], log_dir, seed=hyperparams.get('seed', 0))])
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], log_dir, seed=seed)])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:
@@ -244,10 +147,16 @@ if normalize:
 
 # if training on top of trained model, load trained model
 if env_config['model'].endswith('.pkl') and os.path.isfile(env_config['model']):
+    
     # Continue training
     print("Loading pretrained agent ...")
+    
     # Policy should not be changed
     del hyperparams['policy']  # network architecture already set so don't need
+
+    # if config file provides path to existing tensorboard events file, overwrite auto generated tb_path
+    if env_config['tb_path'] != "":
+        tb_path = env_config['tb_path']
 
     model = ALGOS[env_config['algo']].load(env_config['model'], env=env, tensorboard_log=tb_path, verbose=1, **hyperparams)
 
@@ -265,7 +174,8 @@ kwargs = {}
 if env_config['log_interval'] > -1:
     kwargs = {'log_interval': env_config['log_interval']}
 
-# TODO: implement callbacks
+if env_config['algo'] == 'sac':
+    kwargs.update({'callback': create_callback(env_config['algo'], run_specific_path, reward_threshold=2200, verbose=1)})
 
 # train model
 print("Starting training run ...")
@@ -279,7 +189,7 @@ env.reset()
 # exit scene?
 
 # Save trained model as .pkl - NOTE set cloudpickle to False to save model as json
-model.save(os.path.abspath(os.path.join(run_specific_path, 'model.pkl')), cloudpickle=True)
+model.save(os.path.abspath(os.path.join(run_specific_path, 'finalmodel.pkl')), cloudpickle=True)
 
 # Save hyperparams
 with open(os.path.abspath(os.path.join(run_specific_path, 'config.yml')), 'w') as f:

@@ -27,22 +27,22 @@ import cmvae_models.cmvae
 import cmvae_utils
 
 # define testing meta parameters
-data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/dummy_images'
-output_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_run_10_01_23/'
-model_to_eval = 'cmvae_model_29.ckpt'
+data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/64x64'
+output_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_02_20_2023_nz_20/'
+model_to_eval = 'cmvae_model_49.ckpt'
 
-n_z = 10
+n_z = 20
 img_res = 64
 learning_rate = 1e-4
 beta = 8.0
-num_imgs_display = 10
+num_imgs_display = 50
 columns = 10
 rows = 10
 read_table = True
 
 num_interp_z = 10
-idx_close = 1 #NB: image want to use is 341.png but index for images_np is 340 with being zero-indexed
-idx_far = 2 # same as above
+idx_close = 2385 #NB: image filename minus 1
+idx_far = 2768
 
 z_range_mural = [-0.02, 0.02]
 z_num_mural = 11

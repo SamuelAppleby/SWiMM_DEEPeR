@@ -135,31 +135,20 @@ class UnitySimHandler:
         # normalize
         norm_heading = heading / np.linalg.norm(heading)
 
-        # if target is ahead of rover, heading[2] (i.e z-coord) should be positive and vice versa
-        # so that the optimal tracking position dictated by heading[2] - opt_d is always *behind* the target
-        # regardless of travelling direction in world
-        if np.dot(norm_heading, self.target_fwd) > 0:
-            heading[2] = math.fabs(heading[2])
-        else:
-            heading[2] = -math.fabs(heading[2])
-
+        # calculate radial distance on the flat y-plane
         self.raw_d = math.sqrt(math.pow(heading[0], 2) + math.pow(heading[2], 2))
-
-        # calculate distance i.e. magnitude of heading vector
-        # NOTE THAT THIS IS DISTANCE FROM ROVER TO OPTIMAL TRACKING POSITION, NOT ROVER TO TARGET
-        self.d = math.sqrt(math.pow(heading[0], 2) + math.pow((heading[2] - self.opt_d), 2))
 
         # calculate angle between rover's forward facing vector and heading vector
         self.a = math.degrees(
             math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
 
-        # scaling function taken from Luo et al. (2018), range [-1, 1], distance and angle equal contribution
-        reward = 1.0 - ((self.d / self.max_d) + (math.fabs(self.a) / 180))
+        # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
+        reward = 1.0 - ((math.pow(self.d - self.opt_d) / math.pow(self.max_d)) + (math.fabs(self.a) / 180))
 
         return reward
 
     def determine_episode_over(self):
-        if self.d > self.max_d:
+        if math.fabs(self.d - self.opt_d) > self.max_d:
             print("Episode terminated as target out of range {}".format(self.d))
             logger.debug(f"game over: distance {self.d}")
             return True

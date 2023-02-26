@@ -39,10 +39,10 @@ sysinfo.txt
 *.jpeg
 
 gym_underwater/Logs/
-RLSimulation/Logs/
-RLSimulation/Logs/Builds/Logs/
-RLSimulation/Builds/Windows/Logs
-RLSimulation/Builds/Linux/Logs
+SWiMM_DEEPeR/Logs/
+SWiMM_DEEPeR/Logs/Builds/Logs/
+SWiMM_DEEPeR/Builds/Windows/Logs
+SWiMM_DEEPeR/Builds/Linux/Logs
 benchmarking/images
 .venv/
 *.pyc
@@ -54,3 +54,5 @@ Logs/
 
 image_generation/
 /data/
+
+SWiMM_DEEPeR/Screenshots/

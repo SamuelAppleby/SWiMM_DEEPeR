@@ -1,4 +1,4 @@
-source ../.venv/bin/activate
+source ../.venv/Scripts/activate
 cd ../gym_underwater
 python3 train.py "$@" &
 cd ../SWiMM_DEEPeR/Builds/Linux

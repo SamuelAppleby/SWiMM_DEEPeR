@@ -76,7 +76,7 @@ class PythonServer:
         self.network_config = conf_arr.pop()
         self.protocol = protocol_mapping[self.network_config["protocol"]]
         self.address = (self.network_config["host"], self.network_config["port"])
-        self.observation_buffer_size = self.network_config["buffers"]["observation_buffer_size"]
+        self.observation_buffer_size = self.network_config["buffers"]["channel_observation"]
 
         if self.handler.debug_logs:
             self.handler.clean_and_create_debug_directories()

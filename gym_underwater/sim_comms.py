@@ -37,9 +37,9 @@ class UnitySimHandler:
         self.packets_received_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_received'))
         self.sim_training_ready = False
         self.server_connected = False
-        self.server = PythonServer(self)
-        self.image_array = np.zeros((256, 256, 3))
-        self.last_obs = np.zeros((256, 256, 3))
+        self.img_scale = img_scale
+        self.image_array = np.zeros(img_scale)
+        self.last_obs = np.zeros(img_scale)
         self.hit = []
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
@@ -50,7 +50,6 @@ class UnitySimHandler:
         self.a = 0.0
         self.opt_d = opt_d
         self.max_d = max_d
-        self.img_scale = img_scale
 
         self.fns = {
             "connection_request": self.connection_request,
@@ -60,6 +59,7 @@ class UnitySimHandler:
         }
 
         logger.setLevel(logging.INFO)
+        self.server = PythonServer(self)
 
     def wait_until_loaded(self):
         while not self.server_connected:
@@ -214,8 +214,8 @@ class UnitySimHandler:
 
         image = np.array(Image.open(BytesIO(image)))
 
-        # scale image otherwise model optimisation takes approx 15 minutes
-        image = resize(image, self.img_scale, 0)
+        if image.shape != self.img_scale:
+            image = resize(image, self.img_scale, 0)
 
         self.image_array = image
 

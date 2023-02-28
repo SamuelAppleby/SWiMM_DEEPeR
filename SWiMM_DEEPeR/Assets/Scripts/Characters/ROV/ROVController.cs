@@ -11,6 +11,8 @@ using static Server;
 [RequireComponent(typeof(Rigidbody))][RequireComponent(typeof(FloaterContainer))]
 public class ROVController : MonoBehaviour
 {
+    public Material tracking_material;
+
     [HideInInspector]
     public List<Transform> target_transforms = new List<Transform>();
 
@@ -77,8 +79,8 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
 
         cam_resolution = new Resolution()
         {
-            width = 1920,
-            height = 1080
+            width = 64,
+            height = 64
         };
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
@@ -109,6 +111,35 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
 
     private void LateUpdate()
     {
+        int num_segments = 100;
+        int opt_d = 10;
+
+        foreach (Transform trans in target_transforms)
+        {
+            LineRenderer line_renderer = trans.GetComponentInChildren<LineRenderer>();
+            line_renderer.material = tracking_material;
+            line_renderer.startWidth = 0.2f;
+            line_renderer.endWidth = 0.2f;
+            line_renderer.positionCount = num_segments + 1;
+            line_renderer.useWorldSpace = false;
+
+            float delta_theta = (float)(2.0 * Mathf.PI) / num_segments;
+
+            float theta = 0f;
+
+            for (int i = 0; i < num_segments + 1; i++)
+            {
+                float x = opt_d * Mathf.Sin(theta);
+                float z = opt_d * Mathf.Cos(theta);
+                Vector3 pos = new Vector3(x, 0, z);
+                line_renderer.SetPosition(i, pos);
+                theta += delta_theta;
+            }
+        }
+    }
+
+    private void OnDestroy()
+    {
     }
 
     private void FixedUpdate()
@@ -123,6 +154,16 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
         {
             StartCoroutine(SendImageData());
         }
+    }
+
+    public void AddAsTarget(Transform t)
+    {
+        GameObject rend = new GameObject();
+        rend.layer = 7;
+        rend.AddComponent<LineRenderer>();
+        rend.transform.parent = t;
+        rend.transform.localPosition = Vector3.zero;
+        target_transforms.Add(t);
     }
 
     private IEnumerator SendImageData()

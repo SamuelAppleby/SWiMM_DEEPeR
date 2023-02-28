@@ -160,7 +160,7 @@ public class FishMovement : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
         //Debug.DrawRay(transform.position, correct_forward * 10, Color.green);

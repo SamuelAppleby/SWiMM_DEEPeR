@@ -1371,7 +1371,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 2147483647
+    m_Bits: 127
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -6338,6 +6338,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c15d2b4c45044f44daa280a6866eb723, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  tracking_material: {fileID: 2100000, guid: 59937b67c589e3c4cadeca088225b1a4, type: 2}
   target_transforms: []
   air_drag: 1
   angular_air_drag: 2

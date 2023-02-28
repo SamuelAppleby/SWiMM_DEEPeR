@@ -89,7 +89,7 @@ public class ImageSampling : MonoBehaviour
             for (int current_img = 0; current_img < SimulationManager._instance.num_images; ++current_img)
             {
                 /* Manual calculation */
-                //float opposite = Mathf.Sin((degree * Mathf.PI) / 180) * sample_distance;
+                //float opposite = Mathf.Sin((degree * Mathf.PI) / 180) * radius;
                 //float adjacent = Mathf.Cos((degree * Mathf.PI) / 180) * radius;
 
                 //transform.position = target_obj.transform.position + new Vector3(opposite, 0, -adjacent);

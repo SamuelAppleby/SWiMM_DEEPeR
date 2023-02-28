@@ -123,16 +123,19 @@ public class SimulationManager : Singleton<SimulationManager>
 
     public void EpisodeReset(bool in_manual)
     {
-        _instance.server.resets_received++;
-
-        switch (current_scene_index)
+        if(_instance.server != null)
         {
-            case E_SceneIndices.MAIN_MENU:
-                _instance.processing_obj.SetActive(false);
-                break;
-            case E_SceneIndices.SIMULATION:
-                Time.timeScale = 0;
-                break;
+            _instance.server.resets_received++;
+
+            switch (current_scene_index)
+            {
+                case E_SceneIndices.MAIN_MENU:
+                    _instance.processing_obj.SetActive(false);
+                    break;
+                case E_SceneIndices.SIMULATION:
+                    Time.timeScale = 0;
+                    break;
+            }
         }
 
         _instance.MoveToScene(E_SceneIndices.SIMULATION, in_manual);

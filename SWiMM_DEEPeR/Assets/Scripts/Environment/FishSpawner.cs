@@ -240,7 +240,8 @@ public class FishSpawner : MonoBehaviour
                         temp_spawn.GetComponent<FishMovement>().valid_movements = group.waypointAxesVector;
                         temp_spawn.transform.localScale *= (group.scale * Random.Range(1 - group.scaleVariance, 1 + group.scaleVariance));
 
-                        SimulationManager._instance.rover.GetComponent<ROVController>().target_transforms.Add(temp_spawn.transform);
+                        SimulationManager._instance.rover.GetComponent<ROVController>().AddAsTarget(temp_spawn.transform);
+
                         current_ai_count++;
 
                         current_progress = (float)current_ai_count / total_ai;

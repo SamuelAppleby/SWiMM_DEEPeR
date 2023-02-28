@@ -354,7 +354,11 @@ public class Server
                     }
 
                     episode_num = message.payload.episode_num;
-                    Task t = File.WriteAllTextAsync(Path.GetFullPath(Path.Combine(SimulationManager._instance.packets_received_dir.FullName, "episode_" + episode_num.ToString() + "_packet_" + message.payload.action_num.ToString() + ".json")), current_json_action);
+
+                    if (SimulationManager._instance.debug_logs)
+                    {
+                        Task t = File.WriteAllTextAsync(Path.GetFullPath(Path.Combine(SimulationManager._instance.packets_received_dir.FullName, "episode_" + episode_num.ToString() + "_packet_" + message.payload.action_num.ToString() + ".json")), current_json_action);
+                    }
 
                     switch (message.msgType)
                     {

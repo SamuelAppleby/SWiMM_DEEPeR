@@ -88,10 +88,6 @@ class UnitySimHandler:
         logger.debug("resetting")
         self.server.action_num = 0
         self.server.episode_num += 1
-
-        if self.debug_logs:
-            self.clean_and_create_debug_directories()
-
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
         self.hit = []

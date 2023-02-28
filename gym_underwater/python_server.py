@@ -157,8 +157,11 @@ class PythonServer:
             # print('Sending: {}'.format(json_str))
 
             if self.handler.debug_logs:
-                with open(os.path.abspath(os.path.join(self.handler.packets_sent_dir, 'episode_' + str(self.episode_num) + '_action_' + str(self.action_num) + '.json')), 'w', encoding='utf-8') as f:
-                    json.dump(self.msg, f, ensure_ascii=False, indent=4)
+                if self.msg['msgType'] == "reset_episode":
+                    self.handler.clean_and_create_debug_directories()
+                else:
+                    with open(os.path.abspath(os.path.join(self.handler.packets_sent_dir, 'episode_' + str(self.episode_num) + '_action_' + str(self.action_num) + '.json')), 'w', encoding='utf-8') as f:
+                        json.dump(self.msg, f, ensure_ascii=False, indent=4)
 
             if self.protocol == Protocol.UDP:
                 self.sock.sendto(bytes(json_str, encoding="utf-8"), self.addr)

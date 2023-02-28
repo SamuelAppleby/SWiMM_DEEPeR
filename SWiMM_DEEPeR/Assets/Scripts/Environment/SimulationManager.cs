@@ -16,10 +16,6 @@ using Random = UnityEngine.Random;
 
 public class SimulationManager : Singleton<SimulationManager>
 {
-    public Vector3 target_pos;
-
-    public Vector3 target_rot;
-
     public bool debug_logs;
 
     public DirectoryInfo debug_output_dir;
@@ -202,8 +198,10 @@ public class SimulationManager : Singleton<SimulationManager>
         _instance.data_dir = null;
         _instance.image_generation_resolutions = new List<Resolution> { };
         _instance.game_state = E_Game_State.REGULAR;
+        _instance.debug_logs = false;
 
-        _instance.debug_logs = true;
+        _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
+
 
         if (debug_logs)
         {
@@ -214,8 +212,6 @@ public class SimulationManager : Singleton<SimulationManager>
                     { _instance.packets_received_dir, true }
                 });
         }
-
-        _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
 #if false
         _instance.game_state = E_Game_State.IMAGE_SAMPLING;
@@ -484,28 +480,6 @@ public class SimulationManager : Singleton<SimulationManager>
                         break;
                     case "debug_logs":
                         _instance.debug_logs = true;
-                        break;
-                    case "target_pos":
-                    case "target_rot":
-                        string type = args[i];
-
-                        float[] nums = new float[3];
-
-                        int pos = 0;
-                        while (i < args.Length && int.Parse(args[i + 1]) != 0)
-                        {
-                            nums[pos] = int.Parse(args[++i]);
-                            pos++;
-                        }
-
-                        if (type == "target_pos")
-                        {
-                            _instance.target_pos = Utils.FloatArrayToVector3(nums);
-                        }
-                        else
-                        {
-                            _instance.target_rot = Utils.FloatArrayToVector3(nums);
-                        }
                         break;
                 }
             }

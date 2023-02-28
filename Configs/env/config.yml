@@ -48,4 +48,4 @@ opt_d: 10
 max_d: 10
 
 # Do we want to ouput the packet information and save images
-debug_logs: True
+debug_logs: False

@@ -166,7 +166,7 @@ public static class Utils
         {
             File.WriteAllBytes(Path.GetFullPath(dir.FullName), byte_image);
 
-            if(SimulationManager._instance != null && SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN && res != SAMPLE_RES)
+            if(SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN && res != SAMPLE_RES)
             {
                 string sampled_dir_path = "";
                 string[] subs = dir.FullName.Split(Path.DirectorySeparatorChar);

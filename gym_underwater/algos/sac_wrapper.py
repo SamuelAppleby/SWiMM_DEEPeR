@@ -8,6 +8,7 @@ from stable_baselines.common.tf_util import total_episode_reward_logger
 from stable_baselines.common.schedules import get_schedule_fn
 from stable_baselines.common.math_util import safe_mean
 from stable_baselines.common import TensorboardWriter
+import tensorflow as tf
 
 
 class SACWrap(SAC):
@@ -38,8 +39,6 @@ class SACWrap(SAC):
         mb_infos_vals = []
 
         if step+1 >= self.batch_size and step+1 >= self.learning_starts:
-            print('We are now optimizing')
-
             for grad_step in range(self.gradient_steps):
                 self.n_updates += 1
                 # Update policy and critics (q functions)
@@ -63,7 +62,7 @@ class SACWrap(SAC):
             self.learning_rate = get_schedule_fn(self.learning_rate)
 
             start_time = time.time()
-            episode_rewards = [0.0]
+            episode_rewards = [[]]
 
             obs = self.env.reset()
 
@@ -104,6 +103,7 @@ class SACWrap(SAC):
 
                 new_obs, reward, done, info = self.env.step(rescaled_action)
                 ep_len += 1
+                episode_rewards[-1].append(reward)
 
                 if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
                     print('{} steps'.format(ep_len))
@@ -117,20 +117,11 @@ class SACWrap(SAC):
                 if maybe_ep_info is not None:
                     ep_info_buf.extend([maybe_ep_info])
 
-                if writer is not None:
-                    # Write reward per episode to tensorboard
-                    ep_reward = np.array([reward]).reshape((1, -1))
-                    ep_done = np.array([done]).reshape((1, -1))
-                    self.episode_reward = total_episode_reward_logger(self.episode_reward, ep_reward,
-                                                                      ep_done, writer, step)
-
                 # Done check here as the last step may have been force reset, don't want to do it twice
                 if not done and ep_len == self.train_freq:
                     print('Maximum episode length reached')
                     done = True
                     obs = self.env.reset()
-
-                episode_rewards[-1] += reward
 
                 # Log losses and entropy, useful for monitor training
                 if len(mb_infos_vals) > 0:
@@ -139,17 +130,22 @@ class SACWrap(SAC):
                 if len(episode_rewards[-101:-1]) > 0:
                     mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
 
-                num_episodes = len(episode_rewards)
-
                 if done:
-                    print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
-                    episode_rewards.append(0.0)
+                    print("Episode finished. Reward: {:.2f} {} Steps".format(np.sum(episode_rewards[-1]), ep_len))
+
+                    if writer is not None:
+                        # Write reward per episode to tensorboard
+                        summary = tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=sum(episode_rewards[-1]))])
+                        writer.add_summary(summary, step)
+
+                    # TODO assert np.sum(episode_rewards[-1]) != self.episode_reward
+                    episode_rewards.append([])
                     ep_len = 0
                     mb_infos_vals = self.optimize(step, writer, current_lr)
 
                     if self.verbose >= 1 and log_interval is not None and len(episode_rewards) % log_interval == 0:
                         fps = int(step / (time.time() - start_time))
-                        logger.logkv("episodes", num_episodes)
+                        logger.logkv("episodes", len(episode_rewards))
                         logger.logkv("mean 100 episode reward", mean_reward)
                         logger.logkv('ep_rewmean', safe_mean([ep_info['r'] for ep_info in ep_info_buf]))
                         logger.logkv('eplenmean', safe_mean([ep_info['l'] for ep_info in ep_info_buf]))

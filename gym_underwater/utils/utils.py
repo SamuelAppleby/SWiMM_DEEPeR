@@ -120,28 +120,5 @@ def create_callback(algo, save_path, reward_threshold, verbose=1):
         :param _globals: (dict)
         :return: (bool) If False: stop training
         """
-
-        global best_mean_reward
-        episode_rewards = _locals['episode_rewards']
-        if len(episode_rewards[-101:-1]) == 0:
-            return True
-        else:
-            mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
-        if mean_reward > best_mean_reward:
-            begin_time = time.time()
-            if verbose >= 1:
-                print("Saving best model ...")
-            _locals['self'].save(os.path.join(save_path, "bestmodel"))
-            best_mean_reward = mean_reward
-            with open(os.path.join(save_path, "ep_nums_for_best.csv"), 'a') as csv_file:
-                writer = csv.writer(csv_file)
-                writer.writerow([len(episode_rewards)])
-                csv_file.close()
-            print("Model saved, time taken: ", time.time() - begin_time)
-        #if mean_reward > reward_threshold:
-            #if verbose >= 1:
-                #print("Stopping training because the mean reward {:.2f} is above the threshold {}".format(mean_reward, reward_threshold))
-            #return False
-
         return True
     return sac_callback

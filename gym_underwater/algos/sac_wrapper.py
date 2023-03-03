@@ -1,3 +1,5 @@
+import csv
+import os
 import time
 from collections import deque
 import numpy as np
@@ -62,17 +64,18 @@ class SACWrap(SAC):
             self.learning_rate = get_schedule_fn(self.learning_rate)
 
             start_time = time.time()
-            episode_rewards = [[]]
+            episode_rewards = [0.0]
 
             obs = self.env.reset()
 
             self.episode_reward = np.zeros((1,))
             ep_info_buf = deque(maxlen=100)
-            ep_len = 0
             self.n_updates = 0
             infos_values = []
             mb_infos_vals = []
             mean_reward = -np.inf
+            best_mean_reward = -np.inf
+            ep_len = 0
 
             for step in range(total_timesteps):
 
@@ -103,7 +106,7 @@ class SACWrap(SAC):
 
                 new_obs, reward, done, info = self.env.step(rescaled_action)
                 ep_len += 1
-                episode_rewards[-1].append(reward)
+                episode_rewards[-1] += reward
 
                 if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
                     print('{} steps'.format(ep_len))
@@ -112,36 +115,45 @@ class SACWrap(SAC):
                 self.replay_buffer.add(obs, rescaled_action, reward, new_obs, float(done))
                 obs = new_obs
 
+                # Done check here as the last step may have been force reset, don't want to do it twice
+                if not done and ep_len == self.train_freq:
+                    print('Maximum episode length reached')
+                    obs = self.env.reset()
+                    done = True
+
                 # Retrieve reward and episode length if using Monitor wrapper
                 maybe_ep_info = info.get('episode')
                 if maybe_ep_info is not None:
                     ep_info_buf.extend([maybe_ep_info])
 
-                # Done check here as the last step may have been force reset, don't want to do it twice
-                if not done and ep_len == self.train_freq:
-                    print('Maximum episode length reached')
-                    done = True
-                    obs = self.env.reset()
-
                 # Log losses and entropy, useful for monitor training
                 if len(mb_infos_vals) > 0:
                     infos_values = np.mean(mb_infos_vals, axis=0)
 
-                if len(episode_rewards[-101:-1]) > 0:
-                    mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
-
                 if done:
-                    print("Episode finished. Reward: {:.2f} {} Steps".format(np.sum(episode_rewards[-1]), ep_len))
+                    print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
 
                     if writer is not None:
                         # Write reward per episode to tensorboard
-                        summary = tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=sum(episode_rewards[-1]))])
+                        summary = tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=episode_rewards[-1])])
                         writer.add_summary(summary, step)
 
-                    # TODO assert np.sum(episode_rewards[-1]) != self.episode_reward
-                    episode_rewards.append([])
-                    ep_len = 0
                     mb_infos_vals = self.optimize(step, writer, current_lr)
+
+                    if len(episode_rewards) > 10:
+                        mean_reward = round(float(np.mean(episode_rewards[-10:])), 1)
+
+                        if mean_reward > best_mean_reward:
+                            begin_time = time.time()
+                            print("Saving best model ...")
+                            self.save(os.path.join(self.tensorboard_log, "bestmodel"))
+
+                            best_mean_reward = mean_reward
+                            with open(os.path.join(self.tensorboard_log, "ep_nums_for_best.csv"), 'a') as csv_file:
+                                best_writer = csv.writer(csv_file)
+                                best_writer.writerow([len(episode_rewards)])
+                                csv_file.close()
+                            print("Model saved, time taken: ", time.time() - begin_time)
 
                     if self.verbose >= 1 and log_interval is not None and len(episode_rewards) % log_interval == 0:
                         fps = int(step / (time.time() - start_time))
@@ -160,6 +172,9 @@ class SACWrap(SAC):
                         logger.dumpkvs()
                         # Reset infos:
                         infos_values = []
+
+                    episode_rewards.append(0.0)
+                    ep_len = 0
 
             # Use last batch
             print("Final optimization before saving")

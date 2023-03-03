@@ -46,7 +46,6 @@ class UnitySimHandler:
         self.rover_fwd = np.zeros(3)
         self.target_fwd = np.zeros(3)
         self.raw_d = 0.0
-        self.d = 0.0
         self.a = 0.0
         self.opt_d = opt_d
         self.max_d = max_d
@@ -96,7 +95,6 @@ class UnitySimHandler:
         self.rover_fwd = np.zeros(3)
         self.target_fwd = np.zeros(3)
         self.raw_d = 0.0
-        self.d = 0.0
         self.a = 0.0
         self.send_reset()
 
@@ -115,14 +113,10 @@ class UnitySimHandler:
                            self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0],
                            self.target_fwd[1], self.target_fwd[2]]
 
-        reward = self.calc_reward()
-
-        done = self.determine_episode_over()
-
-        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.d, "raw_dist": self.raw_d,
+        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.raw_d, "raw_dist": self.raw_d,
                 "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
 
-        return observation, reward, done, info
+        return observation, self.calc_reward(), self.determine_episode_over(), info
 
     def calc_reward(self):
         # heading vector from rover to target
@@ -139,14 +133,14 @@ class UnitySimHandler:
             math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
 
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        reward = 1.0 - ((math.pow((self.d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(self.a) / 180))
+        reward = 1.0 - ((math.pow((self.raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(self.a) / 180))
 
         return reward
 
     def determine_episode_over(self):
-        if math.fabs(self.d - self.opt_d) > self.max_d:
-            print("Episode terminated as target out of range {}".format(self.d))
-            logger.debug(f"game over: distance {self.d}")
+        if math.fabs(self.raw_d - self.opt_d) > self.max_d:
+            print("Episode terminated as target out of range {}".format(self.raw_d - self.opt_d))
+            logger.debug(f"game over: distance {self.raw_d}")
             return True
         if "Dolphin" in self.hit:
             print("Episode terminated due to collision")

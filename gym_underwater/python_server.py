@@ -135,13 +135,14 @@ class PythonServer:
 
             # unpack and send json message onto handler
             json_str = data.decode('UTF-8')
-            # print('Received: {}'.format(json_str))
+            print('Received: {}'.format(json_str))
             json_dict = json.loads(json_str)
 
             if self.handler.debug_logs:
                 with open(os.path.abspath(os.path.join(self.handler.packets_received_dir, 'episode_' + str(self.episode_num) + '_observation_' + str(json_dict['payload']['obsv_num']) + '.json')), 'w',
                           encoding='utf-8') as f:
                     json.dump(json_dict, f, ensure_ascii=False, indent=4)
+                    f.close()
 
             self.handler.on_recv_message(json_dict)
 
@@ -154,7 +155,7 @@ class PythonServer:
             self.msg['payload']['episode_num'] = self.episode_num
             self.msg['payload']['action_num'] = self.action_num
             json_str = json.dumps(self.msg)
-            # print('Sending: {}'.format(json_str))
+            print('Sending: {}'.format(json_str))
 
             if self.handler.debug_logs:
                 if self.msg['msgType'] == "reset_episode":
@@ -162,6 +163,7 @@ class PythonServer:
                 else:
                     with open(os.path.abspath(os.path.join(self.handler.packets_sent_dir, 'episode_' + str(self.episode_num) + '_action_' + str(self.action_num) + '.json')), 'w', encoding='utf-8') as f:
                         json.dump(self.msg, f, ensure_ascii=False, indent=4)
+                        f.close()
 
             if self.protocol == Protocol.UDP:
                 self.sock.sendto(bytes(json_str, encoding="utf-8"), self.addr)

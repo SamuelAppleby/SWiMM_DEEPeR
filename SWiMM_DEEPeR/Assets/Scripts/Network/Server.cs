@@ -28,7 +28,6 @@ public class Server
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public struct ServerConfig
     {
-        public LearningConfig learningConfig;
         public RoverConfig roverConfig;
         public EnvironmentConfig envConfig;
     }
@@ -62,12 +61,6 @@ public class Server
     public struct ActionSpaceConfig
     {
         public int dimensions;
-    }
-
-    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
-    public struct LearningConfig
-    {
-        public ActionSpaceConfig actionSpaceConfig;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
@@ -105,6 +98,8 @@ public class Server
     public struct EnvironmentConfig
     {
         public string actionInference;
+        public float optD;
+        public float maxD;
         public FaunaConfig faunaConfig;
     }
 
@@ -290,7 +285,7 @@ public class Server
                        Task t = File.WriteAllTextAsync(Path.GetFullPath(Path.Combine(SimulationManager._instance.packets_sent_dir.FullName, "episode_" + episode_num.ToString() + "_observation_" + current_msg.payload.obsv_num.ToString() + ".json")), update_json_str);
                     }
 
-                    Debug.Log("Sending: " + update_json_str);
+                    //Debug.Log("Sending: " + update_json_str);
                     byte[] _data = Encoding.UTF8.GetBytes(update_json_str);
 
                     if(udp_client != null)
@@ -335,7 +330,7 @@ public class Server
 
                 if (current_json_action != null)
                 {
-                    Debug.Log("Received: " + current_json_action);
+                    //Debug.Log("Received: " + current_json_action);
                     JsonMessage message = JsonConvert.DeserializeObject<JsonMessage>(current_json_action);
 
                     if(message.msgType == "reset_episode")

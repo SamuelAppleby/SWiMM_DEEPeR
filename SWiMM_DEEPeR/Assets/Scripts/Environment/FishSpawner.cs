@@ -214,6 +214,7 @@ public class FishSpawner : MonoBehaviour
     {
         current_stage = Enums.E_InitialisationStage.SPAWNING_NPCS;
         current_progress = 0;
+        float forward_distance = SimulationManager._instance.server != null ? SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.optD : 10;
 
         float current_ai_count = 0;
 
@@ -229,7 +230,7 @@ public class FishSpawner : MonoBehaviour
                         GameObject temp_spawn = Instantiate(group.objectPrefab, new Vector3(0, 0, 0), Quaternion.Euler(new Vector3(0, 0, 0)));
                         temp_spawn.transform.parent = temp_group.transform;
                         temp_spawn.transform.position = group.spawnInfront ? SimulationManager._instance.rover.transform.position +
-                            (SimulationManager._instance.rover.transform.forward * 10)
+                            (SimulationManager._instance.rover.transform.forward * forward_distance)
                             : GetRandomValidPosition(group.waypointAxesVector);
                         temp_spawn.transform.rotation = Quaternion.Euler(group.rotationOffsetVector);
                         temp_spawn.AddComponent<FishMovement>();

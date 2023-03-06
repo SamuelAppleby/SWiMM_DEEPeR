@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using static Server;
@@ -49,6 +48,20 @@ public class ROVController : MonoBehaviour
 
     public Camera first_person_cam;
 
+    private float opt_d;
+
+    private float max_d;
+
+    private List<float> radii_to_draw;
+
+    private int num_segments;
+
+    private LineRenderer curr_fwd;
+
+    private LineRenderer optimum_fwd;
+
+    public LayerMask gizmo_mask;
+
     public void OnActionReceived(JsonMessage param)
     {
         /* For freeze/hybrid, allow physics */
@@ -62,6 +75,60 @@ public class ROVController : MonoBehaviour
 
     private void Start()
     {
+        GameObject target_line = new GameObject();
+        target_line.transform.localPosition = Vector3.zero;
+        target_line.layer = (int)Mathf.Log(gizmo_mask.value, 2);
+
+        optimum_fwd = target_line.AddComponent<LineRenderer>();
+        optimum_fwd.SetPosition(0, transform.position);
+        optimum_fwd.material = tracking_material;
+        optimum_fwd.material.color = Color.yellow;
+        optimum_fwd.startWidth = 0.05f;
+        optimum_fwd.endWidth = 0.05f;
+        optimum_fwd.positionCount = 2;
+        target_line.transform.parent = transform;
+
+        GameObject fwd_line = new GameObject();
+        fwd_line.layer = (int)Mathf.Log(gizmo_mask.value, 2);
+
+        curr_fwd = fwd_line.AddComponent<LineRenderer>();
+        curr_fwd.SetPosition(0, transform.position);
+        curr_fwd.material = tracking_material;
+        curr_fwd.material.color = Color.cyan;
+        curr_fwd.startWidth = 0.05f;
+        curr_fwd.endWidth = 0.05f;
+        curr_fwd.positionCount = 2;
+        fwd_line.transform.parent = transform;
+        fwd_line.transform.localPosition = Vector3.zero;
+
+        num_segments = 100;
+
+        if (SimulationManager._instance.server != null)
+        {
+            opt_d = SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.optD;
+            max_d = SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.maxD;
+
+            radii_to_draw = new List<float>
+            {
+                opt_d - max_d,
+                opt_d,
+                opt_d + max_d
+            };
+        }
+
+        else
+        {
+            opt_d = 8;
+            max_d = 2;
+
+            radii_to_draw = new List<float>
+            {
+                opt_d - max_d,
+                opt_d,
+                opt_d + max_d
+            };
+        }
+
         is_underwater = water_trans.position.y > transform.position.y;
         RenderSettings.skybox = is_underwater ? underwater_skybox_mat : ground_skybox_mat;
         volume.profile.TryGetSettings(out m_colour_grading);
@@ -111,31 +178,34 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
 
     private void LateUpdate()
     {
-        int num_segments = 100;
-        int opt_d = 10;
-
         foreach (Transform trans in target_transforms)
         {
-            LineRenderer line_renderer = trans.GetComponentInChildren<LineRenderer>();
-            line_renderer.material = tracking_material;
-            line_renderer.startWidth = 0.2f;
-            line_renderer.endWidth = 0.2f;
-            line_renderer.positionCount = num_segments + 1;
-            line_renderer.useWorldSpace = false;
+            int idx = 0;
 
-            float delta_theta = (float)(2.0 * Mathf.PI) / num_segments;
-
-            float theta = 0f;
-
-            for (int i = 0; i < num_segments + 1; i++)
+            foreach(LineRenderer line in trans.GetComponentsInChildren<LineRenderer>())
             {
-                float x = opt_d * Mathf.Sin(theta);
-                float z = opt_d * Mathf.Cos(theta);
-                Vector3 pos = new Vector3(x, 0, z);
-                line_renderer.SetPosition(i, pos);
-                theta += delta_theta;
+                float delta_theta = (float)(2.0 * Mathf.PI) / num_segments;
+                float theta = 0f;
+
+                for (int i = 0; i < num_segments + 1; i++)
+                {
+                    float x = radii_to_draw[idx] * Mathf.Sin(theta);
+                    float z = radii_to_draw[idx] * Mathf.Cos(theta);
+                    line.SetPosition(i, new Vector3(x, 0, z));
+                    theta += delta_theta;
+                }
+
+                idx++;
             }
         }
+
+        optimum_fwd.SetPosition(0, transform.position);
+        optimum_fwd.SetPosition(1, target_transforms[0].position);
+
+        curr_fwd.SetPosition(0, transform.position);
+        Vector3 dir = transform.position + transform.forward;
+        dir.y = transform.position.y;
+        curr_fwd.SetPosition(1, dir);
     }
 
     private void OnDestroy()
@@ -158,12 +228,24 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
 
     public void AddAsTarget(Transform t)
     {
-        GameObject rend = new GameObject();
-        rend.layer = 7;
-        rend.AddComponent<LineRenderer>();
-        rend.transform.parent = t;
-        rend.transform.localPosition = Vector3.zero;
         target_transforms.Add(t);
+
+        for (int i = 0; i < radii_to_draw.Count; ++i)
+        {
+            GameObject rend = new GameObject();
+            rend.layer = (int)Mathf.Log(gizmo_mask.value, 2);
+
+            LineRenderer line = rend.AddComponent<LineRenderer>();
+            line.material = tracking_material;
+            line.material.color = i == 0 || i == 2 ? Color.red : Color.green;
+            line.startWidth = 0.1f;
+            line.endWidth = 0.1f;
+            line.positionCount = num_segments + 1;
+            line.useWorldSpace = false;
+
+            rend.transform.parent = t;
+            rend.transform.localPosition = Vector3.zero;
+        }
     }
 
     private IEnumerator SendImageData()

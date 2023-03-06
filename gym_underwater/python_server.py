@@ -73,6 +73,8 @@ class PythonServer:
         })
 
         self.server_config = conf_arr.pop()
+        self.server_config['payload']['serverConfig']['envConfig']['optD'] = self.handler.opt_d
+        self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.handler.max_d
         self.network_config = conf_arr.pop()
         self.protocol = protocol_mapping[self.network_config["protocol"]]
         self.address = (self.network_config["host"], self.network_config["port"])
@@ -135,7 +137,7 @@ class PythonServer:
 
             # unpack and send json message onto handler
             json_str = data.decode('UTF-8')
-            print('Received: {}'.format(json_str))
+            # print('Received: {}'.format(json_str))
             json_dict = json.loads(json_str)
 
             if self.handler.debug_logs:
@@ -155,7 +157,7 @@ class PythonServer:
             self.msg['payload']['episode_num'] = self.episode_num
             self.msg['payload']['action_num'] = self.action_num
             json_str = json.dumps(self.msg)
-            print('Sending: {}'.format(json_str))
+            # print('Sending: {}'.format(json_str))
 
             if self.handler.debug_logs:
                 if self.msg['msgType'] == "reset_episode":

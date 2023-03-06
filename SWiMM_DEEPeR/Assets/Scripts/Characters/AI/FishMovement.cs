@@ -83,7 +83,6 @@ public class FishMovement : MonoBehaviour
         ////correct_right = (inverse * transform.right).normalized;
         ////correct_up = (inverse * transform.up).normalized;
 
-        float turn_speed = m_speed * UnityEngine.Random.Range(0.03f, 0.1f);
         //Vector3 dir = m_waypoint - transform.position;
 
         //Vector3 angles = new Vector3(
@@ -102,7 +101,7 @@ public class FishMovement : MonoBehaviour
         Quaternion _lookRotation = Quaternion.LookRotation(_direction);
 
         //rotate us over time according to speed until we are in the required rotation
-        transform.rotation = Quaternion.Slerp(transform.rotation, _lookRotation, turn_speed);
+        transform.rotation = Quaternion.Slerp(transform.rotation, _lookRotation, m_speed * 0.1f);
 
         //Quaternion q = transform.rotation;
         //q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
@@ -110,7 +109,7 @@ public class FishMovement : MonoBehaviour
 
         transform.position += correct_forward * m_speed;
 
-        if ((m_waypoint - transform.position).magnitude < 10)
+        if ((m_waypoint - transform.position).magnitude < 5)
         {
             FindNewTarget();
         }

@@ -58,6 +58,7 @@ class SACWrap(SAC):
               log_interval=1, tb_log_name="SAC", print_freq=100):
         with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name) as writer:
 
+            best_n_episodes = 100
             self._setup_learn()
 
             # Transform to callable if needed
@@ -135,13 +136,16 @@ class SACWrap(SAC):
 
                     if writer is not None:
                         # Write reward per episode to tensorboard
-                        summary = tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=episode_rewards[-1])])
-                        writer.add_summary(summary, step)
+                        episode_summary = tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=episode_rewards[-1])])
+                        writer.add_summary(episode_summary, step)
+
+                        training_summary = tf.Summary(value=[tf.Summary.Value(tag="training_reward", simple_value=np.sum(episode_rewards))])
+                        writer.add_summary(training_summary, step)
 
                     mb_infos_vals = self.optimize(step, writer, current_lr)
 
-                    if len(episode_rewards) > 10:
-                        mean_reward = round(float(np.mean(episode_rewards[-10:])), 1)
+                    if len(episode_rewards) > best_n_episodes:
+                        mean_reward = round(float(np.mean(episode_rewards[-best_n_episodes:])), 1)
 
                         if mean_reward > best_mean_reward:
                             begin_time = time.time()
@@ -158,7 +162,7 @@ class SACWrap(SAC):
                     if self.verbose >= 1 and log_interval is not None and len(episode_rewards) % log_interval == 0:
                         fps = int(step / (time.time() - start_time))
                         logger.logkv("episodes", len(episode_rewards))
-                        logger.logkv("mean 100 episode reward", mean_reward)
+                        logger.logkv("mean {} episode reward".format(best_n_episodes), mean_reward)
                         logger.logkv('ep_rewmean', safe_mean([ep_info['r'] for ep_info in ep_info_buf]))
                         logger.logkv('eplenmean', safe_mean([ep_info['l'] for ep_info in ep_info_buf]))
                         logger.logkv("n_updates", self.n_updates)

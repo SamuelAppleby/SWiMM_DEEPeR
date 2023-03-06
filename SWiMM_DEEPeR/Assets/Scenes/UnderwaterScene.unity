@@ -6357,6 +6357,9 @@ MonoBehaviour:
   volume: {fileID: 50173731}
   water_trans: {fileID: 1880194229}
   first_person_cam: {fileID: 300520026}
+  gizmo_mask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!54 &1498372157
 Rigidbody:
   m_ObjectHideFlags: 0

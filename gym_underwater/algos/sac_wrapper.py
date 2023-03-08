@@ -150,7 +150,7 @@ class SACWrap(SAC):
                         if mean_reward > best_mean_reward:
                             begin_time = time.time()
                             print("Saving best model ...")
-                            self.save(os.path.join(self.tensorboard_log, "bestmodel"))
+                            self.save(save_path=os.path.join(self.tensorboard_log, "bestmodel"), cloudpickle=True)
 
                             best_mean_reward = mean_reward
                             with open(os.path.join(self.tensorboard_log, "ep_nums_for_best.csv"), 'a') as csv_file:

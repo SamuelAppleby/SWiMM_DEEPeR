@@ -45,7 +45,7 @@ img_scale: !!python/tuple [64,64,3]
 opt_d: 8
 
 # At what radial distance should the episode terminate (FROM THE OPTIMAL TRACKING POSITION, NOT THE TARGET POSITION)
-max_d: 2
+max_d: 8
 
 # Do we want to ouput the packet information and save images
 debug_logs: True

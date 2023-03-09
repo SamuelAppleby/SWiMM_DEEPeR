@@ -8,7 +8,6 @@ static class GlobalControlMap
     public static KeyCode Key_Reload = KeyCode.R;
     public static KeyCode Key_Cursor_Lock = KeyCode.L;
     public static KeyCode Key_Screenshot = KeyCode.F11;
-    public static KeyCode Key_Reset_NPCs = KeyCode.F12;
 }
 
 [Serializable]
@@ -36,18 +35,12 @@ public class GlobalControlSettings
                     break;
                 default:
                     break;
-
             }
         }
 
         if (Input.GetKeyDown(GlobalControlMap.Key_Cursor_Lock))
         {
             SimulationManager._instance.IndexCursor();
-        }
-
-        if (Input.GetKeyDown(GlobalControlMap.Key_Reset_NPCs))
-        {
-            SimulationManager._instance.ResetNPCs();
         }
     }
 }

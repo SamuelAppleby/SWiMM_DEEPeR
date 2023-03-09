@@ -216,4 +216,11 @@ public static class Utils
         cam.enabled = prev_cam_enabled;
         yield return null;
     }
+
+    public static void Swap<T>(this List<T> list, int i, int j)
+    {
+        T temp = list[i];
+        list[i] = list[j];
+        list[j] = temp;
+    }
 }

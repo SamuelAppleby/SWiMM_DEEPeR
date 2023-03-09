@@ -1,5 +1,8 @@
 using Cinemachine;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using static Server;
 
@@ -22,9 +25,6 @@ public static class MovementControlMap
     public static KeyCode key_mode_manual = KeyCode.Alpha1;
     public static KeyCode key_mode_depth_hold = KeyCode.Alpha2;
     public static KeyCode key_mode_stabilize = KeyCode.Alpha3;
-
-    public static KeyCode key_debug_increase_far_plane = KeyCode.Equals;
-    public static KeyCode key_debug_decrease_far_plane = KeyCode.Minus;
 }
 
 [RequireComponent(typeof(ROVController))]
@@ -43,7 +43,7 @@ public class ROVControls : MonoBehaviour
     public float sensitivity = 20f;
 
     [HideInInspector]
-    public Vector3 input_linear, last_action_input_linear, input_angular, last_action_input_angular;
+    public Vector3 input_linear, input_angular;
 
     [HideInInspector]
     public Enums.E_Rover_Dive_Mode dive_mode;
@@ -61,9 +61,10 @@ public class ROVControls : MonoBehaviour
 
     public Camera first_person_cam;
     public Camera third_person_cam;
+    public Camera fixed_cam;
 
     [HideInInspector]
-    public Camera active_cam, inactive_cam;
+    public List<Camera> cameras;
 
     [HideInInspector]
     public Vector3 desired_move;
@@ -80,10 +81,13 @@ public class ROVControls : MonoBehaviour
     {
         dive_mode = Enums.E_Rover_Dive_Mode.DEPTH_HOLD;
         applicable_body = GetComponent<Rigidbody>();
-        active_cam = first_person_cam.depth == 0 ? first_person_cam : third_person_cam;
-        inactive_cam = active_cam == first_person_cam ? third_person_cam : first_person_cam;
 
-        gameObject.GetComponentInChildren<CinemachineFreeLook>().enabled = active_cam == third_person_cam;
+        cameras = new List<Camera>
+        {
+            fixed_cam,
+            third_person_cam,
+            first_person_cam
+        };
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
@@ -134,16 +138,6 @@ public class ROVControls : MonoBehaviour
             OnChangeCamera();
         }
 
-        if (Input.GetKeyDown(MovementControlMap.key_debug_increase_far_plane))
-        {
-            ChangeFarPlane(100);
-        }
-
-        if (Input.GetKeyDown(MovementControlMap.key_debug_decrease_far_plane))
-        {
-            ChangeFarPlane(-100);
-        }
-
         PlayAudioEffects();
     }
 
@@ -151,16 +145,6 @@ public class ROVControls : MonoBehaviour
     {
         desired_move = new Vector3();
         desired_rotation = new Vector3();
-
-        if (SimulationManager._instance.server != null && !SimulationManager._instance.in_manual_mode)
-        {
-            if (Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
-            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE)
-            {
-                input_linear = last_action_input_linear;
-                input_angular = last_action_input_angular;
-            }
-        }
 
         /* N.B. Before internal physics engine does oncollisions, provide the check anyway otherwise we skip a frame */
         if (object_underwater)
@@ -241,18 +225,19 @@ public class ROVControls : MonoBehaviour
 
             applicable_body.AddForce(desired_move, ForceMode.Force);
             applicable_body.AddRelativeTorque(desired_rotation, ForceMode.Force);
-        }
 
-        input_linear = Vector3.zero;
-        input_angular = Vector3.zero;
+            if (!SimulationManager._instance.in_manual_mode && SimulationManager._instance.server != null && Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.ON_RECEIVE
+                && (input_linear.magnitude > 0 || input_angular.magnitude > 0))
+            {
+                input_linear = Vector3.zero;
+                input_angular = Vector3.zero;
+            }
+        }
     }
 
     public void PlayAudioEffects()
     {
-        if (input_linear.magnitude > 0 || input_angular.magnitude > 0 || (SimulationManager._instance.server != null && (
-            (Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN ||
-            Enums.action_inference_mapping[SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.actionInference] == Enums.E_Action_Inference.MAINTAIN_FREEZE) &&
-            last_action_input_linear.magnitude > 0 || last_action_input_angular.magnitude > 0)))
+        if (input_linear.magnitude > 0 || input_angular.magnitude > 0)
         {
             if (!audios.thrusters.isPlaying)
             {
@@ -274,14 +259,16 @@ public class ROVControls : MonoBehaviour
 
     public void OnChangeCamera()
     {
-        inactive_cam.depth = 0;
-        inactive_cam.rect = new Rect(0, 0, 1, 1);
-        active_cam.depth = 1;
-        active_cam.rect = new Rect(0.7f, 0, 0.3f, 0.3f);
-        Camera temp = active_cam;
-        active_cam = inactive_cam;
-        inactive_cam = temp;
-        gameObject.GetComponentInChildren<CinemachineFreeLook>().enabled = active_cam == third_person_cam;
+        cameras.Swap(0, 1);
+        cameras.Swap(1, 2);
+
+        cameras.First().depth = 0;
+        cameras.First().rect = new Rect(0, 0, 1, 1);
+        cameras.ElementAt(1).rect = new Rect(0.6f, 0, 0.2f, 0.2f); 
+        cameras.Last().rect = new Rect(0.8f, 0, 0.2f, 0.2f);
+        cameras.Last().depth = 1;
+
+        cine_cam.enabled = cameras.First() == third_person_cam;
     }
 
     public void ChangeFarPlane(float val)
@@ -301,10 +288,8 @@ public class ROVControls : MonoBehaviour
 
     public void OnActionReceived(JsonMessage param)
     {
-        input_linear = new Vector3(param.payload.jsonControls.swayThrust,
-            param.payload.jsonControls.heaveThrust, param.payload.jsonControls.surgeThrust);
-        input_angular = new Vector3(param.payload.jsonControls.pitchThrust,
-            param.payload.jsonControls.yawThrust, param.payload.jsonControls.rollThrust);
+        input_linear = new Vector3(param.payload.jsonControls.swayThrust, param.payload.jsonControls.heaveThrust, param.payload.jsonControls.surgeThrust);
+        input_angular = new Vector3(param.payload.jsonControls.pitchThrust, param.payload.jsonControls.yawThrust, param.payload.jsonControls.rollThrust);
 
         /* Simulate joystick output with boolean values */
         input_angular.x = input_angular.x < 0.5 && input_angular.x > -0.5 ? 0 : input_angular.x <= -0.5 ? -1 : 1;
@@ -335,8 +320,5 @@ public class ROVControls : MonoBehaviour
                 ToggleControlMode(Enums.E_Rover_Dive_Mode.MANUAL);
             }
         }
-
-        last_action_input_linear = input_linear;
-        last_action_input_angular = input_angular;
     }
 }

@@ -226,6 +226,11 @@ public class ROVControls : MonoBehaviour
                 /* Counteract the forces due to gravity irrelevant of fixed dt */
                 if (dive_mode == Enums.E_Rover_Dive_Mode.DEPTH_HOLD)
                 {
+                    if(!GetComponent<Rigidbody>().useGravity)
+                    {
+                        GetComponent<Rigidbody>().useGravity = true;        // We have initialised the controls, so we can now enable gravity
+                    }
+
                     applicable_body.AddForce(-Physics.gravity, ForceMode.Acceleration);     // ACCELERATION IS A CONSTANT ACCELERATION, TREAT DIFFERENTLY
 
                     foreach (Floater floater in GetComponentsInChildren<Floater>())

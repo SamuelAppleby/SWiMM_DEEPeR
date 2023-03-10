@@ -136,6 +136,7 @@ public class ROVController : MonoBehaviour
         m_rb = GetComponent<Rigidbody>();
         m_rb.drag = air_drag;
         m_rb.angularDrag = angular_air_drag;
+        m_rb.useGravity = false;         // We want to optimize 2 actions, disable initial biasing of gravity
 
         if (SimulationManager._instance.game_state == Enums.E_Game_State.IMAGE_SAMPLING ||
 SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || SimulationManager._instance.game_state == Enums.E_Game_State.SCREENSHOT)

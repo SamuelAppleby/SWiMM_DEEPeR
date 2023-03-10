@@ -235,8 +235,9 @@ public class SimulationManager : Singleton<SimulationManager>
         };
 #endif
 
+#if false
         _instance.game_state = E_Game_State.VAE_GEN;
-        _instance.num_images = 10;
+        _instance.num_images = 1000;
         _instance.image_generation_resolutions = new List<Resolution>()
         {
             new Resolution
@@ -255,6 +256,7 @@ public class SimulationManager : Singleton<SimulationManager>
                 height = 1080
             }
         };
+#endif
 
         switch (_instance.game_state)
         {

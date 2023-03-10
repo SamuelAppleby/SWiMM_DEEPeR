@@ -32,11 +32,11 @@ def convert_rgb2bgr(img_rgb):
 
 def normalize_state(pose):
     # normalization of ranges as used in image_gen.py to [-1, 1] range
-    r_range = [3, 30]  # [0.1, 30]
-    CAM_FOV = 90.0 * 0.7
+    r_range = [2, 20]
+    CAM_FOV = 79.7249       # HORIZONTAL
     alpha = CAM_FOV / 2.0  # (CAM_FOV/180.0*np.pi/2.0)
     theta_range = [-alpha, alpha]  # [-90, 90]
-    psi_range = [-90, 90]
+    psi_range = [-180, 180]
     if len(pose.shape) == 1:
         # means that it's a 1D vector of velocities
         pose[0] = 2.0 * (pose[0] - r_range[0]) / (r_range[1] - r_range[0]) - 1.0
@@ -54,11 +54,11 @@ def normalize_state(pose):
 
 def de_normalize_state(pose):
     # normalization of ranges as used in image_gen.py to [-1, 1] range
-    r_range = [3, 30]  # [0.1, 30]
-    CAM_FOV = 90.0 * 0.7
+    r_range = [2, 20]
+    CAM_FOV = 79.7249       # HORIZONTAL
     alpha = CAM_FOV / 2.0  # (CAM_FOV/180.0*np.pi/2.0)
     theta_range = [-alpha, alpha]  # [-90, 90]
-    psi_range = [-90, 90]
+    psi_range = [-180, 180]
     if len(pose.shape) == 1:
         # means that it's a 1D vector of velocities
         pose[0] = (pose[0] + 1.0) / 2.0 * (r_range[1] - r_range[0]) + r_range[0]

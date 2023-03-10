@@ -171,34 +171,37 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
 
     private void LateUpdate()
     {
-        foreach (Transform trans in target_transforms)
+        if(SimulationManager._instance.game_state == Enums.E_Game_State.AUTOMATION_TRAINING || SimulationManager._instance.game_state == Enums.E_Game_State.REGULAR)
         {
-            int idx = 0;
-
-            foreach(LineRenderer line in trans.GetComponentsInChildren<LineRenderer>())
+            foreach (Transform trans in target_transforms)
             {
-                float delta_theta = (float)(2.0 * Mathf.PI) / num_segments;
-                float theta = 0f;
+                int idx = 0;
 
-                for (int i = 0; i < num_segments + 1; i++)
+                foreach (LineRenderer line in trans.GetComponentsInChildren<LineRenderer>())
                 {
-                    float x = radii_to_draw[idx] * Mathf.Sin(theta);
-                    float z = radii_to_draw[idx] * Mathf.Cos(theta);
-                    line.SetPosition(i, new Vector3(x, 0, z));
-                    theta += delta_theta;
+                    float delta_theta = (float)(2.0 * Mathf.PI) / num_segments;
+                    float theta = 0f;
+
+                    for (int i = 0; i < num_segments + 1; i++)
+                    {
+                        float x = radii_to_draw[idx] * Mathf.Sin(theta);
+                        float z = radii_to_draw[idx] * Mathf.Cos(theta);
+                        line.SetPosition(i, new Vector3(x, 0, z));
+                        theta += delta_theta;
+                    }
+
+                    idx++;
                 }
-
-                idx++;
             }
+
+            optimum_fwd.SetPosition(0, transform.position);
+            optimum_fwd.SetPosition(1, target_transforms[0].position);
+
+            curr_fwd.SetPosition(0, transform.position);
+            Vector3 dir = transform.position + transform.forward;
+            dir.y = transform.position.y;
+            curr_fwd.SetPosition(1, dir);
         }
-
-        optimum_fwd.SetPosition(0, transform.position);
-        optimum_fwd.SetPosition(1, target_transforms[0].position);
-
-        curr_fwd.SetPosition(0, transform.position);
-        Vector3 dir = transform.position + transform.forward;
-        dir.y = transform.position.y;
-        curr_fwd.SetPosition(1, dir);
     }
 
     private void OnDestroy()

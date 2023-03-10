@@ -1,6 +1,7 @@
 using Cinemachine;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -25,6 +26,8 @@ public static class MovementControlMap
     public static KeyCode key_mode_manual = KeyCode.Alpha1;
     public static KeyCode key_mode_depth_hold = KeyCode.Alpha2;
     public static KeyCode key_mode_stabilize = KeyCode.Alpha3;
+
+    public static KeyCode Key_Screenshot = KeyCode.F11;
 }
 
 [RequireComponent(typeof(ROVController))]
@@ -77,6 +80,8 @@ public class ROVControls : MonoBehaviour
     [HideInInspector]
     public bool object_underwater = false;
 
+    private int manual_screenshot_count = 0;
+
     public void Start()
     {
         dive_mode = Enums.E_Rover_Dive_Mode.DEPTH_HOLD;
@@ -91,7 +96,8 @@ public class ROVControls : MonoBehaviour
 
         if (SimulationManager._instance.server != null && SimulationManager._instance.server.json_server_config.msgType.Length > 0)
         {
-            first_person_cam.fieldOfView = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.fov;
+            first_person_cam.focalLength = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.focalLength;
+            first_person_cam.sensorSize = new Vector2(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.sensorWidth, SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.camConfig.sensorHeight);
             stability_threshold = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityThreshold;
             stability_force = SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.stabilityForce;
             linear_thrust_stength = Utils.FloatArrayToVector3(SimulationManager._instance.server.json_server_config.payload.serverConfig.roverConfig.motorConfig.linearThrustPower);
@@ -125,6 +131,12 @@ public class ROVControls : MonoBehaviour
             if (Input.GetKeyDown(MovementControlMap.key_mode_stabilize))
             {
                 ToggleControlMode(Enums.E_Rover_Dive_Mode.STABILIZE);
+            }
+
+            if (Input.GetKeyDown(MovementControlMap.Key_Screenshot))
+            {
+                StartCoroutine(Utils.TakeScreenshot(GetComponent<ROVController>().cam_resolution, first_person_cam, new DirectoryInfo(Path.GetFullPath(Path.Combine(SimulationManager._instance.image_dir.FullName, manual_screenshot_count + ".jpg")))));
+                manual_screenshot_count++;
             }
         }
 

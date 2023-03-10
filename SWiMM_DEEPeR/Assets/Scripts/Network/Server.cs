@@ -84,7 +84,9 @@ public class Server
     public struct CameraConfig
     {
         public int[] resolution;
-        public int fov;
+        public float focalLength;
+        public float sensorWidth;
+        public float sensorHeight;
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]

@@ -7,15 +7,14 @@ static class GlobalControlMap
     public static KeyCode Key_Quit = KeyCode.Escape;
     public static KeyCode Key_Reload = KeyCode.R;
     public static KeyCode Key_Cursor_Lock = KeyCode.L;
-    public static KeyCode Key_Screenshot = KeyCode.F11;
 }
 
 [Serializable]
-public class GlobalControlSettings
+public class GlobalControlSettings : MonoBehaviour
 {
-    public void Update(bool manual_controls)
+    public void Update()
     {
-        if (manual_controls)
+        if (SimulationManager._instance.in_manual_mode)
         {
             if (Input.GetKeyUp(GlobalControlMap.Key_Reload))
             {

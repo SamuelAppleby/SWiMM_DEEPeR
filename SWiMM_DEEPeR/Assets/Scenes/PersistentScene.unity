@@ -842,6 +842,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1373481078}
   - component: {fileID: 1373481077}
+  - component: {fileID: 1373481085}
   - component: {fileID: 1373481080}
   - component: {fileID: 1373481081}
   - component: {fileID: 1373481082}
@@ -866,8 +867,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 032c2d7b78f0ab0498cc6c1d20bef718, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target_pos: {x: 0, y: 0, z: 0}
-  target_rot: {x: 0, y: 0, z: 0}
   debug_logs: 0
   image_generation_resolutions: []
   num_images: 0
@@ -1093,18 +1092,6 @@ MonoBehaviour:
           m_StringArgument: Sending image data...
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 1582158832}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
   observation_sent_unity_event:
     m_PersistentCalls:
       m_Calls:
@@ -1119,18 +1106,6 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: Waiting for next action (model may be optimising)...
           m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 1582158832}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
         m_CallState: 2
       - m_Target: {fileID: 1373481077}
         m_TargetAssemblyTypeName: SimulationManager, Assembly-CSharp
@@ -1257,6 +1232,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   current_actions: 
+--- !u!114 &1373481085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373481076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db0fcb507a2ce3545a3c68aab2ef88c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1395858807
 GameObject:
   m_ObjectHideFlags: 0

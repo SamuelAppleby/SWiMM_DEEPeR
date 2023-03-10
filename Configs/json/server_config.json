@@ -22,7 +22,9 @@
             64,
             64
           ],
-          "fov": 100
+          "sensorWidth": 4.96,
+          "sensorHeight": 3.74,
+          "focalLength": 2.97
         },
         "structureConfig": {
           "ballastMass": 1.2

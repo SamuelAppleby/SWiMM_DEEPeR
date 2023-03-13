@@ -34,9 +34,6 @@ public class GameEventListener : MonoBehaviour
     public UnityEvent end_simulation_unity_event;
 
     [SerializeField]
-    public UnityEvent awaiting_training_unity_event;
-
-    [SerializeField]
     public UnityEvent ai_groups_complete_unity_event;
 
     [SerializeField]
@@ -107,11 +104,6 @@ public class GameEventListener : MonoBehaviour
     public void OnObservationSentEventRaised()
     {
         observation_sent_unity_event.Invoke();
-    }
-
-    public void OnServerAwaitingTrainingEventRaised()
-    {
-        awaiting_training_unity_event.Invoke();
     }
 
     public void OnAIGroupsCompleteEventRaised()

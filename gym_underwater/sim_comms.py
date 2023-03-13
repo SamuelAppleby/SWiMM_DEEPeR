@@ -35,7 +35,7 @@ class UnitySimHandler:
         self.image_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'images'))
         self.packets_sent_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_sent'))
         self.packets_received_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_received'))
-        self.sim_training_ready = False
+        self.sim_ready = False
         self.server_connected = False
         self.img_scale = img_scale
         self.image_array = np.zeros(img_scale)
@@ -52,8 +52,7 @@ class UnitySimHandler:
 
         self.fns = {
             "connection_request": self.connection_request,
-            'server_config_received': self.server_config_confirmation,
-            'training_ready': self.sim_training_ready_request,
+            'client_ready': self.sim_ready_request,
             "on_telemetry": self.on_telemetry
         }
 
@@ -62,12 +61,12 @@ class UnitySimHandler:
 
     def wait_until_loaded(self):
         while not self.server_connected:
-            logger.warning("waiting for sim ..")
+            logger.warning("waiting for sim...")
             time.sleep(1.0)
 
-    def wait_until_training_ready(self):
-        while not self.sim_training_ready:
-            logger.warning("waiting for sim training message ..")
+    def wait_until_client_ready(self):
+        while not self.sim_ready:
+            logger.warning("waiting for client...")
             time.sleep(1.0)
 
     def render(self):
@@ -172,17 +171,9 @@ class UnitySimHandler:
         self.server_connected = True
         return
 
-    def server_config_confirmation(self, payload):
-        self.server.msg = {
-            'msgType': 'awaiting_training',
-            'payload': {}
-        }
-
-        return
-
-    def sim_training_ready_request(self, payload):
-        logger.debug('sim ready to train')
-        self.sim_training_ready = True
+    def sim_ready_request(self, payload):
+        logger.debug('client ready')
+        self.sim_ready = True
 
     def on_telemetry(self, payload):
         self.rover_pos = np.array([payload['telemetry_data']['position'][0], payload['telemetry_data']['position'][1],

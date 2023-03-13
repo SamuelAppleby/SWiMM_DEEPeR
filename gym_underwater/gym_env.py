@@ -72,7 +72,7 @@ class UnderwaterEnv(gym.Env):
         # wait until connection established 
         self.handler.wait_until_loaded()
         self.handler.send_server_config()
-        self.handler.wait_until_training_ready()
+        self.handler.wait_until_client_ready()
 
     def close(self):
         self.handler.quit()

@@ -23,7 +23,7 @@ public class AutomationImageSampling : AutomationBase
         {
             case E_SceneIndices.MAIN_MENU:
                 current_actions.AddRange(new List<Enums.E_Automation_Actions> {
-                    E_Automation_Actions.START_MANUAL_SIM
+                    E_Automation_Actions.START_SERVER_CONTROL
                 });
                 break;
             case E_SceneIndices.SIMULATION:

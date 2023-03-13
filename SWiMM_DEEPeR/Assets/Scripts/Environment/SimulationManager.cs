@@ -109,14 +109,6 @@ public class SimulationManager : Singleton<SimulationManager>
     public void OnServerConfigReceived(JsonMessage param)
     {
         _instance.server.json_server_config = param;
-
-        if (_instance.server != null && _instance.server.IsConnectionValid())
-        {
-            _instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
-            {
-                msg_type = "server_config_received"
-            });
-        }
     }
 
     public void EpisodeReset(bool in_manual)
@@ -260,13 +252,13 @@ public class SimulationManager : Singleton<SimulationManager>
 
         switch (_instance.game_state)
         {
-            case E_Game_State.AUTOMATION_TRAINING:
+            case E_Game_State.SERVER_CONTROL:
             case E_Game_State.IMAGE_SAMPLING:
             case E_Game_State.VAE_GEN:
             case E_Game_State.REGULAR:
-                if(_instance.game_state == E_Game_State.AUTOMATION_TRAINING)
+                if(_instance.game_state == E_Game_State.SERVER_CONTROL)
                 {
-                    _instance.GetComponent<AutomationTraining>().enabled = true;
+                    _instance.GetComponent<AutomationServerControl>().enabled = true;
                 }
                 else if (_instance.game_state == E_Game_State.IMAGE_SAMPLING || _instance.game_state == E_Game_State.VAE_GEN)
                 {
@@ -458,8 +450,8 @@ public class SimulationManager : Singleton<SimulationManager>
             {
                 switch (args[i])
                 {
-                    case "mode_training":
-                        _instance.game_state = E_Game_State.AUTOMATION_TRAINING;
+                    case "server_control":
+                        _instance.game_state = E_Game_State.SERVER_CONTROL;
                         break;
                     case "mode_sample_gen":
                         _instance.game_state = E_Game_State.IMAGE_SAMPLING;

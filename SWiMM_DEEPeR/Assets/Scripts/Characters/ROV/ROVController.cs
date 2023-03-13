@@ -172,7 +172,7 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
 
     private void LateUpdate()
     {
-        if(SimulationManager._instance.game_state == Enums.E_Game_State.AUTOMATION_TRAINING || SimulationManager._instance.game_state == Enums.E_Game_State.REGULAR)
+        if(SimulationManager._instance.game_state == Enums.E_Game_State.SERVER_CONTROL || SimulationManager._instance.game_state == Enums.E_Game_State.REGULAR)
         {
             foreach (Transform trans in target_transforms)
             {

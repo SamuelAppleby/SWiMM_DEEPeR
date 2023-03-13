@@ -38,11 +38,8 @@ public class AutomationBase : MonoBehaviour
                     case Enums.E_Automation_Actions.TO_MENU:
                         menu_ref.back_button.onClick.Invoke();
                         break;
-                    case Enums.E_Automation_Actions.START_MANUAL_SIM:
-                        menu_ref.PlayGame(0);       // 1 assocites to training in Enums
-                        break;
-                    case Enums.E_Automation_Actions.START_TRAINING:
-                        menu_ref.PlayGame(1);       // 1 assocites to training in Enums
+                    case Enums.E_Automation_Actions.START_SERVER_CONTROL:
+                        menu_ref.PlayGame(1);
                         break;
                     default:
                         break;

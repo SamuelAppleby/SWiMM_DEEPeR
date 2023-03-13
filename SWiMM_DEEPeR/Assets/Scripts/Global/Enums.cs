@@ -15,8 +15,7 @@ public static class Enums
     public enum E_LevelType
     {
         MANUAL = 0,
-        TRAINING = 1,
-        INFERENCE = 2
+        SERVER = 1
     }
 
     public enum E_InitialisationStage
@@ -58,8 +57,8 @@ public static class Enums
         TO_OPTIONS = 0,
         SERVER_CONNECT = 1,
         TO_MENU = 2,
-        START_TRAINING = 3,
-        START_MANUAL_SIM = 4
+        START_SERVER_CONTROL = 3,
+        START_MANUAL_CONTROL = 4
     }
 
     public enum E_Rover_Dive_Mode
@@ -72,7 +71,7 @@ public static class Enums
     public enum E_Game_State
     {
         REGULAR = 0,
-        AUTOMATION_TRAINING = 1,
+        SERVER_CONTROL = 1,
         IMAGE_SAMPLING = 2,
         VAE_GEN = 3,
         SCREENSHOT = 4

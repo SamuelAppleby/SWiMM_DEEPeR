@@ -15,9 +15,6 @@ public class ServerEvent : GameEvent
                 case "process_server_config":
                     l.OnServerConfigReceivedEventRasied(param);
                     break;
-                case "awaiting_training":
-                    l.OnServerAwaitingTrainingEventRaised();
-                    break;
                 case "reset_episode":
                     l.OnEpisodeResetEventRaised();
                     break;

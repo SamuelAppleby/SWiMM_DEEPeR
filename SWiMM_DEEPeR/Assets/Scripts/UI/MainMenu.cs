@@ -31,12 +31,8 @@ public class MainMenu : MonoBehaviour
     private TextMeshProUGUI connect_text;
 
     [SerializeField]
-    private Button training_button;
-    private TextMeshProUGUI training_button_text;
-
-    [SerializeField]
-    private Button nn_button;
-    private TextMeshProUGUI nn_button_text;
+    private Button server_control_button;
+    private TextMeshProUGUI server_control_button_text;
 
     [SerializeField]
     private TextMeshProUGUI network_message;
@@ -58,16 +54,6 @@ public class MainMenu : MonoBehaviour
 
     public Button back_button;
 
-    public void OnAwaitingTraining()
-    {
-        training_button_text.color = Color.white;
-        training_button.interactable = true;
-        training_button.image.enabled = true;
-        nn_button_text.color = Color.white;
-        nn_button.interactable = true;
-        nn_button.image.enabled = true;
-    }
-
     void OnEnable()
     {
         connect_button.onClick.AddListener(() => Connect(ip_addr.text, int.Parse(port.text)));
@@ -87,8 +73,7 @@ public class MainMenu : MonoBehaviour
         ip_addr.text = SimulationManager._instance.network_config.host;
         port.text = SimulationManager._instance.network_config.port.ToString();
         connect_text = connect_button.GetComponentInChildren<TextMeshProUGUI>();
-        training_button_text = training_button.GetComponentInChildren<TextMeshProUGUI>();
-        nn_button_text = nn_button.GetComponentInChildren<TextMeshProUGUI>();
+        server_control_button_text = server_control_button.GetComponentInChildren<TextMeshProUGUI>();
         ui_ray.enabled = true;
     }
 
@@ -106,14 +91,14 @@ public class MainMenu : MonoBehaviour
             case Enums.E_LevelType.MANUAL:
                 SimulationManager._instance.MoveToScene(Enums.E_SceneIndices.SIMULATION, true);
                 break;
-            case Enums.E_LevelType.TRAINING:
+            case Enums.E_LevelType.SERVER:
                 SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
                 {
-                    msg_type = "training_ready"
+                    msg_type = "client_ready"
                 });
 
                 SimulationManager._instance.processing_obj.SetActive(true);
-                SimulationManager._instance.processing_obj.GetComponentInChildren<TextMeshProUGUI>().text = "Model initialising...";
+                SimulationManager._instance.processing_obj.GetComponentInChildren<TextMeshProUGUI>().text = "Awaiting Server...";
                 ui_ray.enabled = false;
                 break;
             default:
@@ -144,17 +129,18 @@ public class MainMenu : MonoBehaviour
 
     public void OnServerConfigReceived(JsonMessage param)
     {
-        if (Enums.protocol_mapping[SimulationManager._instance.network_config.protocol] == Enums.E_Protocol.UDP)
-        {
-            network_message.text = "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
-            network_image.sprite = healthy_network;
-            ip_addr.interactable = false;
-            port.interactable = false;
-            connect_button.image.color = Color.green;
-            connect_text.text = "Connected";
-            connect_button.interactable = false;
-            EventSystem.current.SetSelectedGameObject(null);
-        }
+        network_message.text = "Succcessfully connected to: " + ip_addr.text + ":" + port.text;
+        network_image.sprite = healthy_network;
+        ip_addr.interactable = false;
+        port.interactable = false;
+        connect_button.image.color = Color.green;
+        connect_text.text = "Connected";
+        connect_button.interactable = false;
+        EventSystem.current.SetSelectedGameObject(null);
+
+        server_control_button_text.color = Color.white;
+        server_control_button.interactable = true;
+        server_control_button.image.enabled = true;
     }
 
     public void Connect(string ip, int port)

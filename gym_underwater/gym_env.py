@@ -105,7 +105,7 @@ class UnderwaterEnv(gym.Env):
             # denormalize state predictions
             pred = cmvae_utils.dataset_utils.de_normalize_state(pred)
             # print distance pred
-            print("Distance: {}, Prediction: {}, Thrust: {}, Steer: {}".format(self.handler.raw_d, pred[0], action[0], action[1]))
+            # print("Distance: {}, Prediction: {}, Thrust: {}, Steer: {}".format(self.handler.raw_d, pred[0], action[0], action[1]))
             # set latent vector as observation
             observation = z
 

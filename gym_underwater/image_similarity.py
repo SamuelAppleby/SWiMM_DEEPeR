@@ -27,7 +27,7 @@ def read_files_from_dir(dir, resize_img=False):
         if file.endswith('.jpg'):
             img = np.array(Image.open(file))
             if resize_img:
-                arr.append(resize(img, (64, 64), 0, preserve_range=True))
+                arr.append(resize(img, (64, 64), 0, preserve_range=True).astype(np.uint8))
             else:
                 arr.append(img)
 
@@ -49,8 +49,13 @@ def unity_python_similarity(dir_orig, dir_unity_sample, num_samples, output_dir)
         orig_files_rand.append(os.path.join(dir_orig, file_names_orig[num]))
         unity_files_rand.append(os.path.join(dir_unity_sample, file_names_unity[num]))
 
-    python_sampled = read_files_from_dir(orig_files_rand, resize_img=True)
-    unity_sampled = read_files_from_dir(unity_files_rand, resize_img=False)
+    python_scaled = read_files_from_dir(orig_files_rand, resize_img=True)
+    unity_scaled = read_files_from_dir(unity_files_rand, resize_img=False)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_dir = os.path.join(output_dir, 'resizing.csv')
 
     with open(output_dir, 'a', newline='', encoding='UTF8') as f:
         writer = csv.writer(f)
@@ -60,8 +65,8 @@ def unity_python_similarity(dir_orig, dir_unity_sample, num_samples, output_dir)
 
         pair_res = []
 
-        for num in range(len(unity_sampled)):
-            sim = image_similarity(unity_sampled[num], python_sampled[num])
+        for num in range(len(unity_scaled)):
+            sim = image_similarity(unity_scaled[num], python_scaled[num])
             pair_res.append(sim)
             writer.writerow(
                 [orig_files_rand[num], unity_files_rand[num], orig_res.size[0], orig_res.size[1], sim])
@@ -90,6 +95,11 @@ def cross_resolution_similarity(dir_low_scaled, dir_high_scaled, dir_raw, num_sa
     low_scaled = read_files_from_dir(files_rand_low, resize_img=False)
     high_scaled = read_files_from_dir(files_rand_high, resize_img=False)
     raw = read_files_from_dir(files_rand_raw, resize_img=False)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_dir = os.path.join(output_dir, 'cross_resolution.csv')
 
     with open(output_dir, 'a', newline='', encoding='UTF8') as f:
         writer = csv.writer(f)

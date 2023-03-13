@@ -205,7 +205,7 @@ class UnitySimHandler:
         image = np.array(Image.open(BytesIO(image)))
 
         if image.shape != self.img_scale:
-            image = resize(image, self.img_scale, 0)
+            image = resize(image, self.img_scale, 0).astype(np.uint8)
 
         self.image_array = image
 

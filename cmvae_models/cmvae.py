@@ -150,6 +150,13 @@ class CmvaeDirect(object):
         :return: (np.ndarray), (np.ndarray), (np.ndarray)
         """
         return self.sess.run([self.means, self.stddev, self.z], feed_dict={self.img_gt: x})
+    
+    def encode_with_pred(self, x):
+        """
+        :param img_gt: (np.ndarray)
+        :return: (np.ndarray), (np.ndarray), (np.ndarray)
+        """
+        return self.sess.run([self.means, self.stddev, self.z, self.state_recon], feed_dict={self.img_gt: x})
 
     def decode(self, z):
         """

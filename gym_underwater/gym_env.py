@@ -1,12 +1,26 @@
+#generic imports
 import logging
 import warnings
-import gym
+import sys
+import os
 import numpy as np
 import cv2
+
+# specialised imports
+import gym
 from gym import spaces
 from gym.utils import seeding
-from sim_comms import UnitySimHandler
 
+# code to go up a directory so higher level modules can be imported
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+import_path = os.path.join(curr_dir, '..')
+sys.path.insert(0, import_path)
+
+# local imports
+from gym_underwater.sim_comms import UnitySimHandler
+import cmvae_utils
+
+# remove warnings
 warnings.filterwarnings("ignore", category=UserWarning, module='gym')
 logger = logging.getLogger(__name__)
 
@@ -87,7 +101,11 @@ class UnderwaterEnv(gym.Env):
             # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
             observation = observation.reshape(-1, *observation.shape)
             # pass through encoder network                                                                
-            _, _, z = self.vae.encode(observation)
+            _, _, z, pred = self.vae.encode_with_pred(observation)
+            # denormalize state predictions
+            pred = cmvae_utils.dataset_utils.de_normalize_state(pred)
+            # print distance pred
+            print("Distance: {}, Prediction: {}, Thrust: {}, Steer: {}".format(self.handler.raw_d, pred[0], action[0], action[1]))
             # set latent vector as observation
             observation = z
 

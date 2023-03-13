@@ -67,8 +67,6 @@ public class SimulationManager : Singleton<SimulationManager>
     [HideInInspector]
     public int avgFrameRate;
 
-    static public GlobalControlSettings globalControls = new GlobalControlSettings();
-
     public GameObject processing_obj;
 
     public struct ServerInfo
@@ -205,12 +203,15 @@ public class SimulationManager : Singleton<SimulationManager>
 
         _instance.ParseCommandLineArguments(Environment.GetCommandLineArgs());
 
+        Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
+                {
+                    { _instance.image_dir, true }
+                });
 
         if (debug_logs)
         {
             Utils.CleanAndCreateDirectories(new Dictionary<DirectoryInfo, bool>()
                 {
-                    { _instance.image_dir, true },
                     { _instance.packets_sent_dir, true },
                     { _instance.packets_received_dir, true }
                 });
@@ -236,9 +237,14 @@ public class SimulationManager : Singleton<SimulationManager>
 
 #if false
         _instance.game_state = E_Game_State.VAE_GEN;
-        _instance.num_images = 10;
+        _instance.num_images = 1000;
         _instance.image_generation_resolutions = new List<Resolution>()
         {
+            new Resolution
+            {
+                width = 64,
+                height = 64
+            },
             new Resolution
             {
                 width = 640,
@@ -433,7 +439,6 @@ public class SimulationManager : Singleton<SimulationManager>
 
     void Update()
     {
-        globalControls.Update(_instance.in_manual_mode);
     }
 
     public T ProcessConfig<T>(DirectoryInfo dir)

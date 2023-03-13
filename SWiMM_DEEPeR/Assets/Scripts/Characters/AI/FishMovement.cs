@@ -37,16 +37,6 @@ public class FishMovement : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Minus))
-        {
-            transform.position = new Vector3(0, 100, 0);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Equals))
-        {
-            transform.position = SimulationManager._instance.rover.transform.position;
-        }
-
         if ((transform.position - SimulationManager._instance.rover.transform.position).magnitude > distance_threshold)
         {
             current_timer += Time.deltaTime;
@@ -101,13 +91,13 @@ public class FishMovement : MonoBehaviour
         Quaternion _lookRotation = Quaternion.LookRotation(_direction);
 
         //rotate us over time according to speed until we are in the required rotation
-        transform.rotation = Quaternion.Slerp(transform.rotation, _lookRotation, m_speed * 0.1f);
+        //transform.rotation = Quaternion.Slerp(transform.rotation, _lookRotation, m_speed * 0.1f);
 
-        //Quaternion q = transform.rotation;
-        //q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
-        //transform.rotation = q;
+        ////Quaternion q = transform.rotation;
+        ////q.eulerAngles = new Vector3(q.eulerAngles.x, q.eulerAngles.y, 0);
+        ////transform.rotation = q;
 
-        transform.position += correct_forward * m_speed;
+        //transform.position += correct_forward * m_speed;
 
         if ((m_waypoint - transform.position).magnitude < 5)
         {

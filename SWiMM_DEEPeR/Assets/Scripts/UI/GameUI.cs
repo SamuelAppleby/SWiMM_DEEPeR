@@ -60,16 +60,7 @@ public class GameUI : MonoBehaviour
     private TextMeshProUGUI rotation_value_text;
 
     [SerializeField]
-    private TextMeshProUGUI water_shader_text;
-
-    [SerializeField]
-    private TextMeshProUGUI global_lighting_text;
-
-    [SerializeField]
     private TextMeshProUGUI total_ai_text;
-
-    [SerializeField]
-    private TextMeshProUGUI far_plane_text;
 
     private void Start()
     {
@@ -96,15 +87,17 @@ public class GameUI : MonoBehaviour
 
         position_value_text.text = third_person_movement.transform.position.ToString();
         orienation_value_text.text = third_person_movement.transform.rotation.eulerAngles.ToString();
+
         linear_velocity_value_text.text = third_person_movement.m_rb.velocity.ToString();
         angular_velocity_value_text.text = third_person_movement.m_rb.angularVelocity.ToString();
+
         movement_input_value_text.text = third_person_controls.input_linear.ToString();
         rotation_input_value_text.text = third_person_controls.input_angular.ToString();
         control_mode_value_text.text = third_person_controls.dive_mode.ToString();
+
         movement_value_text.text = third_person_controls.desired_move.ToString();
         rotation_value_text.text = third_person_controls.desired_rotation.ToString();
 
         total_ai_text.text = spawner.GetTotalNPCs().ToString();
-        far_plane_text.text = third_person_movement.first_person_cam.farClipPlane.ToString();
     }
 }

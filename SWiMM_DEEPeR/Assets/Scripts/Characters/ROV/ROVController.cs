@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using static Server;
@@ -44,13 +45,11 @@ public class ROVController : MonoBehaviour
     public Transform water_trans;
     private float m_distance_undewater;
 
-    private int manual_screenshot_count = 0;
-
     public Camera first_person_cam;
 
-    private float opt_d;
+    public float opt_d;
 
-    private float max_d;
+    public float max_d;
 
     private List<float> radii_to_draw;
 
@@ -118,8 +117,8 @@ public class ROVController : MonoBehaviour
 
         else
         {
-            opt_d = 8;
-            max_d = 2;
+            opt_d = 6;
+            max_d = 4;
 
             radii_to_draw = new List<float>
             {
@@ -137,6 +136,7 @@ public class ROVController : MonoBehaviour
         m_rb = GetComponent<Rigidbody>();
         m_rb.drag = air_drag;
         m_rb.angularDrag = angular_air_drag;
+        m_rb.useGravity = false;         // We want to optimize 2 actions, disable initial biasing of gravity
 
         if (SimulationManager._instance.game_state == Enums.E_Game_State.IMAGE_SAMPLING ||
 SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || SimulationManager._instance.game_state == Enums.E_Game_State.SCREENSHOT)
@@ -168,44 +168,41 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
     {
         m_distance_undewater = water_trans.position.y - transform.position.y;
         CheckCameraEffects();
-
-        if (Input.GetKeyDown(GlobalControlMap.Key_Screenshot))
-        {
-            StartCoroutine(Utils.TakeScreenshot(cam_resolution, first_person_cam, new DirectoryInfo(Path.GetFullPath(Path.Combine(SimulationManager._instance.image_dir.FullName, manual_screenshot_count + ".jpg")))));
-            manual_screenshot_count++;
-        }
     }
 
     private void LateUpdate()
     {
-        foreach (Transform trans in target_transforms)
+        if(SimulationManager._instance.game_state == Enums.E_Game_State.AUTOMATION_TRAINING || SimulationManager._instance.game_state == Enums.E_Game_State.REGULAR)
         {
-            int idx = 0;
-
-            foreach(LineRenderer line in trans.GetComponentsInChildren<LineRenderer>())
+            foreach (Transform trans in target_transforms)
             {
-                float delta_theta = (float)(2.0 * Mathf.PI) / num_segments;
-                float theta = 0f;
+                int idx = 0;
 
-                for (int i = 0; i < num_segments + 1; i++)
+                foreach (LineRenderer line in trans.GetComponentsInChildren<LineRenderer>())
                 {
-                    float x = radii_to_draw[idx] * Mathf.Sin(theta);
-                    float z = radii_to_draw[idx] * Mathf.Cos(theta);
-                    line.SetPosition(i, new Vector3(x, 0, z));
-                    theta += delta_theta;
+                    float delta_theta = (float)(2.0 * Mathf.PI) / num_segments;
+                    float theta = 0f;
+
+                    for (int i = 0; i < num_segments + 1; i++)
+                    {
+                        float x = radii_to_draw[idx] * Mathf.Sin(theta);
+                        float z = radii_to_draw[idx] * Mathf.Cos(theta);
+                        line.SetPosition(i, new Vector3(x, 0, z));
+                        theta += delta_theta;
+                    }
+
+                    idx++;
                 }
-
-                idx++;
             }
+
+            optimum_fwd.SetPosition(0, transform.position);
+            optimum_fwd.SetPosition(1, target_transforms[0].position);
+
+            curr_fwd.SetPosition(0, transform.position);
+            Vector3 dir = transform.position + transform.forward;
+            dir.y = transform.position.y;
+            curr_fwd.SetPosition(1, dir);
         }
-
-        optimum_fwd.SetPosition(0, transform.position);
-        optimum_fwd.SetPosition(1, target_transforms[0].position);
-
-        curr_fwd.SetPosition(0, transform.position);
-        Vector3 dir = transform.position + transform.forward;
-        dir.y = transform.position.y;
-        curr_fwd.SetPosition(1, dir);
     }
 
     private void OnDestroy()
@@ -251,40 +248,40 @@ SimulationManager._instance.game_state == Enums.E_Game_State.VAE_GEN || Simulati
     private IEnumerator SendImageData()
     {
         DirectoryInfo image_dir = SimulationManager._instance.debug_logs ?
-            new DirectoryInfo(Path.GetFullPath(Path.Combine(SimulationManager._instance.image_dir.FullName, "episode_" +
-            SimulationManager._instance.server.episode_num.ToString() + "_image_" + SimulationManager._instance.server.obsv_num.ToString() + ".jpg"))) : null;
-            
-        yield return StartCoroutine(Utils.TakeScreenshot(cam_resolution, first_person_cam, image_dir, byte_image =>
-        {
-            TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
-            int pos = 0;
+       new DirectoryInfo(Path.GetFullPath(Path.Combine(SimulationManager._instance.image_dir.FullName, "episode_" +
+       SimulationManager._instance.server.episode_num.ToString() + "_image_" + SimulationManager._instance.server.obsv_num.ToString() + ".jpg"))) : null;
 
-            foreach (Transform trans in target_transforms)
+            yield return StartCoroutine(Utils.TakeScreenshot(cam_resolution, first_person_cam, image_dir, byte_image =>
             {
-                targetPositions[pos] = new TargetObject
-                {
-                    position = new float[] { trans.position.x, trans.position.y, trans.position.z },
-                    fwd = new float[] { trans.forward.x, trans.forward.y, trans.forward.z }
-                };
-                pos++;
-            }
+                TargetObject[] targetPositions = new TargetObject[target_transforms.Count];
+                int pos = 0;
 
-            SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
-            {
-                msg_type = "on_telemetry",
-                payload = new PayloadDataToSend
+                foreach (Transform trans in target_transforms)
                 {
-                    telemetry_data = new TelemetryData
+                    targetPositions[pos] = new TargetObject
                     {
-                        jpg_image = byte_image,
-                        position = Utils.Vector3ToFloatArray(transform.position),
-                        collision_objects = collision_objects_list.ToArray(),
-                        fwd = Utils.Vector3ToFloatArray(transform.forward),
-                        targets = targetPositions
-                    }
+                        position = new float[] { trans.position.x, trans.position.y, trans.position.z },
+                        fwd = new float[] { trans.forward.x, trans.forward.y, trans.forward.z }
+                    };
+                    pos++;
                 }
-            });
-        }));
+
+                SimulationManager._instance.server.json_str_obsv = JsonConvert.SerializeObject(new DataToSend
+                {
+                    msg_type = "on_telemetry",
+                    payload = new PayloadDataToSend
+                    {
+                        telemetry_data = new TelemetryData
+                        {
+                            jpg_image = byte_image,
+                            position = Utils.Vector3ToFloatArray(transform.position),
+                            collision_objects = collision_objects_list.ToArray(),
+                            fwd = Utils.Vector3ToFloatArray(transform.forward),
+                            targets = targetPositions
+                        }
+                    }
+                });
+            }));
     }
 
     private void OnCollisionEnter(Collision collision)

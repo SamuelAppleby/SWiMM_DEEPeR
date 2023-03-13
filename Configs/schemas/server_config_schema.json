@@ -24,13 +24,21 @@
                                             "minItems": 2,
                                             "maxItems": 2
                                         },
-                                        "fov": {
+                                        "focalLength": {
+                                            "type": "number"
+                                        },
+                                        "sensorWidth": {
+                                            "type": "number"
+                                        },
+                                        "sensorHeight": {
                                             "type": "number"
                                         }
                                     },
                                     "required": [
                                         "resolution",
-                                        "fov"
+                                        "focalLength",
+                                        "sensorWidth",
+                                        "sensorHeight"
                                     ]
                                 },
                                 "structureConfig": {

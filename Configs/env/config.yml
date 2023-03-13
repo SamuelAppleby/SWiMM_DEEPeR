@@ -49,10 +49,10 @@ img_scale: !!python/tuple [64,64,3]
 
 # Used to express the optimal tracking position. This value is subtracted from the z-coordinate of the target's position 
 # i.e. how far set back from the target do you want the AUV to position itself
-opt_d: 8
+opt_d: 6
 
 # At what radial distance should the episode terminate (FROM THE OPTIMAL TRACKING POSITION, NOT THE TARGET POSITION)
-max_d: 8
+max_d: 4
 
 # Do we want to ouput the packet information and save images
-debug_logs: True
+debug_logs: False

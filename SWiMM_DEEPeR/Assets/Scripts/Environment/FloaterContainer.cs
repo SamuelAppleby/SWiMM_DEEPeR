@@ -9,17 +9,12 @@ public class FloaterContainer : MonoBehaviour
 {
     [HideInInspector]
     public float submerged_buoyant_strength;
-
     private Collider m_collider;
-    public List<GameObject> floaters = new List<GameObject>();
+    private List<GameObject> floaters = new List<GameObject>();
     public int num_floaters = 4;
     public Collider ocean_collider;
     private const float displacement_volume = 375;      // cubic inches
     private float net_buoyancy;      // cubic inches
-
-    [HideInInspector]
-    public bool is_initialized = false;
-
     private LayerMask water_mask;
 
     void Start()
@@ -68,8 +63,6 @@ public class FloaterContainer : MonoBehaviour
             new_floater.GetComponent<Floater>().water_mask = water_mask;
             floaters.Add(new_floater);
         }
-
-        is_initialized = true;
     }
 
     private void FixedUpdate()

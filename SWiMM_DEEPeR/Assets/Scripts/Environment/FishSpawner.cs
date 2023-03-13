@@ -214,7 +214,7 @@ public class FishSpawner : MonoBehaviour
     {
         current_stage = Enums.E_InitialisationStage.SPAWNING_NPCS;
         current_progress = 0;
-        float forward_distance = SimulationManager._instance.server != null ? SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.optD : 10;
+        float forward_distance = SimulationManager._instance.server != null ? SimulationManager._instance.server.json_server_config.payload.serverConfig.envConfig.optD : SimulationManager._instance.rover.GetComponent<ROVController>().opt_d;
 
         float current_ai_count = 0;
 

@@ -76,7 +76,7 @@ public class Screenshotter : MonoBehaviour
             current_obj.transform.parent = screeshot_location.transform;
         }
 
-        if (Input.GetKeyDown(GlobalControlMap.Key_Screenshot))
+        if (Input.GetKeyDown(MovementControlMap.Key_Screenshot))
         {
             StartCoroutine(Utils.TakeScreenshot(new Resolution { width = 7680, height = 4320 }, cam, new DirectoryInfo(Path.GetFullPath(Path.Combine(dir.FullName, current_obj.name + ".jpg")))));
         }

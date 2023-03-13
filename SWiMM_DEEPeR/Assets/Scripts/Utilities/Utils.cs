@@ -140,19 +140,25 @@ public static class Utils
         return;
 #endif
 
+#if !UNITY_EDITOR
         Application.Quit();
+        return;
+#endif
     }
 
     public static IEnumerator TakeScreenshot(Resolution res, Camera cam, DirectoryInfo dir, Action<byte[]> callback = null)
     {
+        Rect prev_rect = cam.rect;
         RenderTexture prev_render_tex = RenderTexture.active;
         RenderTexture prev_cam_target_tex = cam.targetTexture;
         bool prev_cam_enabled = cam.enabled;
+
         cam.enabled = false;
+        cam.rect = new Rect(0, 0, 1, 1);        // If we don't extend the viewport to max, we are already scaling a scaled render
 
         yield return new WaitForEndOfFrame();
 
-        RenderTexture rt = RenderTexture.GetTemporary(res.width, res.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default, 1);
+        RenderTexture rt = RenderTexture.GetTemporary(res.width, res.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
         cam.targetTexture = rt;
         cam.Render();
         RenderTexture.active = rt;
@@ -214,6 +220,14 @@ public static class Utils
         RenderTexture.active = prev_render_tex;
         cam.targetTexture = prev_cam_target_tex;
         cam.enabled = prev_cam_enabled;
+        cam.rect = prev_rect;
         yield return null;
+    }
+
+    public static void Swap<T>(this List<T> list, int i, int j)
+    {
+        T temp = list[i];
+        list[i] = list[j];
+        list[j] = temp;
     }
 }

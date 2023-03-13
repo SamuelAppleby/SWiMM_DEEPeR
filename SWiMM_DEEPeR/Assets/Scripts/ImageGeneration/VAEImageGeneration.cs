@@ -28,13 +28,8 @@ public class VAEImageGeneration : MonoBehaviour
     [SerializeField]
     private Range r_range;
 
-    [HideInInspector]
-    private Range theta_range;
-
     [SerializeField]
     private Range psi_range;
-
-    private float fov_limit;
 
     private Vector3 PolarTranslation(float r, float theta)
     {
@@ -103,14 +98,7 @@ public class VAEImageGeneration : MonoBehaviour
             });
         }
 
-        fov_limit = (float)track_camera.fieldOfView * 0.7f;
-        fov_limit = fov_limit * 0.5f * Mathf.Deg2Rad;
-
-        theta_range = new Range()
-        {
-            min = -fov_limit,
-            max = fov_limit
-        };
+        float theta = Camera.VerticalToHorizontalFieldOfView(track_camera.fieldOfView, track_camera.sensorSize.x / track_camera.sensorSize.y) * 0.5f * Mathf.Deg2Rad;
 
         var csv = new StringBuilder();
 
@@ -123,12 +111,12 @@ public class VAEImageGeneration : MonoBehaviour
             track_camera.transform.parent.position = new_pos;
 
             float rover_yaw = Random.Range(camera_yaw_range.min, camera_yaw_range.max);
-            Quaternion rover_yaw_q = Quaternion.Euler(new Vector3(0, rover_yaw, 0));
 
-            track_camera.transform.parent.rotation = rover_yaw_q;
+            track_camera.transform.parent.rotation = Quaternion.Euler(new Vector3(0, rover_yaw, 0));
 
             float new_r = Random.Range(r_range.min, r_range.max);
-            float new_theta = Random.Range(theta_range.min, theta_range.max);
+
+            float new_theta = Random.Range(-theta, theta);
 
             Vector3 dolphin_rel = PolarTranslation(new_r, new_theta);
             //Vector3 world_pos = ConvertTBodyToWorld(dolphin_rel, rover_trans.position, rover_trans.rotation);
@@ -137,9 +125,8 @@ public class VAEImageGeneration : MonoBehaviour
 
             float psi_rel = Random.Range(psi_range.min, psi_range.max);
             //float dolphn_yaw = rover_yaw + psi_rel;
-            Quaternion dolphin_yaw_q = Quaternion.Euler(new Vector3(0, psi_rel, 0));
 
-            target_trans.localRotation = dolphin_yaw_q;
+            target_trans.localRotation = Quaternion.Euler(new Vector3(0, psi_rel, 0));
 
             foreach (Resolution res in SimulationManager._instance.image_generation_resolutions)
             {

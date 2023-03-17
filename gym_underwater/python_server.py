@@ -47,7 +47,7 @@ class PythonServer:
     Python backend is the server and Unity frontend is the client.
     """
 
-    def __init__(self, handler):
+    def __init__(self, handler, protocol, host):
 
         # hold onto the handler
         self.sock = None
@@ -68,17 +68,17 @@ class PythonServer:
         self.action_num = 0
 
         conf_arr = process_and_validate_configs({
-            os.path.abspath(os.path.join(os.pardir, 'Configs', 'json', 'network_config.json')): os.path.abspath(os.path.join(os.pardir, 'Configs', 'schemas', 'network_config_schema.json')),
             os.path.abspath(os.path.join(os.pardir, 'Configs', 'json', 'server_config.json')):  os.path.abspath(os.path.join(os.pardir, 'Configs', 'schemas', 'server_config_schema.json'))
         })
 
         self.server_config = conf_arr.pop()
         self.server_config['payload']['serverConfig']['envConfig']['optD'] = self.handler.opt_d
         self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.handler.max_d
-        self.network_config = conf_arr.pop()
-        self.protocol = protocol_mapping[self.network_config["protocol"]]
-        self.address = (self.network_config["host"], self.network_config["port"])
-        self.observation_buffer_size = self.network_config["buffers"]["channel_observation"]
+
+        self.protocol = protocol
+        self.full_host = host.split(':')
+        self.address = (self.full_host[0], self.full_host[1])
+        self.observation_buffer_size = 8192
 
         if self.handler.debug_logs:
             self.handler.clean_and_create_debug_directories()

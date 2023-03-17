@@ -36,6 +36,16 @@
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,
           "spawnRadius": 10,
+          "boidGroups": [
+            {
+              "prefabName": "boid_fish",
+              "prefabNum": 0,
+              "numGroups": 0,
+              "fragmentedGroup": 50,
+              "fragmentedIndividual": 30,
+              "soaring": 1
+            }
+          ],
           "aiGroups": [
             {
               "prefabName": "dolphin",
@@ -55,7 +65,7 @@
                 0
               ],
               "scale": 1,
-              "minSpeed": 0.02,
+              "minSpeed": 0.04,
               "maxSpeed": 0.04,
               "spawnInfront": true,
               "scaleVariance": 0

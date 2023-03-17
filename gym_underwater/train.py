@@ -1,7 +1,7 @@
 """
 Parent script for initiating a training run
 """
-
+import argparse
 # generic imports
 import glob
 import os
@@ -15,6 +15,8 @@ import sys
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.schedules import constfn
 from stable_baselines.common.vec_env import VecNormalize, DummyVecEnv
+
+from gym_underwater.python_server import Protocol
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -40,6 +42,18 @@ ALGOS = {
 print("Loading environment configuration ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-h', '--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
+parser.add_argument('-tcp', help='Enable tcp', action='store_true')
+parser.add_argument('-udp', help='Enable udp', action='store_true')
+args = parser.parse_args()
+
+if (args.tcp and args.udp) or args.tcp:
+    args.protocol = Protocol.TCP
+else:
+    args.protocol = Protocol.UDP
 
 # early check on path to trained model if -i arg passed
 if env_config['model'] != "":
@@ -139,7 +153,7 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], log_dir, seed=seed)])
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, seed=seed)])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:

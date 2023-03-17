@@ -9,14 +9,15 @@ from gym_underwater.gym_env import UnderwaterEnv
 # Used for saving best model
 best_mean_reward = -np.inf
 
-def make_env(vae, obs, opt_d, max_d, img_scale, debug_logs, log_d, seed):
+
+def make_env(vae, obs, opt_d, max_d, img_scale, debug_logs, protocol, host, log_d, seed):
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
 
     def _init():
         # create instance of environment
-        env_inst = UnderwaterEnv(vae, obs, opt_d, max_d, img_scale, debug_logs)
+        env_inst = UnderwaterEnv(vae, obs, opt_d, max_d, img_scale, debug_logs, protocol, host)
         print("Environment ready")
         if seed > 0:
             # seed the environment
@@ -99,6 +100,7 @@ def accelerated_schedule(initial_value):
 
     return func
 
+
 def create_callback(algo, save_path, reward_threshold, verbose=1):
     """
     Create callback function for saving best model frequently and stopping run on reward threshold.
@@ -121,4 +123,5 @@ def create_callback(algo, save_path, reward_threshold, verbose=1):
         :return: (bool) If False: stop training
         """
         return True
+
     return sac_callback

@@ -29,7 +29,7 @@ def clean_and_remake(directory):
 
 
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_scale, debug):
+    def __init__(self, opt_d, max_d, img_scale, debug, protocol, host):
         self.debug_logs = debug
         self.debug_logs_dir = os.path.abspath(os.path.join(os.pardir, 'Logs'))
         self.image_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'images'))
@@ -57,7 +57,7 @@ class UnitySimHandler:
         }
 
         logger.setLevel(logging.INFO)
-        self.server = PythonServer(self)
+        self.server = PythonServer(self, protocol, host)
 
     def wait_until_loaded(self):
         while not self.server_connected:

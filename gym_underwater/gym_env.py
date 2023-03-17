@@ -30,7 +30,7 @@ class UnderwaterEnv(gym.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, vae, obs, opt_d, max_d, scale, debug):
+    def __init__(self, vae, obs, opt_d, max_d, scale, debug, protocol, host):
         print("Starting underwater environment ..")
 
         # set logging level
@@ -48,7 +48,7 @@ class UnderwaterEnv(gym.Env):
         self.scale = scale
 
         # create instance of class that deals with Unity comms
-        self.handler = UnitySimHandler(opt_d, max_d, scale, debug)
+        self.handler = UnitySimHandler(opt_d, max_d, scale, debug, protocol, host)
 
         # action space declaration
         print("Declaring action space")

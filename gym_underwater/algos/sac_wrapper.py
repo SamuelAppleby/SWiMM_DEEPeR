@@ -58,7 +58,7 @@ class SACWrap(SAC):
               log_interval=1, tb_log_name="SAC", print_freq=100):
         with TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name) as writer:
 
-            best_n_episodes = 100
+            best_n_episodes = 10
             self._setup_learn()
 
             # Transform to callable if needed

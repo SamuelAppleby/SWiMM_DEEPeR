@@ -16,8 +16,6 @@ from stable_baselines.common import set_global_seeds
 from stable_baselines.common.schedules import constfn
 from stable_baselines.common.vec_env import VecNormalize, DummyVecEnv
 
-from gym_underwater.python_server import Protocol
-
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
@@ -26,6 +24,7 @@ sys.path.insert(0, import_path)
 # local imports
 from gym_underwater.algos import SAC
 from gym_underwater.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, create_callback
+from gym_underwater.python_server import Protocol
 import cmvae_models.cmvae
 
 # remove warnings
@@ -45,15 +44,15 @@ with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml'
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-h', '--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
+parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
 parser.add_argument('-tcp', help='Enable tcp', action='store_true')
 parser.add_argument('-udp', help='Enable udp', action='store_true')
 args = parser.parse_args()
 
-if (args.tcp and args.udp) or args.tcp:
-    args.protocol = Protocol.TCP
-else:
+if args.udp and not args.tcp:
     args.protocol = Protocol.UDP
+else:
+    args.protocol = Protocol.TCP
 
 # early check on path to trained model if -i arg passed
 if env_config['model'] != "":

@@ -2,7 +2,7 @@
 
 import socket
 import json
-from enum import Enum
+from enum import Enum, IntEnum
 
 from jsonschema import validate
 from datetime import datetime
@@ -12,9 +12,14 @@ import os
 import shutil
 
 
-class Protocol(Enum):
+class Protocol(IntEnum):
     UDP = 0
     TCP = 1
+
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value < other.value
+        return NotImplemented
 
 
 protocol_mapping = {
@@ -60,7 +65,6 @@ class PythonServer:
         self.th = None
         self.conn = None
         self.network_config = None
-        self.protocol = None
         self.server_config = None
         self.action_buffer_size = None
         self.observation_buffer_size = None
@@ -77,7 +81,7 @@ class PythonServer:
 
         self.protocol = protocol
         self.full_host = host.split(':')
-        self.address = (self.full_host[0], self.full_host[1])
+        self.address = (self.full_host[0], (int(self.full_host[1])))
         self.observation_buffer_size = 8192
 
         if self.handler.debug_logs:
@@ -87,12 +91,10 @@ class PythonServer:
 
     def connect(self, host='127.0.0.1', port=60260):
         """
-        Open a udp socket
+        Open a tcp/udp socket
         """
 
         # create socket and associate the socket with local address
-        print('Protocol' + str(self.protocol))
-
         if self.protocol == Protocol.UDP:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         else:

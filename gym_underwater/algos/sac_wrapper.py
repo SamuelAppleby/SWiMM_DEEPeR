@@ -132,7 +132,7 @@ class SACWrap(SAC):
                     infos_values = np.mean(mb_infos_vals, axis=0)
 
                 if done:
-                    print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
+                    print("Episode finished. \nReward: {:.2f} \nSteps: {}".format(episode_rewards[-1], ep_len))
 
                     if writer is not None:
                         writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=episode_rewards[-1])]), step)

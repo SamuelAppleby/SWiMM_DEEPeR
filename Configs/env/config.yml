@@ -15,7 +15,7 @@ model: ''
 tb_path: ''
 
 # If want to pass image observation through pretrained encoder, provide filepath, else pass empty string
-vae_path: 'C:\Users\sambu\Downloads\cmvae_02_16_2023_nz_10\cmvae_model_49.ckpt'
+vae_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\vae_training_set\64x64\cmvae_03-15-2023_nz_10\cmvae_model_49.ckpt'
 #vae_path: '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_02_16_2023_nz_10/cmvae_model_49.ckpt'
 
 # path to trained policy for performing inference

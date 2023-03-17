@@ -27,11 +27,11 @@ import cmvae_models.cmvae
 import cmvae_utils
 
 # define testing meta parameters
-data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/64x64'
-output_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_02_20_2023_nz_20/'
+data_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/test'
+output_dir = '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_03-15-2023_nz_10/'
 model_to_eval = 'cmvae_model_49.ckpt'
 
-n_z = 20
+n_z = 10
 img_res = 64
 learning_rate = 1e-4
 beta = 8.0
@@ -40,9 +40,9 @@ columns = 10
 rows = 10
 read_table = True
 
-num_interp_z = 10
-idx_close = 2385 #NB: image filename minus 1
-idx_far = 2768
+num_interp_z = 3 #10
+idx_close = 7 #NB: image filename minus 1
+idx_far = 120
 
 z_range_mural = [-0.02, 0.02]
 z_num_mural = 11
@@ -113,113 +113,121 @@ images_np = ((images_np + 1.0) / 2.0 * 255.0).astype(np.uint8)
 img_recon = ((img_recon + 1.0) / 2.0 * 255.0).astype(np.uint8)
 state_recon = cmvae_utils.dataset_utils.de_normalize_state(state_recon)
 
-# get stats for state predictions
-cmvae_utils.stats_utils.calculate_state_stats(state_recon, raw_table, output_dir)
+for i in range(len(state_recon)):
+    gt_yaw = raw_table[i][2]
+    pred_yaw = state_recon[i][2]
+    print("Pred: {}, GT: {}".format(pred_yaw, gt_yaw))
 
-# show some reconstruction figures
-fig = plt.figure(figsize=(20, 20))
-# create array of num_imgs_display indexes to use with random sampler rather than using index 0 to num_imgs_display so more variation
-imgs_to_use = np.random.choice(range(len(raw_table)), num_imgs_display, replace=False)
-for i in range(1, num_imgs_display+1):
-    img_to_use = imgs_to_use[i-1]
-    idx_orig = (i-1)*2+1
-    fig.add_subplot(rows, columns, idx_orig)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[img_to_use, :])
-    plt.axis('off')
-    plt.imshow(img_display)
-    fig.add_subplot(rows, columns, idx_orig+1)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon[img_to_use, :])
-    plt.axis('off')
-    plt.imshow(img_display)
-fig.savefig(os.path.join(output_dir, 'reconstruction_results.png'))
-plt.show()
+# # get stats for state predictions
+# cmvae_utils.stats_utils.calculate_state_stats(state_recon, raw_table, output_dir)
 
-# show interpolation btw two images in latent space
-z_close = z[idx_close, :]
-z_far = z[idx_far, :]
-z_interp = cmvae_utils.geom_utils.interp_vector(z_close, z_far, num_interp_z)
+# # show some reconstruction figures
+# fig = plt.figure(figsize=(20, 20))
+# # create array of num_imgs_display indexes to use with random sampler rather than using index 0 to num_imgs_display so more variation
+# imgs_to_use = np.random.choice(range(len(raw_table)), num_imgs_display, replace=False)
+# for i in range(1, num_imgs_display+1):
+#     img_to_use = imgs_to_use[i-1]
+#     idx_orig = (i-1)*2+1
+#     fig.add_subplot(rows, columns, idx_orig)
+#     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[img_to_use, :])
+#     plt.axis('off')
+#     plt.imshow(img_display)
+#     fig.add_subplot(rows, columns, idx_orig+1)
+#     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon[img_to_use, :])
+#     plt.axis('off')
+#     plt.imshow(img_display)
+# fig.savefig(os.path.join(output_dir, 'reconstruction_results.png'))
+# plt.show()
 
-# get the image predictions
-# add dimension to front so (1,10) not (10,)
-z_feed = z_interp[0].reshape(1, -1)
-# initialise output variable with first call to decode
-img_recon_interp, state_recon_interp = model.decode(z_feed)
-# concat output to initial variable with each subsequent call to decode
-for i in range(1, len(z_interp)):
-    z_feed = z_interp[i].reshape(1, -1)
-    x, y = model.decode(z_feed)
-    img_recon_interp = np.concatenate([img_recon_interp, x], axis=0)
-    state_recon_interp = np.concatenate([state_recon_interp, y], axis=0)
+# # show interpolation btw two images in latent space
+# z_close = z[idx_close, :]
+# z_far = z[idx_far, :]
+# z_interp = cmvae_utils.geom_utils.interp_vector(z_close, z_far, num_interp_z)
 
-# de-normalization of states and images
-img_recon_interp = ((img_recon_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
-state_recon_interp = cmvae_utils.dataset_utils.de_normalize_state(state_recon_interp)
+# # get the image predictions
+# # add dimension to front so (1,10) not (10,)
+# z_feed = z_interp[0].reshape(1, -1)
+# # initialise output variable with first call to decode
+# img_recon_interp, state_recon_interp = model.decode(z_feed)
+# # concat output to initial variable with each subsequent call to decode
+# for i in range(1, len(z_interp)):
+#     z_feed = z_interp[i].reshape(1, -1)
+#     x, y = model.decode(z_feed)
+#     img_recon_interp = np.concatenate([img_recon_interp, x], axis=0)
+#     state_recon_interp = np.concatenate([state_recon_interp, y], axis=0)
 
-# join predictions with array and print
-indices = np.array([np.arange(num_interp_z)]).transpose()
-results = np.concatenate((indices, state_recon_interp), axis=1)
-print('Img index | Predictions: = \n{}'.format(results))
+# # de-normalization of states and images
+# img_recon_interp = ((img_recon_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
+# state_recon_interp = cmvae_utils.dataset_utils.de_normalize_state(state_recon_interp)
 
-fig, axs = plt.subplots(1, 3, tight_layout=True)
-axs[0].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 0], 'b-', label='r')
-axs[1].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 1], 'b-', label=r'$\theta$') 
-axs[2].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 2], 'b-', label=r'$\psi$')
+# # join predictions with array and print
+# indices = np.array([np.arange(num_interp_z)]).transpose()
+# results = np.concatenate((indices, state_recon_interp), axis=1)
+# print('Img index | Predictions: = \n{}'.format(results))
 
-for idx in range(3): 
-    y_ticks_array = state_recon_interp[:, idx][np.array([0, state_recon_interp[:, idx].shape[0]-1])]
-    y_ticks_array = np.around(y_ticks_array, decimals=1)
-    if idx > 0:
-        y_ticks_array = y_ticks_array 
-    axs[idx].set_yticks(y_ticks_array)
-    axs[idx].set_xticks(np.array([0, 9]))
-    axs[idx].set_xticklabels((r'$I_a$', r'$I_b$'))
+# fig, axs = plt.subplots(1, 3, tight_layout=True)
+# axs[0].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 0], 'b-', label='r')
+# axs[1].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 1], 'b-', label=r'$\theta$') 
+# axs[2].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 2], 'b-', label=r'$\psi$')
 
-axs[0].set_title(r'$r$')
-axs[1].set_title(r'$\theta$')
-axs[2].set_title(r'$\psi$')
+# for idx in range(3): 
+#     y_ticks_array = state_recon_interp[:, idx][np.array([0, state_recon_interp[:, idx].shape[0]-1])]
+#     y_ticks_array = np.around(y_ticks_array, decimals=1)
+#     if idx > 0:
+#         y_ticks_array = y_ticks_array 
+#     axs[idx].set_yticks(y_ticks_array)
+#     axs[idx].set_xticks(np.array([0, 9]))
+#     axs[idx].set_xticklabels((r'$I_a$', r'$I_b$'))
 
-axs[0].set_ylabel('[meter]')
-axs[1].set_ylabel(r'[deg]')
-axs[2].set_ylabel(r'[deg]') 
+# axs[0].set_title(r'$r$')
+# axs[1].set_title(r'$\theta$')
+# axs[2].set_title(r'$\psi$')
 
-fig.savefig(os.path.join(output_dir, 'state_stats_interpolation_results.png'))
+# axs[0].set_ylabel('[meter]')
+# axs[1].set_ylabel(r'[deg]')
+# axs[2].set_ylabel(r'[deg]') 
 
-# plot the interpolated images
-fig2 = plt.figure(figsize=(96, 96))
-columns = num_interp_z + 2
-rows = 1
-fig2.add_subplot(rows, columns, 1)
-img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[idx_close, :])
-plt.axis('off')
-plt.imshow(img_display)
-for i in range(1, num_interp_z + 1):
-    fig2.add_subplot(rows, columns, i+1)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp[i - 1, :])
-    plt.axis('off')
-    plt.imshow(img_display)
-fig2.add_subplot(rows, columns, num_interp_z + 2)
-img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[idx_far, :])
-plt.axis('off')
-plt.imshow(img_display)
-fig2.savefig(os.path.join(output_dir, 'reconstruction_interpolation_results.png'))
-plt.show()
+# fig.savefig(os.path.join(output_dir, 'state_stats_interpolation_results.png'))
 
-# new plot traveling through latent space
-fig3 = plt.figure(figsize=(96, 96))
-columns = z_num_mural
-rows = n_z
-z_values = cmvae_utils.geom_utils.interp_vector(z_range_mural[0], z_range_mural[1], z_num_mural)
-for i in range(1, z_num_mural*n_z + 1):
-    fig3.add_subplot(rows, columns, i)
-    z = np.zeros((1, n_z)).astype(np.float32)
-    z[0, int((i-1)/columns)] = z_values[i%columns-1] 
-    img_recon_interp, state_recon_interp = model.decode(z)
-    img_recon_interp = ((img_recon_interp[0, :] + 1.0) / 2.0 * 255.0).astype(np.uint8)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
-    plt.axis('off')
-    plt.imshow(img_display)
-fig3.savefig(os.path.join(output_dir, 'z_mural.png'))
-plt.show()
+# # plot the interpolated images
+# fig2 = plt.figure(figsize=(96, 96))
+# columns = num_interp_z + 2
+# rows = 1
+# fig2.add_subplot(rows, columns, 1)
+# img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[idx_close, :])
+# plt.axis('off')
+# plt.imshow(img_display)
+# for i in range(1, num_interp_z + 1):
+#     fig2.add_subplot(rows, columns, i+1)
+#     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp[i - 1, :])
+#     plt.axis('off')
+#     plt.imshow(img_display)
+# fig2.add_subplot(rows, columns, num_interp_z + 2)
+# img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[idx_far, :])
+# plt.axis('off')
+# plt.imshow(img_display)
+# fig2.savefig(os.path.join(output_dir, 'reconstruction_interpolation_results.png'))
+# plt.show()
+
+# # new plot traveling through latent space
+# fig3 = plt.figure(figsize=(96, 96))
+# columns = z_num_mural
+# rows = n_z
+# z_values = cmvae_utils.geom_utils.interp_vector(z_range_mural[0], z_range_mural[1], z_num_mural)
+# for i in range(1, z_num_mural*n_z + 1):
+#     fig3.add_subplot(rows, columns, i)
+#     z = np.zeros((1, n_z)).astype(np.float32)
+#     z[0, int((i-1)/columns)] = z_values[i%columns-1] 
+#     img_recon_interp, state_recon_interp = model.decode(z)
+#     img_recon_interp = ((img_recon_interp[0, :] + 1.0) / 2.0 * 255.0).astype(np.uint8)
+#     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
+#     plt.axis('off')
+#     plt.imshow(img_display)
+# fig3.savefig(os.path.join(output_dir, 'z_mural.png'))
+# plt.show()
+
+# # get stats for absolute yaw predictions
+# cmvae_utils.stats_utils.calc_abs_yaw_stats(state_recon, raw_table, output_dir)
 
 # # single-channel version of above 
 # fig4 = plt.figure(figsize=(96, 96))

@@ -34,7 +34,7 @@ def calculate_state_stats(predictions, poses, output_dir):
     print('Standard error: R({}) Theta({}) Psi({})'.format(std[0], std[1], std[2]), file=f) 
     # display max errors
     max_diff = np.max(abs_diff, axis=0)
-    print('Max error : R({}) Theta({}) Psi({})'.format(max_diff[0], max_diff[1], max_diff[2]), file=f)    
+    print('Max error : R({}) Theta({}) Psi({})'.format(max_diff[0], max_diff[1], max_diff[2]), file=f) 
 
     f.close() 
 
@@ -63,4 +63,26 @@ def calculate_state_stats(predictions, poses, output_dir):
     fig.savefig(os.path.join(output_dir, 'state_stats_error_histograms.png'))
 
     plt.show()
+
+def calc_abs_yaw_stats(predictions, poses, output_dir):
+
+    f_path = os.path.join(output_dir, 'abs_stats.txt')
+    f = open(f_path, 'w')
+
+    # see how model does at predicting yaw regardless of sign
+    abs_psi_predictions = []
+    for psi in predictions[2]:
+        abs_psi_predictions.append(np.abs(psi))
+    abs_psi_gt = []
+    for psi in poses[2]:
+        abs_psi_gt.append(np.abs(psi))
+    abs_psi_predictions = np.array(abs_psi_predictions)
+    abs_psi_gt = np.array(abs_psi_gt)
+    new_abs_diff = np.abs(abs_psi_predictions-abs_psi_gt)
+    new_mae = np.mean(new_abs_diff, axis=0)
+    new_std = np.std(new_abs_diff, axis=0) / np.sqrt(new_abs_diff.shape[0])
+    new_max_diff = np.max(new_abs_diff, axis=0)
+    print('If take absolute yaw: mae = {}, std = {}, max = {}'.format(new_mae, new_std, new_max_diff), file=f)
+
+    f.close()
 

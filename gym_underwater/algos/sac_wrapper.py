@@ -135,12 +135,12 @@ class SACWrap(SAC):
                     print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
 
                     if writer is not None:
-                        # Write reward per episode to tensorboard
-                        episode_summary = tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=episode_rewards[-1])])
-                        writer.add_summary(episode_summary, step)
+                        writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=episode_rewards[-1])]), step)
+                        writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_length", simple_value=ep_len)]), len(episode_rewards)-1)
 
-                        training_summary = tf.Summary(value=[tf.Summary.Value(tag="training_reward", simple_value=np.sum(episode_rewards))])
-                        writer.add_summary(training_summary, step)
+                        val = 1 if ep_len == self.train_freq else 0
+                        writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_termination", simple_value=val)]), len(episode_rewards)-1)
+                        writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="training_reward", simple_value=np.sum(episode_rewards))]), step)
 
                     mb_infos_vals = self.optimize(step, writer, current_lr)
 

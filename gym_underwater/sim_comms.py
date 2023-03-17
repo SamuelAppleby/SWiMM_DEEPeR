@@ -138,7 +138,7 @@ class UnitySimHandler:
 
     def determine_episode_over(self):
         if math.fabs(self.raw_d - self.opt_d) > self.max_d:
-            print("Episode terminated as target out of range {}".format(self.raw_d - self.opt_d))
+            print("Episode terminated as target out of range {}".format(abs(self.raw_d - self.opt_d)))
             logger.debug(f"game over: distance {self.raw_d}")
             return True
         if "Dolphin" in self.hit:

@@ -23,16 +23,14 @@ df_reward$Termination <- cut(df_reward$Termination,
 
 
 # Calculate average reward
-
-df_reward$average <- c(0)
-
 test_df = data.frame(Step=NA, average_rew=NA)[numeric(0), ]
 
 for (i in seq(100, nrow(df_reward), by=100)) {
-  print(df_reward[i, ])
+  # df_reward[i-99:i,]
+  df_reward[i, ]$average_rew <- mean(df_reward[i-99:i,]$Value)
 }
 
-ggplot(data=df_reward, aes(x=Step, y=Value)) +
+ggplot(data=df_reward, aes(x=Step, y=df_reward$average_rew)) +
   geom_smooth(method = "loess") +
   # geom_smooth(method = lm) +
   # geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE) +

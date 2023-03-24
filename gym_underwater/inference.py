@@ -12,8 +12,6 @@ from stable_baselines import logger
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.vec_env import DummyVecEnv
 
-from gym_underwater.python_server import Protocol
-
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
@@ -22,7 +20,8 @@ sys.path.insert(0, import_path)
 # local imports
 from gym_underwater.algos import SAC
 from gym_underwater.utils import make_env 
-import cmvae_models.cmvae 
+import cmvae_models.cmvae
+from gym_underwater.python_server import Protocol
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)

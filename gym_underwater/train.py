@@ -198,8 +198,6 @@ model.learn(n_timesteps, **kwargs)
 # Close the connection properly
 env.reset()
 
-# exit scene?
-
 # Save trained model as .pkl - NOTE set cloudpickle to False to save model as json
 model.save(os.path.abspath(os.path.join(run_specific_path, 'finalmodel.pkl')), cloudpickle=True)
 

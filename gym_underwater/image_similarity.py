@@ -14,8 +14,12 @@ def image_similarity(image_1, image_2):
     image_1 = image_1.flatten()
     image_2 = image_2.flatten()
 
+    test1 = np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
+
     image_1 = image_1 / 255
     image_2 = image_2 / 255
+
+    test2 = np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
 
     return np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
 

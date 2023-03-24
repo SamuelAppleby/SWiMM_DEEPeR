@@ -87,11 +87,11 @@ obs = env.reset()
 running_reward = 0.0
 ep_len = 0
 ep_rewards = []
-train_freq = 100
-episode_to_run = 2
+train_freq = 3000
+episode_to_run = 100
 
 # perform inference for 100 episodes (standard practice)
-while len(ep_rewards) <= episode_to_run:
+while len(ep_rewards) < episode_to_run:
 
     # query model for action decision given obs
     action, _ = model.predict(obs[0], deterministic=True)

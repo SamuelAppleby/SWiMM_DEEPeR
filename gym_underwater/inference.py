@@ -19,7 +19,7 @@ sys.path.insert(0, import_path)
 
 # local imports
 from gym_underwater.algos import SAC
-from gym_underwater.utils import make_env 
+from gym_underwater.utils import make_env
 import cmvae_models.cmvae
 from gym_underwater.python_server import Protocol
 
@@ -69,6 +69,10 @@ if env_config['vae_path'] != '':
     vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)
     vae.load_weights(env_config['vae_path'])
 
+else:
+    print('For inference, must provide a valid vae path!')
+    quit()
+
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
 env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, seed=seed)])
 
@@ -83,16 +87,17 @@ obs = env.reset()
 running_reward = 0.0
 ep_len = 0
 ep_rewards = []
+train_freq = 3000
 
 # perform inference for 100 episodes (standard practice)
-while len(ep_rewards) <= 100:
+while len(ep_rewards) <= 2:
 
     # query model for action decision given obs
-    action, _ = model.predict(obs[0], deterministic=True) 
+    action, _ = model.predict(obs[0], deterministic=True)
 
     # NB this is going to be passed to step in DummyVecEnv before step in DonkeyEnv
     # hence why it needs to be wrapped in a list 
-    action = [action]                             
+    action = [action]
 
     # step the environment
     obs, reward, done, infos = env.step(action)
@@ -102,6 +107,11 @@ while len(ep_rewards) <= 100:
 
     # increment episode length
     ep_len += 1
+
+    if not done and ep_len == train_freq:
+        print('Maximum episode length reached')
+        obs = env.reset()
+        done = True
 
     if done or ep_len >= 3000:
         # log episodic reward

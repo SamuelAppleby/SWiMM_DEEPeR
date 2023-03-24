@@ -23,19 +23,29 @@ df_reward$Termination <- cut(df_reward$Termination,
 
 
 # Calculate average reward
-test_df = data.frame(Step=NA, average_rew=NA)[numeric(0), ]
+df_reward$average_rew <- NA
+df_reward[1,]$average_rew <- 0
 
-for (i in seq(100, nrow(df_reward), by=100)) {
+window_size <- 100
+
+for (i in seq(window_size, nrow(df_reward), by=window_size)) {
   # df_reward[i-99:i,]
-  df_reward[i, ]$average_rew <- mean(df_reward[i-99:i,]$Value)
+  df_reward[i, ]$average_rew <- mean(df_reward[(i-window_size+1):i,]$Value)
 }
 
-ggplot(data=df_reward, aes(x=Step, y=df_reward$average_rew)) +
-  geom_smooth(method = "loess") +
+scientific_10 <- function(x) {
+  parse(text=gsub("e", " %*% 10^", scales::scientific_format()(x)))
+}
+
+ggplot(data=df_reward, aes(x=Step, y=average_rew)) +
+  scale_x_continuous(name =TeX(r'(Step)'), labels = scientific_10)+ 
+  scale_y_continuous(name =TeX(r'(Average Episodic Reward ($\mu=100$))'), labels = scientific_10)+ 
+  geom_smooth(method = "loess", level=0.3) +
   # geom_smooth(method = lm) +
   # geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE) +
-  geom_point(aes(color=Length, shape=Termination)) +
-  labs(x = TeX(r'($ |{S}| $)'), y = "Episodic Reward", color="Steps", shape="Termination Criteria") + 
+  geom_point(aes(x=Step, y=Value, color=Length, shape=Termination)) +
+  labs(color=TeX(r'(Steps per Episode)'), shape=TeX(r'(Termination Criteria)')) + 
+  scale_color_gradient2(mid="#DC3220", high="#1A85FF", labels = scientific_10) +
   theme(legend.position="bottom") 
 
 

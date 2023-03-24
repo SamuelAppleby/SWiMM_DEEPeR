@@ -19,8 +19,23 @@ df_reward$Termination <- cut(df_reward$Termination,
               breaks=c(-1, 0, 1),
               labels=c('Determine Over', 'Episode Max'))
 
+# df_reward <- df_reward[df_reward$Step < 900000, ]
+
+
+# Calculate average reward
+
+df_reward$average <- c(0)
+
+test_df = data.frame(Step=NA, average_rew=NA)[numeric(0), ]
+
+for (i in seq(100, nrow(df_reward), by=100)) {
+  print(df_reward[i, ])
+}
+
 ggplot(data=df_reward, aes(x=Step, y=Value)) +
   geom_smooth(method = "loess") +
+  # geom_smooth(method = lm) +
+  # geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE) +
   geom_point(aes(color=Length, shape=Termination)) +
   labs(x = TeX(r'($ |{S}| $)'), y = "Episodic Reward", color="Steps", shape="Termination Criteria") + 
   theme(legend.position="bottom") 

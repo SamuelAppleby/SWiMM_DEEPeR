@@ -8,3 +8,5 @@ Logs/
 image_generation/
 data/
 benchmarking_results/
+*.RData
+*.Rhistory

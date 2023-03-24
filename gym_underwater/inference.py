@@ -1,4 +1,5 @@
 # generic imports
+import argparse
 import os
 import sys
 import yaml
@@ -11,6 +12,8 @@ from stable_baselines import logger
 from stable_baselines.common import set_global_seeds
 from stable_baselines.common.vec_env import DummyVecEnv
 
+from gym_underwater.python_server import Protocol
+
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
@@ -20,6 +23,17 @@ sys.path.insert(0, import_path)
 from gym_underwater.algos import SAC
 from gym_underwater.utils import make_env 
 import cmvae_models.cmvae 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
+parser.add_argument('-tcp', help='Enable tcp', action='store_true')
+parser.add_argument('-udp', help='Enable udp', action='store_true')
+args = parser.parse_args()
+
+if args.udp and not args.tcp:
+    args.protocol = Protocol.UDP
+else:
+    args.protocol = Protocol.TCP
 
 # Remove warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module='tensorflow')
@@ -38,6 +52,7 @@ with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml'
 algo = env_config['algo']
 seed = env_config['seed']
 policy_path = env_config['policy_path']
+
 assert os.path.isfile(policy_path), "No model found at this path: {}".format(policy_path)
 
 set_global_seeds(seed)
@@ -56,7 +71,7 @@ if env_config['vae_path'] != '':
     vae.load_weights(env_config['vae_path'])
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], log_dir, seed=seed)]) 
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, seed=seed)])
 
 # load trained model
 model = ALGOS[algo].load(policy_path)

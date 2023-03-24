@@ -27,6 +27,17 @@ from gym_underwater.utils import make_env, middle_drop, accelerated_schedule, li
 from gym_underwater.python_server import Protocol
 import cmvae_models.cmvae
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
+parser.add_argument('-tcp', help='Enable tcp', action='store_true')
+parser.add_argument('-udp', help='Enable udp', action='store_true')
+args = parser.parse_args()
+
+if args.udp and not args.tcp:
+    args.protocol = Protocol.UDP
+else:
+    args.protocol = Protocol.TCP
+
 # remove warnings
 # TODO: terminal still flooded with warnings, try and remove
 warnings.filterwarnings("ignore", category=FutureWarning, module='tensorflow')
@@ -41,18 +52,6 @@ ALGOS = {
 print("Loading environment configuration ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
-parser.add_argument('-tcp', help='Enable tcp', action='store_true')
-parser.add_argument('-udp', help='Enable udp', action='store_true')
-args = parser.parse_args()
-
-if args.udp and not args.tcp:
-    args.protocol = Protocol.UDP
-else:
-    args.protocol = Protocol.TCP
 
 # early check on path to trained model if -i arg passed
 if env_config['model'] != "":

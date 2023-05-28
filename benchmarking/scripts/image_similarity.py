@@ -105,7 +105,7 @@ def cross_resolution_similarity(dir_low_scaled, dir_high_scaled, dir_raw, num_sa
 
     output_dir = os.path.join(output_dir, 'cross_resolution.csv')
 
-    with open(output_dir, 'a', newline='', encoding='UTF8') as f:
+    with open(output_dir, 'w', newline='', encoding='UTF8') as f:
         writer = csv.writer(f)
 
         if f.tell() == 0:

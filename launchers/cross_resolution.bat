@@ -1,3 +1,3 @@
 CALL .\..\.venv\Scripts\activate.bat
-cd ..\gym_underwater
-python image_similarity.py --dir_low_scaled D:\vae_test_set\640x360\64x64 --dir_high_scaled D:\vae_test_set\1920x1080\64x64 --dir_raw D:\vae_test_set\64x64\images --dir_output C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPer\benchmarking_results --cross_resolution --num_samples 1000
+cd ..\benchmarking\scripts
+python3 image_similarity.py --dir_high_scaled C:\Users\sambu\Downloads\images_high_scaled --dir_low_scaled C:\Users\sambu\Downloads\images_low_scaled --dir_raw C:\Users\sambu\Downloads\images_raw --dir_output C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPer\benchmarking\results --cross_resolution --num_samples 1000

@@ -1,5 +1,6 @@
 # generic imports
 import argparse
+import csv
 import os
 import sys
 import yaml
@@ -90,6 +91,11 @@ ep_rewards = []
 train_freq = 3000
 episode_to_run = 100
 
+with open(env_config['reward_log_path'], 'w', newline='') as csv_file:
+    best_writer = csv.writer(csv_file)
+    best_writer.writerow(["Episode", "Reward", "Length", "Termination"])
+    csv_file.close()
+
 # perform inference for 100 episodes (standard practice)
 while len(ep_rewards) < episode_to_run:
 
@@ -104,7 +110,7 @@ while len(ep_rewards) < episode_to_run:
     obs, reward, done, infos = env.step(action)
 
     # add reward for step to cumulative episodic reward       
-    running_reward += reward
+    running_reward += reward[-1]
 
     # increment episode length
     ep_len += 1
@@ -117,8 +123,14 @@ while len(ep_rewards) < episode_to_run:
     if done or ep_len >= train_freq:
         # log episodic reward
         ep_rewards.append(running_reward)
-        print("Episode Reward: {:.2f}".format(running_reward[0]))
+        print("Episode Reward: {:.2f}".format(running_reward))
         print("Episode Length: ", ep_len)
+
+        with open(env_config['reward_log_path'], 'a', newline='') as csv_file:
+            best_writer = csv.writer(csv_file)
+            best_writer.writerow([len(ep_rewards), running_reward, ep_len, int(ep_len == train_freq)])
+            csv_file.close()
+
         running_reward = 0.0
         ep_len = 0
 

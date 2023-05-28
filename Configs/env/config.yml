@@ -19,11 +19,11 @@ vae_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\vae
 #vae_path: '/home/campus.ncl.ac.uk/b3024896/Downloads/cmvae_02_16_2023_nz_10/cmvae_model_49.ckpt'
 
 # path to trained policy for performing inference
-policy_path: 'C:\Users\sambu\Downloads\3\bestmodel.pkl'
+policy_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\Logs\sac\1\bestmodel.pkl'
 #policy_path: '/home/campus.ncl.ac.uk/b3024896/Downloads/SAC_2/finalmodel.pkl'
 
 # path to where to create reward log csv as an output of inference run
-reward_log_path: 'C:\Users\sambu\Downloads'
+reward_log_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\Logs\sac\1\inference.csv'
 #reward_log_path: '/home/campus.ncl.ac.uk/b3024896/Downloads/SAC_2/'
 
 # Whether or not to use Tensorboard NOTE: resulting event files are large

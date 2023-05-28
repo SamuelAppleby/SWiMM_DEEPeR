@@ -137,27 +137,24 @@ class SACWrap(SAC):
                     if writer is not None:
                         writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_reward", simple_value=episode_rewards[-1])]), step)
                         writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_length", simple_value=ep_len)]), len(episode_rewards)-1)
-
-                        val = 1 if ep_len == self.train_freq else 0
-                        writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_termination", simple_value=val)]), len(episode_rewards)-1)
+                        writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="episode_termination", simple_value=int(ep_len == self.train_freq))]), len(episode_rewards)-1)
                         writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag="training_reward", simple_value=np.sum(episode_rewards))]), step)
 
                     mb_infos_vals = self.optimize(step, writer, current_lr)
+                    mean_reward = round(float(np.mean(episode_rewards[-best_n_episodes:])), 1) if len(episode_rewards) > best_n_episodes else round(float(np.mean(episode_rewards)), 1)
 
-                    if len(episode_rewards) > best_n_episodes:
-                        mean_reward = round(float(np.mean(episode_rewards[-best_n_episodes:])), 1)
+                    if mean_reward > best_mean_reward:
+                        best_mean_reward = mean_reward
+                        begin_time = time.time()
+                        print("Saving best model ...")
+                        self.save(save_path=os.path.join(self.tensorboard_log, "bestmodel"), cloudpickle=True)
 
-                        if mean_reward > best_mean_reward:
-                            begin_time = time.time()
-                            print("Saving best model ...")
-                            self.save(save_path=os.path.join(self.tensorboard_log, "bestmodel"), cloudpickle=True)
+                        with open(os.path.join(self.tensorboard_log, "ep_nums_for_best.csv"), 'a') as csv_file:
+                            best_writer = csv.writer(csv_file)
+                            best_writer.writerow([len(episode_rewards)])
+                            csv_file.close()
 
-                            best_mean_reward = mean_reward
-                            with open(os.path.join(self.tensorboard_log, "ep_nums_for_best.csv"), 'a') as csv_file:
-                                best_writer = csv.writer(csv_file)
-                                best_writer.writerow([len(episode_rewards)])
-                                csv_file.close()
-                            print("Model saved, time taken: ", time.time() - begin_time)
+                        print("Model saved, time taken: ", time.time() - begin_time)
 
                     if self.verbose >= 1 and log_interval is not None and len(episode_rewards) % log_interval == 0:
                         fps = int(step / (time.time() - start_time))

@@ -50,7 +50,7 @@ ALGOS = {
 }
 
 print("Loading environment configuration ...")
-with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'configs', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 # early check on path to trained model if -i arg passed
@@ -73,7 +73,7 @@ if env_config['obs'] == 'vae':
 
 # load hyperparameters from yaml file into dict
 print("Loading hyperparameters ...")
-with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'hyperparams', '{}.yml'.format(env_config['algo']))), 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'configs', '{}.yml'.format(env_config['algo']))), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
 # add seed provided by config
@@ -95,7 +95,7 @@ set_global_seeds(seed)
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.abspath(os.path.join(os.pardir, "Logs", env_config['algo']))
+algo_specific_path = os.path.abspath(os.path.join(os.pardir, "logs", env_config['algo']))
 run_id = 0
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):

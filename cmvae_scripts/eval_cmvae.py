@@ -14,7 +14,6 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-import cv2
 import random
 import yaml
 
@@ -47,7 +46,7 @@ idx_far = 2768
 z_range_mural = [-0.02, 0.02]
 z_num_mural = 11
 
-with open('../Configs/env/config.yml', 'r') as f:
+with open('../configs/config.yml', 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 # seeding for reproducability

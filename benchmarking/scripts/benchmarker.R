@@ -27,7 +27,7 @@ df_resize <- aggregate(. ~ width + height, df_resize, function(x) c(
 # )
 
 
-df_inference <- read.csv(file = 'C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR/Logs/sac/1/inference.csv')
+df_inference <- read.csv(file = 'C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR/logs/sac/1/inference.csv')
 
 df_inference <- sapply(df_inference, function(x) c(
   "mean" = mean(x),

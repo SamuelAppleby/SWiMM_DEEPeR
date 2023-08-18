@@ -51,10 +51,10 @@ max_size = None
 learning_rate = 1e-4
 beta = 8.0
 
-with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'configs', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-# seeding for reproducability
+# seeding for reproducibility
 seed = env_config['seed']
 tf.compat.v1.set_random_seed(seed)
 np.random.seed(seed)

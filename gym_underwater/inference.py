@@ -46,7 +46,7 @@ ALGOS = {
 }
 
 print("Loading environment configuration ...")
-with open(os.path.abspath(os.path.join(os.pardir, 'Configs', 'env', 'config.yml')), 'r') as f:
+with open(os.path.abspath(os.path.join(os.pardir, 'configs', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 algo = env_config['algo']

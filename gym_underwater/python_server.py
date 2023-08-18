@@ -72,7 +72,7 @@ class PythonServer:
         self.action_num = 0
 
         conf_arr = process_and_validate_configs({
-            os.path.abspath(os.path.join(os.pardir, 'Configs', 'json', 'server_config.json')):  os.path.abspath(os.path.join(os.pardir, 'Configs', 'schemas', 'server_config_schema.json'))
+            os.path.abspath(os.path.join(os.pardir, 'configs', 'server_config.json')):  os.path.abspath(os.path.join(os.pardir, 'configs', 'server_config_schema.json'))
         })
 
         self.server_config = conf_arr.pop()

@@ -3,6 +3,7 @@
   "payload": {
     "serverConfig": {
       "roverConfig": {
+        "tpCameraCollider" : true,
         "motorConfig": {
           "stabilityForce": 0.2,
           "stabilityThreshold": 1,

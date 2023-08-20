@@ -13,6 +13,9 @@
                         "roverConfig": {
                             "type": "object",
                             "properties": {
+                                "tpCameraCollider" : {
+                                    "type":  "boolean"
+                                },
                                 "camConfig": {
                                     "type": "object",
                                     "properties": {
@@ -87,9 +90,10 @@
                                 }
                             },
                             "required": [
-                                "motorConfig",
+                                "tpCameraCollider",
                                 "camConfig",
-                                "structureConfig"
+                                "structureConfig",
+                                "motorConfig"
                             ]
                         },
                         "envConfig": {

@@ -10,3 +10,4 @@ data/
 benchmarking_results/
 *.RData
 *.Rhistory
+Pipfile.lock

@@ -12,9 +12,11 @@ import yaml
 import sys
 
 # specialist imports
-from stable_baselines.common import set_global_seeds
-from stable_baselines.common.schedules import constfn
-from stable_baselines.common.vec_env import VecNormalize, DummyVecEnv
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.utils import constant_fn
+from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
+
+from gym_underwater.algos.train_wrapper import AlgWrapper
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,8 +24,8 @@ import_path = os.path.join(curr_dir, '..')
 sys.path.insert(0, import_path)
 
 # local imports
-from gym_underwater.algos import SAC
-from gym_underwater.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, create_callback
+from stable_baselines3 import SAC
+from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule
 from gym_underwater.python_server import Protocol
 import cmvae_models.cmvae
 
@@ -63,7 +65,7 @@ print("Obs: {}".format(env_config['obs']))
 vae = None
 if env_config['obs'] == 'vae':
 
-    if env_config['vae_path'] is '':
+    if env_config['vae_path'] == '':
         print('For vae training, must provide a valid vae path!')
         quit()
 
@@ -91,7 +93,7 @@ if vae is not None:
 # if seed provided, use it, otherwise use zero
 # Note: this stable baselines utility function seeds tensorflow, np.random, and random
 seed = hyperparams.get('seed', 0)
-set_global_seeds(seed)
+set_random_seed(seed)
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
@@ -131,7 +133,7 @@ if isinstance(hyperparams['learning_rate'], str):
     else:
         hyperparams['learning_rate'] = linear_schedule(initial_value)
 elif isinstance(hyperparams['learning_rate'], float):
-    hyperparams['learning_rate'] = constfn(hyperparams['learning_rate'])
+    hyperparams['learning_rate'] = constant_fn(hyperparams['learning_rate'])
 else:
     raise ValueError('Invalid value for learning rate: {}'.format(hyperparams['learning_rate']))
 
@@ -170,7 +172,7 @@ if env_config['model'].endswith('.pkl') and os.path.isfile(env_config['model']):
     if env_config['tb_path'] != "":
         tb_path = env_config['tb_path']
 
-    model = ALGOS[env_config['algo']].load(env_config['model'], env=env, tensorboard_log=tb_path, verbose=1, **hyperparams)
+    model = SAC.load(path=env_config['model'], env=env, **hyperparams)
 
     exp_folder = env_config['model'].split('.pkl')[0]
     if normalize:
@@ -183,23 +185,21 @@ else:
     model = ALGOS[env_config['algo']](env=env, tensorboard_log=tb_path, verbose=1, **hyperparams)
 
 kwargs = {}
-if env_config['log_interval'] > -1:
-    kwargs = {'log_interval': env_config['log_interval']}
+
+stats = AlgWrapper()
 
 if env_config['algo'] == 'sac':
-    kwargs.update({'callback': create_callback(env_config['algo'], run_specific_path, reward_threshold=2200, verbose=1)})
+    kwargs.update({'callback': stats.create_callback(env_config['algo'], run_specific_path), 'log_interval': env_config['log_interval'], 'tb_log_name': 'SAC'})
 
 # train model
 print("Starting training run ...")
 model.learn(n_timesteps, **kwargs)
 
-# send message via server
-
 # Close the connection properly
 env.reset()
 
-# Save trained model as .pkl - NOTE set cloudpickle to False to save model as json
-model.save(os.path.abspath(os.path.join(run_specific_path, 'finalmodel.pkl')), cloudpickle=True)
+# Save trained model as .pkl - NOTE set cloudpickle = False to save model as json
+model.save(os.path.join(model.tensorboard_log, "bestmodel"))
 
 # Save hyperparams
 with open(os.path.abspath(os.path.join(run_specific_path, 'config.yml')), 'w') as f:

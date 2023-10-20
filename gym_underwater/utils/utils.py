@@ -1,13 +1,5 @@
-import os
-import csv
-import time
-import numpy as np
-from stable_baselines.common import set_global_seeds
-from stable_baselines.bench import Monitor
+from stable_baselines3.common.monitor import Monitor
 from gym_underwater.gym_env import UnderwaterEnv
-
-# Used for saving best model
-best_mean_reward = -np.inf
 
 
 def make_env(vae, obs, opt_d, max_d, img_scale, debug_logs, protocol, host, log_d, seed):
@@ -99,29 +91,3 @@ def accelerated_schedule(initial_value):
         return progress * initial_value
 
     return func
-
-
-def create_callback(algo, save_path, reward_threshold, verbose=1):
-    """
-    Create callback function for saving best model frequently and stopping run on reward threshold.
-
-    :param algo: (str)
-    :param save_path: (str)
-    :param reward_threshold: (int)
-    :param verbose: (int)
-    :return: (function) the callback function
-    """
-    if algo != 'sac':
-        raise NotImplementedError("Callback creation not implemented yet for {}".format(algo))
-
-    def sac_callback(_locals, _globals):
-        """
-        Callback for saving best model when using SAC. Early stopping also implemented here.
-
-        :param _locals: (dict)
-        :param _globals: (dict)
-        :return: (bool) If False: stop training
-        """
-        return True
-
-    return sac_callback

@@ -115,7 +115,7 @@ class UnitySimHandler:
         info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.raw_d, "raw_dist": self.raw_d,
                 "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
 
-        return observation, self.calc_reward(), self.determine_episode_over(), info
+        return observation, self.calc_reward(), self.determine_episode_over(), False, info
 
     def calc_reward(self):
         # heading vector from rover to target

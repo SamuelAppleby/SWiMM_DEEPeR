@@ -31,7 +31,7 @@ cd launchers
 #### Windows
 ```bash
 cd launchers
-chmod +x install_pip.sh (Optional)
+chmod +x pip_install.sh (Optional)
 .\install_pip.sh
 ```
 

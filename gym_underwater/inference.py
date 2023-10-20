@@ -7,11 +7,11 @@ import yaml
 import warnings
 
 # specialist imports
-import gym
+import gymnasium
 import numpy as np
-from stable_baselines import logger
-from stable_baselines.common import set_global_seeds
-from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines3.common import logger
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -19,7 +19,7 @@ import_path = os.path.join(curr_dir, '..')
 sys.path.insert(0, import_path)
 
 # local imports
-from gym_underwater.algos import SAC
+from stable_baselines3 import SAC
 from gym_underwater.utils import make_env
 import cmvae_models.cmvae
 from gym_underwater.python_server import Protocol
@@ -55,7 +55,7 @@ policy_path = env_config['policy_path']
 
 assert os.path.isfile(policy_path), "No model found at this path: {}".format(policy_path)
 
-set_global_seeds(seed)
+set_random_seed(seed)
 
 # set up a reward log if want one
 log_dir = os.path.dirname(policy_path)

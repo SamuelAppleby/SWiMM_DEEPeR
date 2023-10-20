@@ -135,7 +135,7 @@ class PythonServer:
             if not data:
                 print("[-] Invalid json")
                 self.stop()
-                break
+                return
 
             # unpack and send json message onto handler
             json_str = data.decode('UTF-8')
@@ -189,8 +189,6 @@ class PythonServer:
             }
         }
 
-        if self.th is not None:
-            self.th.join()
         if self.sock is not None:
             print("[-] Closing socket")
             self.sock.close()

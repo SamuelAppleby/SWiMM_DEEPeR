@@ -41,8 +41,8 @@ opt_d: 6
 # At what radial distance should the episode terminate (FROM THE OPTIMAL TRACKING POSITION, NOT THE TARGET POSITION)
 max_d: 4
 
-# Override log interval (default: -1, no change)
-log_interval: -1
+# Override log interval
+log_interval: 4
 
 # Verbose mode (0: no output, 1: INFO)
 verbose: 1

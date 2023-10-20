@@ -7,9 +7,9 @@ import numpy as np
 import cv2
 
 # specialised imports
-import gym
-from gym import spaces
-from gym.utils import seeding
+import gymnasium
+from gymnasium import spaces
+from gymnasium.utils import seeding
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module='gym')
 logger = logging.getLogger(__name__)
 
 
-class UnderwaterEnv(gym.Env):
+class UnderwaterEnv(gymnasium.Env):
     """
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
@@ -83,57 +83,45 @@ class UnderwaterEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def observe_and_process_observation(self, action=None, pred=False):
+        # retrieve results of action implementation
+        observation, reward, terminated, truncated, info = self.handler.observe(self.obs)
+
+        # if vae has been passed, raw image observation encoded to latent vector
+        if self.vae is not None:
+            # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
+            observation = observation[:, :, ::-1]
+            # resize to resolution used to train vae
+            observation = cv2.resize(observation, (self.vae.res, self.vae.res))
+            # normalize pixel values
+            observation = observation / 255.0 * 2.0 - 1.0
+            # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
+            observation = observation.reshape(-1, *observation.shape)
+            # pass through encoder network
+            if pred:
+                _, _, z, pred = self.vae.encode_with_pred(observation)
+                # denormalize state predictions
+                pred = cmvae_utils.dataset_utils.de_normalize_state(pred)
+                print("Distance: {}, Prediction: {}, Thrust: {}, Steer: {}".format(self.handler.raw_d, pred[0], action[0], action[1]))
+            else:
+                _, _, z = self.vae.encode(observation)
+
+            # set latent vector as observation
+            observation = z
+
+        return observation, reward, terminated, truncated, info
+
     def step(self, action):
         # send action decision to handler to send off to sim
         self.handler.send_action(action)
+        return self.observe_and_process_observation()
 
-        # retrieve results of action implementation
-        observation, reward, done, info = self.handler.observe(self.obs)
-
-        # if vae has been passed, raw image observation encoded to latent vector
-        if self.vae is not None:
-            # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
-            observation = observation[:, :, ::-1]                                                                                        
-            # resize to resolution used to train vae
-            observation = cv2.resize(observation, (self.vae.res, self.vae.res))
-            # normalize pixel values
-            observation = observation / 255.0 * 2.0 - 1.0
-            # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
-            observation = observation.reshape(-1, *observation.shape)
-            # pass through encoder network                                                                
-            _, _, z, pred = self.vae.encode_with_pred(observation)
-            # denormalize state predictions
-            pred = cmvae_utils.dataset_utils.de_normalize_state(pred)
-            # print distance pred
-            # print("Distance: {}, Prediction: {}, Thrust: {}, Steer: {}".format(self.handler.raw_d, pred[0], action[0], action[1]))
-            # set latent vector as observation
-            observation = z
-
-        return observation, reward, done, info
-
-    def reset(self):
+    def reset(self, **kwargs):
         # reset simulation to start state
         self.handler.reset()
-
         # fetch initial observation
-        observation, reward, done, info = self.handler.observe(self.obs)
-
-        # if vae has been passed, raw image observation encoded to latent vector
-        if self.vae is not None:
-            # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
-            observation = observation[:, :, ::-1]                                                                                        
-            # resize to resolution used to train vae
-            observation = cv2.resize(observation, (self.vae.res, self.vae.res))
-            # normalize pixel values
-            observation = observation / 255.0 * 2.0 - 1.0
-            # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
-            observation = observation.reshape(-1, *observation.shape)
-            # pass through encoder network                                                                
-            _, _, z = self.vae.encode(observation)
-            # set latent vector as observation
-            observation = z
-
-        return observation
+        observation, _, _, _, info = self.observe_and_process_observation()
+        return observation, info
 
     def render(self):
         return self.handler.handler.image_array

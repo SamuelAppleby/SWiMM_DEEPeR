@@ -1,4 +1,4 @@
-#generic imports
+# generic imports
 import logging
 import warnings
 import sys
@@ -30,7 +30,7 @@ class UnderwaterEnv(gymnasium.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, vae, obs, opt_d, max_d, scale, debug, protocol, host):
+    def __init__(self, vae, obs, opt_d, max_d, scale, debug, protocol, host, ep_len_threshold):
         print("Starting underwater environment ..")
 
         # set logging level
@@ -47,8 +47,11 @@ class UnderwaterEnv(gymnasium.Env):
         self.obs = obs
         self.scale = scale
 
+        self.episode_num = 0
+        self.step_num = 0
+
         # create instance of class that deals with Unity comms
-        self.handler = UnitySimHandler(opt_d, max_d, scale, debug, protocol, host)
+        self.handler = UnitySimHandler(opt_d, max_d, scale, debug, protocol, host, ep_len_threshold)
 
         # action space declaration
         print("Declaring action space")
@@ -112,16 +115,21 @@ class UnderwaterEnv(gymnasium.Env):
         return observation, reward, terminated, truncated, info
 
     def step(self, action):
+        self.step_num += 1
+
         # send action decision to handler to send off to sim
-        self.handler.send_action(action)
+        self.handler.send_action(action, self.step_num)
         return self.observe_and_process_observation()
 
     def reset(self, **kwargs):
+        self.step_num = 0
+        self.episode_num += 1
+
         # reset simulation to start state
-        self.handler.reset()
+        self.handler.send_reset(self.episode_num)
         # fetch initial observation
         observation, _, _, _, info = self.observe_and_process_observation()
         return observation, info
 
     def render(self):
-        return self.handler.handler.image_array
+        return self.handler.image_array

@@ -11,12 +11,15 @@ from collections import OrderedDict
 import yaml
 import sys
 
+from stable_baselines3.common.logger import configure
 # specialist imports
-from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.utils import set_random_seed, get_latest_run_id
 from stable_baselines3.common.utils import constant_fn
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
+from torch.utils.tensorboard import SummaryWriter
 
-from gym_underwater.algos.train_wrapper import AlgWrapper
+from gym_underwater.algos.callbacks import SwimCallback
+from gym_underwater.sim_comms import Protocol
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +29,6 @@ sys.path.insert(0, import_path)
 # local imports
 from stable_baselines3 import SAC
 from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule
-from gym_underwater.python_server import Protocol
 import cmvae_models.cmvae
 
 parser = argparse.ArgumentParser()
@@ -56,25 +58,20 @@ with open(os.path.abspath(os.path.join(os.pardir, 'configs', 'config.yml')), 'r'
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 # early check on path to trained model if -i arg passed
-if env_config['model'] != "":
-    assert env_config['model'].endswith('.pkl') and os.path.isfile(env_config['model']), \
-        "The argument trained_agent must be a valid path to a .pkl file"
+if env_config['model_path'] != '':
+    assert os.path.exists(env_config['model_path']) and os.path.isfile(env_config['model_path']) and env_config['model_path'].endswith('.zip'), \
+        'The argument model_path must be a valid path to a .zip file'
 
 # if using pretrained vae, create instance of vae object and load trained weights from path provided
 print("Obs: {}".format(env_config['obs']))
 vae = None
 if env_config['obs'] == 'vae':
-
-    if env_config['vae_path'] == '':
-        print('For vae training, must provide a valid vae path!')
-        quit()
-
-    print("Loading VAE ...")
+    print('Loading VAE ...')
     vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
     vae.load_weights(env_config['vae_path'])
 
 # load hyperparameters from yaml file into dict
-print("Loading hyperparameters ...")
+print('Loading hyperparameters ...')
 with open(os.path.abspath(os.path.join(os.pardir, 'configs', '{}.yml'.format(env_config['algo']))), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
@@ -109,13 +106,9 @@ os.makedirs(run_specific_path, exist_ok=True)
 
 print("Outputs and logs will be saved to {}".format(run_specific_path))
 
-# generate path for tb files
-if not env_config['tb']:
-    tb_path = None
-else:
-    tb_path = os.path.abspath(run_specific_path)
+if hyperparams['tensorboard_log'] == '':
+    hyperparams['tensorboard_log'] = os.path.abspath(run_specific_path)
 
-# generate path for Monitor logs
 if not env_config['monitor']:
     log_dir = os.path.abspath(os.path.join('tmp', 'gym', '{}'.format(int(time.time()))))
 else:
@@ -153,14 +146,14 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, seed=seed)])
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=seed)])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:
     env = VecNormalize(env, **normalize_kwargs)
 
 # if training on top of trained model, load trained model
-if env_config['model'].endswith('.pkl') and os.path.isfile(env_config['model']):
+if os.path.isfile(env_config['model_path']):
     
     # Continue training
     print("Loading pretrained agent ...")
@@ -168,38 +161,54 @@ if env_config['model'].endswith('.pkl') and os.path.isfile(env_config['model']):
     # Policy should not be changed
     del hyperparams['policy']  # network architecture already set so don't need
 
-    # if config file provides path to existing tensorboard events file, overwrite auto generated tb_path
-    if env_config['tb_path'] != "":
-        tb_path = env_config['tb_path']
+    model = SAC.load(path=env_config['model_path'], env=env, **hyperparams)
 
-    model = SAC.load(path=env_config['model'], env=env, **hyperparams)
-
-    exp_folder = env_config['model'].split('.pkl')[0]
     if normalize:
         print("Loading saved running average ...")
+        exp_folder = env_config['model'].split('.zip')[0]
         env.load(exp_folder, env)
 
 else:
     # Train an agent from scratch
     print("Training from scratch: initialising new model ...")
-    model = ALGOS[env_config['algo']](env=env, tensorboard_log=tb_path, verbose=1, **hyperparams)
+    model = ALGOS[env_config['algo']](env=env, **hyperparams)
 
-kwargs = {}
-
-stats = AlgWrapper()
+kwargs = {'total_timesteps': n_timesteps, 'callback': SwimCallback(), 'log_interval': env_config['log_interval'], 'reset_num_timesteps': True,  'progress_bar': True}
 
 if env_config['algo'] == 'sac':
-    kwargs.update({'callback': stats.create_callback(env_config['algo'], run_specific_path), 'log_interval': env_config['log_interval'], 'tb_log_name': 'SAC'})
+    kwargs.update({'tb_log_name': 'SAC'})
 
-# train model
+
+# off_policy_algorithm forces no csv output, so recreate the function and set a custom logger
+save_path, format_strings = None, ['stdout']
+
+if model.tensorboard_log is not None and SummaryWriter is None:
+    raise ImportError('Trying to log data to tensorboard but tensorboard is not installed.')
+
+if model.tensorboard_log is not None and SummaryWriter is not None:
+    latest_run_id = get_latest_run_id(model.tensorboard_log, kwargs['tb_log_name'])
+    if not kwargs['reset_num_timesteps']:
+        # Continue training in the same directory
+        latest_run_id -= 1
+    save_path = os.path.join(model.tensorboard_log, f"{kwargs['tb_log_name']}_{latest_run_id + 1}")
+    if model.verbose >= 1:
+        format_strings = ['stdout', 'tensorboard', 'csv']
+    else:
+        format_strings = ['tensorboard']
+elif model.verbose == 0:
+    format_strings = [""]
+
+model.set_logger(configure(save_path, format_strings))
+
+# Train model
 print("Starting training run ...")
-model.learn(n_timesteps, **kwargs)
+model.learn(**kwargs)
 
 # Close the connection properly
 env.reset()
 
-# Save trained model as .pkl - NOTE set cloudpickle = False to save model as json
-model.save(os.path.join(model.tensorboard_log, "bestmodel"))
+# Save final model, regardless of state
+model.save(os.path.abspath(os.path.join(str(model.tensorboard_log), 'final_model')))
 
 # Save hyperparams
 with open(os.path.abspath(os.path.join(run_specific_path, 'config.yml')), 'w') as f:

@@ -1,25 +1,54 @@
 import base64
+import json
 import logging
 import os
 import shutil
 import time
+from enum import IntEnum
+import socket
+from threading import Thread
+
 import numpy as np
 import math
 from io import BytesIO
 from PIL import Image
+from jsonschema.validators import validate
 from skimage.transform import resize
-from python_server import PythonServer
-
-logger = logging.getLogger(__name__)
+from datetime import datetime
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
-def write_image_to_file_incrementally(image, image_dir):
-    """
-    Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
-    """
-    with open(image_dir, 'wb') as f:
-        f.write(image)
+class Protocol(IntEnum):
+    UDP = 0
+    TCP = 1
+
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value < other.value
+        return NotImplemented
+
+
+class EpisodeTerminationType(IntEnum):
+    MAXIMUM_DISTANCE = 0
+    OUT_OF_VIEW = 1
+    THRESHOLD_REACHED = 2
+
+
+def process_and_validate_configs(dir_map):
+    arr = []
+    for conf_dir, schema_dir in dir_map.items():
+        assert os.path.isfile(conf_dir)
+        assert os.path.isfile(schema_dir)
+
+        with open(conf_dir) as file_conf:
+            conf_json = json.load(file_conf)
+
+            assert os.path.isfile(schema_dir)
+            with open(schema_dir) as file_schema:
+                schema_json = json.load(file_schema)
+                validate(instance=conf_json, schema=schema_json)
+                arr.append(conf_json)
+
+    return arr
 
 
 def clean_and_remake(directory):
@@ -28,13 +57,24 @@ def clean_and_remake(directory):
     os.makedirs(directory)
 
 
+logger = logging.getLogger(__name__)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
+def write_image_to_file_incrementally(image, directory):
+    """
+    Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
+    """
+    with open(directory, 'wb') as f:
+        f.write(image)
+
+
+def on_disconnect():
+    logger.debug("socket disconnected")
+
+
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_scale, debug, protocol, host):
-        self.debug_logs = debug
-        self.debug_logs_dir = os.path.abspath(os.path.join(os.pardir, 'Logs'))
-        self.image_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'images'))
-        self.packets_sent_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_sent'))
-        self.packets_received_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_received'))
+    def __init__(self, opt_d, max_d, img_scale, debug, protocol, host, ep_len_threshold):
         self.sim_ready = False
         self.server_connected = False
         self.img_scale = img_scale
@@ -49,6 +89,7 @@ class UnitySimHandler:
         self.a = 0.0
         self.opt_d = opt_d
         self.max_d = max_d
+        self.ep_length_threshold = ep_len_threshold
 
         self.fns = {
             "connection_request": self.connection_request,
@@ -57,7 +98,150 @@ class UnitySimHandler:
         }
 
         logger.setLevel(logging.INFO)
-        self.server = PythonServer(self, protocol, host)
+
+        self.debug_logs = debug
+        self.debug_logs_dir = os.path.abspath(os.path.join(os.pardir, 'Logs'))
+        self.image_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'images'))
+        self.packets_sent_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_sent'))
+        self.packets_received_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_received'))
+
+        self.sock = None
+        self.addr = None
+        self.do_process_msgs = False
+        self.msg = {}
+        self.th = None
+        self.conn = None
+        self.network_config = None
+        self.server_config = None
+        self.action_buffer_size = None
+        self.observation_buffer_size = None
+        self.episode_num = 0
+        self.step_num = 0
+        self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
+
+        conf_arr = process_and_validate_configs({
+            os.path.abspath(os.path.join(os.pardir, 'configs', 'server_config.json')): os.path.abspath(os.path.join(os.pardir, 'configs', 'server_config_schema.json'))
+        })
+
+        self.server_config = conf_arr.pop()
+        self.server_config['payload']['serverConfig']['envConfig']['optD'] = self.opt_d
+        self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.max_d
+
+        self.protocol = protocol
+        self.full_host = host.split(':')
+        self.address = (self.full_host[0], (int(self.full_host[1])))
+        self.observation_buffer_size = 8192
+
+        if self.debug_logs:
+            self.clean_and_create_debug_directories()
+
+        self.connect(*self.address)
+
+    def clean_and_create_debug_directories(self):
+        clean_and_remake(self.image_dir)
+        clean_and_remake(self.packets_sent_dir)
+        clean_and_remake(self.packets_received_dir)
+
+    def connect(self, host='127.0.0.1', port=60260):
+        """
+        Open a tcp/udp socket
+        """
+
+        # create socket and associate the socket with local address
+        if self.protocol == Protocol.UDP:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        else:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        self.sock.bind((host, port))
+        print(f"[+] Listening on {host}:{port}")
+
+        # the remaining network related code, receiving json and sending json, is ran in a thread
+        self.do_process_msgs = True
+        self.th = Thread(target=self.proc_msg, daemon=True)
+        self.th.start()
+
+    def proc_msg(self):
+        """
+        Continue to process messages from each connected client
+        """
+
+        if self.protocol == Protocol.TCP:
+            try:
+                # wait for connection request
+                self.sock.listen(5)
+                self.conn, self.addr = self.sock.accept()
+                current_time = datetime.now().ctime()
+                print(
+                    f"[+] Connecting by {self.addr[0]}:{self.addr[1]} ({current_time})")
+            except ConnectionRefusedError as refuse_error:
+                raise (Exception("Could not connect to server.")) from refuse_error
+
+        while self.do_process_msgs:
+            # print('Waiting to receive message')
+            # receive packets/datagrams
+            if self.protocol == Protocol.UDP:
+                data, self.addr = self.sock.recvfrom(self.observation_buffer_size)
+            else:
+                data = self.conn.recv(self.observation_buffer_size)
+
+            if not data:
+                print("[-] Invalid json")
+                self.stop()
+                return
+
+            # unpack and send json message
+            json_str = data.decode('UTF-8')
+            # print('Received: {}'.format(json_str))
+            json_dict = json.loads(json_str)
+
+            if self.debug_logs:
+                with open(os.path.abspath(os.path.join(self.packets_received_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num))), 'w', encoding='utf-8') as f:
+                    json.dump(json_dict, f, ensure_ascii=False, indent=4)
+                    f.close()
+
+            self.on_recv_message(json_dict)
+
+            # wait to point something to self.msg variable dedicated to outgoing messages
+            # print('Waiting to send message')
+            while self.msg == {}:
+                time.sleep(1.0 / 120.0)
+
+            # print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
+            json_str = json.dumps(self.msg)
+            # print('Sending: {}'.format(json_str))
+
+            if self.debug_logs:
+                if self.msg['msgType'] == "reset_episode":
+                    self.clean_and_create_debug_directories()
+                else:
+                    with open(os.path.abspath(os.path.join(self.packets_sent_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num))), 'w', encoding='utf-8') as f:
+                        json.dump(self.msg, f, ensure_ascii=False, indent=4)
+                        f.close()
+
+            if self.protocol == Protocol.UDP:
+                self.sock.sendto(bytes(json_str, encoding="utf-8"), self.addr)
+            else:
+                self.conn.sendall(bytes(json_str, encoding="utf-8"))
+
+            self.msg = {}
+
+    def stop(self):
+        """
+        Signal proc_msg loop to stop, wait for thread to finish, close socket
+        """
+        self.do_process_msgs = False
+
+        self.msg = {
+            'msgType': 'end_simulation',
+            'payload': {
+            }
+        }
+
+        if self.sock is not None:
+            print("[-] Closing socket")
+            self.sock.close()
+            on_disconnect()
 
     def wait_until_loaded(self):
         while not self.server_connected:
@@ -67,25 +251,16 @@ class UnitySimHandler:
     def wait_until_client_ready(self):
         while not self.sim_ready:
             logger.warning("waiting for client...")
-            time.sleep(1.0)
+            time.sleep(0.1)
 
     def render(self):
         pass
 
     def quit(self):
-        self.server.stop()
+        self.stop()
 
-    def clean_and_create_debug_directories(self):
-        clean_and_remake(self.image_dir)
-        clean_and_remake(self.packets_sent_dir)
-        clean_and_remake(self.packets_received_dir)
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Gym ~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-    def reset(self):
+    def send_reset(self, ep_n):
         logger.debug("resetting")
-        self.server.action_num = 0
-        self.server.episode_num += 1
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
         self.hit = []
@@ -95,7 +270,12 @@ class UnitySimHandler:
         self.target_fwd = np.zeros(3)
         self.raw_d = 0.0
         self.a = 0.0
-        self.send_reset()
+        self.episode_num = ep_n
+        self.step_num = 0
+        self.msg = {
+            'msgType': 'reset_episode',
+            'payload': {}
+        }
 
     def observe(self, obs):
         while self.last_obs is self.image_array:
@@ -107,10 +287,10 @@ class UnitySimHandler:
         # for vector obs training run, overwrite image observation with vector obs 
         # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
         if obs == 'vector':
-            observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2], self.rover_fwd[0],
-                           self.rover_fwd[1], self.rover_fwd[2],
-                           self.target_pos[0], self.target_pos[1], self.target_pos[2], self.target_fwd[0],
-                           self.target_fwd[1], self.target_fwd[2]]
+            observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2],
+                           self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2],
+                           self.target_pos[0], self.target_pos[1], self.target_pos[2],
+                           self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
 
         info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.raw_d, "raw_dist": self.raw_d,
                 "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
@@ -137,20 +317,21 @@ class UnitySimHandler:
         return reward
 
     def determine_episode_over(self):
+        if (self.ep_length_threshold > 0) and (self.step_num == self.ep_length_threshold):
+            print('[EPISODE TERMINATED]: Maximum episode length reached: {}'.format(self.ep_length_threshold))
+            logger.debug(f"game over: episode threshold {self.ep_length_threshold}")
+            self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
+            return True
         if math.fabs(self.raw_d - self.opt_d) > self.max_d:
-            print("Episode terminated as target out of range: {}".format(abs(self.raw_d - self.opt_d)))
+            print('[EPISODE TERMINATED] Too far from the optimum distance: {}'.format(abs(self.raw_d - self.opt_d)))
             logger.debug(f"game over: distance {self.raw_d}")
+            self.episode_termination_type = EpisodeTerminationType.MAXIMUM_DISTANCE
             return True
         if "Dolphin" in self.hit:
-            print("Episode terminated due to collision")
+            print('[EPISODE TERMINATED] Due to collision: {}'.format(self.hit))
             logger.debug(f"game over: hit {self.hit}")
+            self.episode_termination_type = EpisodeTerminationType.OUT_OF_VIEW
             return True
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Socket ~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-    def on_disconnect(self):
-        logger.debug("socket disconnected")
-        self.server = None
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -182,8 +363,6 @@ class UnitySimHandler:
         self.rover_fwd = np.array([payload['telemetry_data']["fwd"][0], payload['telemetry_data']['fwd'][1],
                                    payload['telemetry_data']['fwd'][2]])
 
-        # TODO: implement receiving json on multiple targets
-        # Sam.A, targets are now an array, use the last element of it for targeting
         for target in payload['telemetry_data']['targets']:
             self.target_pos = np.array([target['position'][0], target['position'][1], target['position'][2]])
             self.target_fwd = np.array([target['fwd'][0], target['fwd'][1], target['fwd'][2]])
@@ -191,7 +370,8 @@ class UnitySimHandler:
         image = bytearray(base64.b64decode(payload['telemetry_data']['jpg_image']))
 
         if self.debug_logs:
-            write_image_to_file_incrementally(image, os.path.abspath(os.path.join(self.image_dir, 'episode_' + str(self.server.episode_num) + '_' + 'image{}.jpg'.format(payload['obsv_num']))))
+            write_image_to_file_incrementally(image, os.path.abspath(
+                os.path.join(self.image_dir, 'episode_{}_step{}.jpg'.format(self.episode_num, self.step_num))))
 
         image = np.array(Image.open(BytesIO(image)))
 
@@ -202,11 +382,8 @@ class UnitySimHandler:
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-    def send_action(self, action):
-        if self.server is None:
-            return
-
-        self.server.msg = {
+    def send_action(self, action, step_n):
+        self.msg = {
             'msgType': 'receive_json_controls',
             'payload': {
                 'jsonControls': {
@@ -223,30 +400,26 @@ class UnitySimHandler:
             }
         }
 
+        self.step_num = step_n
+
     def send_server_config(self):
         """
         Generate server config for client
         """
-        self.server.msg = self.server.server_config
+        self.msg = self.server_config
 
-    def send_reset(self):
-        self.server.msg = {
-            'msgType': 'reset_episode',
-            'payload': {}
-        }
-
-    def send_object_pos(self, object, pos_x, pos_y, pos_z, Q):
+    def send_object_pos(self, object_pos, pos_x, pos_y, pos_z, q):
         # note that the pos_y argument has been allocated to the z-axis array index
         # and the pos_z argument has been allocated to the y-axis array index
         # due to the difference in axis naming between scipy (incoming) and unity (outgoing)
-        self.server.msg = {
+        self.msg = {
             'msgType': 'set_position',
             'payload': {
                 'objectPositions': [
                     {
-                        'object_name': object,
+                        'object_name': object_pos,
                         'position': [pos_x, pos_z, pos_y],
-                        'rotation': Q
+                        'rotation': q
                     }
                 ]
             }

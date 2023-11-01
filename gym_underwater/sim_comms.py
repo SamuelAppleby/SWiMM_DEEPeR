@@ -120,7 +120,7 @@ class UnitySimHandler:
         self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
 
         conf_arr = process_and_validate_configs({
-            os.path.abspath(os.path.join(os.pardir, 'configs', 'server_config.json')): os.path.abspath(os.path.join(os.pardir, 'configs', 'server_config_schema.json'))
+            os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json')): os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config_schema.json'))
         })
 
         self.server_config = conf_arr.pop()
@@ -245,13 +245,13 @@ class UnitySimHandler:
 
     def wait_until_loaded(self):
         while not self.server_connected:
-            logger.warning("waiting for sim...")
+            logger.info("waiting for sim...")
             time.sleep(1.0)
 
     def wait_until_client_ready(self):
         while not self.sim_ready:
-            logger.warning("waiting for client...")
-            time.sleep(0.1)
+            logger.info("waiting for client...")
+            time.sleep(1.0)
 
     def render(self):
         pass

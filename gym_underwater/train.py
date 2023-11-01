@@ -1,25 +1,22 @@
 """
 Parent script for initiating a training run
 """
-import argparse
 # generic imports
+import argparse
 import glob
 import os
-import warnings
 import time
 from collections import OrderedDict
 import yaml
 import sys
 
-from stable_baselines3.common.logger import configure
 # specialist imports
-from stable_baselines3.common.utils import set_random_seed, get_latest_run_id
+from stable_baselines3.common.logger import configure
+from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.utils import constant_fn
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 from torch.utils.tensorboard import SummaryWriter
-
-from gym_underwater.algos.callbacks import SwimCallback
-from gym_underwater.sim_comms import Protocol
+from stable_baselines3 import SAC
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,9 +24,10 @@ import_path = os.path.join(curr_dir, '..')
 sys.path.insert(0, import_path)
 
 # local imports
-from stable_baselines3 import SAC
-from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule
 import cmvae_models.cmvae
+from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule
+from gym_underwater.algos.callbacks import SwimCallback
+from gym_underwater.sim_comms import Protocol
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
@@ -42,19 +40,13 @@ if args.udp and not args.tcp:
 else:
     args.protocol = Protocol.TCP
 
-# remove warnings
-# TODO: terminal still flooded with warnings, try and remove
-warnings.filterwarnings("ignore", category=FutureWarning, module='tensorflow')
-warnings.filterwarnings("ignore", category=UserWarning, module='gym')
-
-# TODO: add other algorithms
-# dictionary of available algorithms
+# Dictionary of available algorithms
 ALGOS = {
     'sac': SAC,
 }
 
-print("Loading environment configuration ...")
-with open(os.path.abspath(os.path.join(os.pardir, 'configs', 'config.yml')), 'r') as f:
+print('Loading environment configuration ...')
+with open(os.path.abspath(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 # early check on path to trained model if -i arg passed
@@ -72,7 +64,7 @@ if env_config['obs'] == 'vae':
 
 # load hyperparameters from yaml file into dict
 print('Loading hyperparameters ...')
-with open(os.path.abspath(os.path.join(os.pardir, 'configs', '{}.yml'.format(env_config['algo']))), 'r') as f:
+with open(os.path.abspath(os.path.join(curr_dir, os.pardir, 'configs', '{}.yml'.format(env_config['algo']))), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
 # add seed provided by config
@@ -89,12 +81,11 @@ if vae is not None:
 
 # if seed provided, use it, otherwise use zero
 # Note: this stable baselines utility function seeds tensorflow, np.random, and random
-seed = hyperparams.get('seed', 0)
-set_random_seed(seed)
+set_random_seed(hyperparams.get('seed', 0))
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.abspath(os.path.join(os.pardir, "logs", env_config['algo']))
+algo_specific_path = os.path.abspath(os.path.join(curr_dir, os.pardir, "logs", env_config['algo']))
 run_id = 0
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
@@ -104,10 +95,11 @@ for path in glob.glob(algo_specific_path + "/[0-9]*"):
 run_specific_path = os.path.abspath(os.path.join(algo_specific_path, str(run_id + 1)))
 os.makedirs(run_specific_path, exist_ok=True)
 
-print("Outputs and logs will be saved to {}".format(run_specific_path))
+with open('train_output.txt', 'w') as log_file:
+    print('Logging directory: {}'.format(run_specific_path))
+    log_file.write('Logging directory: {}\n'.format(run_specific_path))
 
-if hyperparams['tensorboard_log'] == '':
-    hyperparams['tensorboard_log'] = os.path.abspath(run_specific_path)
+hyperparams['tensorboard_log'] = os.path.abspath(run_specific_path)
 
 if not env_config['monitor']:
     log_dir = os.path.abspath(os.path.join('tmp', 'gym', '{}'.format(int(time.time()))))
@@ -146,7 +138,7 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=seed)])
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=hyperparams.get('seed', 0))])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:
@@ -154,13 +146,10 @@ if normalize:
 
 # if training on top of trained model, load trained model
 if os.path.isfile(env_config['model_path']):
-    
     # Continue training
     print("Loading pretrained agent ...")
-    
     # Policy should not be changed
     del hyperparams['policy']  # network architecture already set so don't need
-
     model = SAC.load(path=env_config['model_path'], env=env, **hyperparams)
 
     if normalize:
@@ -180,17 +169,17 @@ if env_config['algo'] == 'sac':
 
 
 # off_policy_algorithm forces no csv output, so recreate the function and set a custom logger
-save_path, format_strings = None, ['stdout']
+save_path, format_strings = model.tensorboard_log, ['stdout']
 
 if model.tensorboard_log is not None and SummaryWriter is None:
     raise ImportError('Trying to log data to tensorboard but tensorboard is not installed.')
 
 if model.tensorboard_log is not None and SummaryWriter is not None:
-    latest_run_id = get_latest_run_id(model.tensorboard_log, kwargs['tb_log_name'])
-    if not kwargs['reset_num_timesteps']:
-        # Continue training in the same directory
-        latest_run_id -= 1
-    save_path = os.path.join(model.tensorboard_log, f"{kwargs['tb_log_name']}_{latest_run_id + 1}")
+    # latest_run_id = get_latest_run_id(model.tensorboard_log, kwargs['tb_log_name'])
+    # if not kwargs['reset_num_timesteps']:
+    #     # Continue training in the same directory
+    #     latest_run_id -= 1
+    # save_path = os.path.join(save_path, f"{kwargs['tb_log_name']}_{latest_run_id + 1}")
     if model.verbose >= 1:
         format_strings = ['stdout', 'tensorboard', 'csv']
     else:
@@ -218,5 +207,4 @@ if normalize:
     # Important: save the running average, for testing the agent we need that normalization
     env.save(run_specific_path)
 
-# close sim or command line hangs - indexing is to unwrap wrapper
 env.envs[0].close()

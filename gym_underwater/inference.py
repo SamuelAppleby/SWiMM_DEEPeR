@@ -4,14 +4,15 @@ import csv
 import os
 import sys
 import yaml
-import warnings
+import gymnasium
 
 # specialist imports
-import gymnasium
 import numpy as np
 from stable_baselines3.common import logger
-from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.utils import set_random_seed, safe_mean
 from stable_baselines3.common.vec_env import DummyVecEnv
+
+from gym_underwater.sim_comms import Protocol
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,9 +21,8 @@ sys.path.insert(0, import_path)
 
 # local imports
 from stable_baselines3 import SAC
-from gym_underwater.utils import make_env
+from gym_underwater.utils.utils import make_env
 import cmvae_models.cmvae
-from gym_underwater.python_server import Protocol
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
@@ -35,12 +35,7 @@ if args.udp and not args.tcp:
 else:
     args.protocol = Protocol.TCP
 
-# Remove warnings
-warnings.filterwarnings("ignore", category=FutureWarning, module='tensorflow')
-warnings.filterwarnings("ignore", category=UserWarning, module='gym')
-
-# TODO: add other algorithms
-# dictionary of available algorithms
+# Dictionary of available algorithms
 ALGOS = {
     'sac': SAC,
 }
@@ -49,99 +44,81 @@ print("Loading environment configuration ...")
 with open(os.path.abspath(os.path.join(os.pardir, 'configs', 'config.yml')), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-algo = env_config['algo']
-seed = env_config['seed']
-policy_path = env_config['policy_path']
+# early check on path to trained model if -i arg passed
+if env_config['model_path'] != '':
+    assert os.path.exists(env_config['model_path']) and os.path.isfile(env_config['model_path']) and env_config['model_path'].endswith('.zip'), \
+        'The argument model_path must be a valid path to a .zip file'
 
-assert os.path.isfile(policy_path), "No model found at this path: {}".format(policy_path)
-
-set_random_seed(seed)
-
-# set up a reward log if want one
-log_dir = os.path.dirname(policy_path)
-os.environ["OPENAI_LOG_FORMAT"] = 'csv'
-os.environ["OPENAI_LOGDIR"] = os.path.abspath(log_dir)
-logger.configure()
-
-# load trained vae weights if trained vae was used for rl training
+# if using pretrained vae, create instance of vae object and load trained weights from path provided
+print("Obs: {}".format(env_config['obs']))
 vae = None
-if env_config['vae_path'] != '':
-    print("Loading VAE ...")
-    vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)
+if env_config['obs'] == 'vae':
+    print('Loading VAE ...')
+    vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
     vae.load_weights(env_config['vae_path'])
-
 else:
     print('For inference, must provide a valid vae path!')
     quit()
 
-# wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, seed=seed)])
+# if seed provided, use it, otherwise use zero
+# Note: this stable baselines utility function seeds tensorflow, np.random, and random
+set_random_seed(env_config['seed'])
+
+# Set up a reward log if you want one
+log_dir = os.path.dirname(env_config['model_path'])
+os.environ['OPENAI_LOG_FORMAT'] = 'csv'
+os.environ['OPENAI_LOGDIR'] = os.path.abspath(log_dir)
+logger.configure()
+
+# Wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
+env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=env_config.get('seed', 0))])
 
 # load trained model
-model = ALGOS[algo].load(policy_path)
+print("Loading pretrained agent ...")
+model = SAC.load(path=env_config['model_path'], env=env)
 
-# collect first observation 
+# Collect first observation
 # NB this is calling reset in DummyVecEnv before reset in DonkeyEnv
 # DummyVecEnv, like VecEnv, returns list (length 1) of obs, hence why below obs[0] is passed to predict not obs
 obs = env.reset()
 
-running_reward = 0.0
-ep_len = 0
-ep_rewards = []
-train_freq = 3000
-episode_to_run = 100
-
 with open(env_config['reward_log_path'], 'w', newline='') as csv_file:
     best_writer = csv.writer(csv_file)
-    best_writer.writerow(["Episode", "Reward", "Length", "Termination"])
+    best_writer.writerow(['Episode', 'Steps', 'Reward', 'Time', 'Termination'])
     csv_file.close()
 
+episode_times = []
+
 # perform inference for 100 episodes (standard practice)
-while len(ep_rewards) < episode_to_run:
+while len(env.envs[0].episode_lengths) < 5:
 
     # query model for action decision given obs
-    action, _ = model.predict(obs[0], deterministic=True)
-
-    # NB this is going to be passed to step in DummyVecEnv before step in DonkeyEnv
-    # hence why it needs to be wrapped in a list 
-    action = [action]
+    action, _ = model.predict(obs, deterministic=True)
 
     # step the environment
-    obs, reward, done, infos = env.step(action)
+    obs, reward, terminated, info = env.step(action)
 
-    # add reward for step to cumulative episodic reward       
-    running_reward += reward[-1]
-
-    # increment episode length
-    ep_len += 1
-
-    if not done and ep_len == train_freq:
-        print('Maximum episode length reached')
-        obs = env.reset()
-        done = True
-
-    if done or ep_len >= train_freq:
+    if terminated:
         # log episodic reward
-        ep_rewards.append(running_reward)
-        print("Episode Reward: {:.2f}".format(running_reward))
-        print("Episode Length: ", ep_len)
+        print("Episode Reward: {:.2f}".format(info[-1]['episode']['r']))
+        print("Episode Length: ", info[-1]['episode']['l'])
+        episode_times.append(env.envs[0].episode_times[-1] - env.envs[0].episode_times[-2] if (len(env.envs[0].episode_times) > 1) else env.envs[0].episode_times[-1])
+        print("Episode Time: ", episode_times[-1])
 
         with open(env_config['reward_log_path'], 'a', newline='') as csv_file:
-            best_writer = csv.writer(csv_file)
-            best_writer.writerow([len(ep_rewards), running_reward, ep_len, int(ep_len == train_freq)])
+            csv.writer(csv_file).writerow([len(env.envs[0].episode_lengths), info[-1]['episode']['l'], info[-1]['episode']['r'], episode_times[-1], env.envs[0].handler.episode_termination_type])
             csv_file.close()
-
-        running_reward = 0.0
-        ep_len = 0
 
 print("Finished!")
 
 # reset before close
 env.reset()
 
-print("Number of episodes: ", len(ep_rewards))
-print("Average reward: ", np.mean(ep_rewards))
-print("Reward std: ", np.std(ep_rewards))
+print("Number of episodes: ", len(env.envs[0].episode_lengths))
+print("Total reward: ", np.sum(env.envs[0].episode_returns))
+print("Average reward: ", safe_mean(env.envs[0].episode_returns))
+print("Reward std: ", np.std(env.envs[0].episode_returns))
+print("Total time: ", np.sum(episode_times))
+print("Average Episode Time: ", safe_mean(episode_times))
 
-# close sim or command line hangs - indexing is to unwrap wrapper
 env.envs[0].close()

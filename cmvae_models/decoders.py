@@ -9,10 +9,12 @@ author: Rogerio Bonatti et al
 '''
 
 import tensorflow as tf
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, BatchNormalization, Lambda, Concatenate, Conv2DTranspose, Reshape, ReLU
 
-class ImgDecoder(Model):
+tf = tf.compat.v1
+tf.disable_v2_behavior()
+
+
+class ImgDecoder(tf.keras.Model):
     def __init__(self):
         super(ImgDecoder, self).__init__()
         self.create_model()
@@ -29,18 +31,17 @@ class ImgDecoder(Model):
         return img_recon
 
     def create_model(self):
-
         print('[ImgDecoder] Creating layers')
 
-        self.dense = Dense(units=1024, name='p_img_dense')
-        self.reshape = Reshape((1, 1, 1024))
+        self.dense = tf.keras.layers.Dense(units=1024, name='p_img_dense')
+        self.reshape = tf.keras.layers.Reshape((1, 1, 1024))
 
         # for 64x64 img
-        self.deconv1 = Conv2DTranspose(filters=128, kernel_size=4, strides=1, padding='valid', activation='relu')
-        self.deconv2 = Conv2DTranspose(filters=64, kernel_size=5, strides=1, padding='valid', activation='relu', dilation_rate=3)
-        self.deconv3 = Conv2DTranspose(filters=64, kernel_size=6, strides=1, padding='valid', activation='relu', dilation_rate=2)
-        self.deconv4 = Conv2DTranspose(filters=32, kernel_size=5, strides=2, padding='valid', activation='relu', dilation_rate=1)
-        self.deconv5 = Conv2DTranspose(filters=16, kernel_size=5, strides=1, padding='valid', activation='relu', dilation_rate=1)
-        self.deconv6 = Conv2DTranspose(filters=3, kernel_size=6, strides=1, padding='valid', activation='tanh')
+        self.deconv1 = tf.keras.layers.Conv2DTranspose(filters=128, kernel_size=4, strides=1, padding='valid', activation='relu')
+        self.deconv2 = tf.keras.layers.Conv2DTranspose(filters=64, kernel_size=5, strides=1, padding='valid', activation='relu', dilation_rate=3)
+        self.deconv3 = tf.keras.layers.Conv2DTranspose(filters=64, kernel_size=6, strides=1, padding='valid', activation='relu', dilation_rate=2)
+        self.deconv4 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, strides=2, padding='valid', activation='relu', dilation_rate=1)
+        self.deconv5 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=5, strides=1, padding='valid', activation='relu', dilation_rate=1)
+        self.deconv6 = tf.keras.layers.Conv2DTranspose(filters=3, kernel_size=6, strides=1, padding='valid', activation='tanh')
 
         print('[ImgDecoder] Done with creating model')

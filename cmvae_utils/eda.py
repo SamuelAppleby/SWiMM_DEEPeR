@@ -1,11 +1,11 @@
-'''
+"""
 file: eda.py
 author: Kirsten Richardson
 date: 2021
 
-Use this script to inspect data distribution preiodically whilst collecting data with manual driving using teleop.
-Can adjust manual driving based on current distribution e.g. compensate for skew 
-'''
+Use this script to inspect data distribution periodically whilst collecting data with manual driving using teleop.
+Can adjust manual driving based on current distribution e.g. compensate for skew
+"""
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -66,9 +66,3 @@ print('Index of rows with Theta > 90: {}'.format(df[df.iloc[:, 1] > 90].index + 
 print('Index of rows with Psi < -90: {}'.format(df[df.iloc[:, 2] < -90].index + 1))
 
 print('Index of rows with Psi > 90: {}'.format(df[df.iloc[:, 2] > 90].index + 1))
-
-
-
-
-
-

@@ -32,10 +32,10 @@
         }
       },
       "envConfig": {
-        "drawRewardRings": false,
-        "drawOptimumHeading": false,
-        "enableUI": false,
-        "enableSecondaryCameras": false,
+        "drawRewardRings": true,
+        "drawOptimumHeading": true,
+        "enableUI": true,
+        "enableSecondaryCameras": true,
         "actionInference": "maintain",
         "faunaConfig": {
           "spawnTimer": 5,

@@ -1,22 +1,16 @@
-'''
+"""
 file: dataset_utils.py
 author: Kirsten Richardson
 date: 2021
 NB rolled back from TF2 to TF1, and three not four state variables
 
 code taken from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
-author: Rogerio Bonatti et al
-'''
+author: Rogerio Bonatti et al.
+"""
 
-import os
 import numpy as np
-import matplotlib.pyplot as plt
-import tensorflow as tf
-import random
 import os
-import pandas as pd
 import glob
-from PIL import Image
 import cv2
 from sklearn.model_selection import train_test_split
 from natsort import natsorted
@@ -33,8 +27,8 @@ def convert_rgb2bgr(img_rgb):
 def normalize_state(pose):
     # normalization of ranges as used in image_gen.py to [-1, 1] range
     r_range = [2, 20]
-    CAM_FOV = 79.7249       # HORIZONTAL
-    alpha = CAM_FOV / 2.0  # (CAM_FOV/180.0*np.pi/2.0)
+    cam_fov = 79.7249       # HORIZONTAL
+    alpha = cam_fov / 2.0  # (cam_fov/180.0*np.pi/2.0)
     theta_range = [-alpha, alpha]  # [-90, 90]
     psi_range = [-180, 180]
     if len(pose.shape) == 1:
@@ -55,8 +49,8 @@ def normalize_state(pose):
 def de_normalize_state(pose):
     # normalization of ranges as used in image_gen.py to [-1, 1] range
     r_range = [2, 20]
-    CAM_FOV = 79.7249       # HORIZONTAL
-    alpha = CAM_FOV / 2.0  # (CAM_FOV/180.0*np.pi/2.0)
+    cam_fov = 79.7249       # HORIZONTAL
+    alpha = cam_fov / 2.0  # (cam_fov/180.0*np.pi/2.0)
     theta_range = [-alpha, alpha]  # [-90, 90]
     psi_range = [-180, 180]
     if len(pose.shape) == 1:
@@ -180,7 +174,7 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
     return ds_train, ds_test, n_batches_train, n_batches_test
 
 
-def create_dataset_filepaths(data_dir, batch_size, res, max_size=None):
+def create_dataset_filepaths(data_dir, batch_size, max_size=None):
     print('Going to read file list')
     files_list = glob.glob(os.path.abspath(os.path.join(data_dir, 'images', '*.jpg')))  # took out the preceding images dir
     print('Done. Starting sorting.')

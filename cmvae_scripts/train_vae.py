@@ -31,7 +31,7 @@ beta = 8.0
 # so wrote a new function that just returns filenames and cmvae.py then loads images in batches on the fly
 print('Starting dataset')
 if big_data:
-    train_ds, test_ds, n_batches_train, n_batches_test = cmvae_utils.dataset_utils.create_dataset_filepaths(data_dir, batch_size, img_res, max_size=max_size)
+    train_ds, test_ds, n_batches_train, n_batches_test = cmvae_utils.dataset_utils.create_dataset_filepaths(data_dir, batch_size, max_size)
 else:
     train_ds, test_ds, n_batches_train, n_batches_test = cmvae_utils.dataset_utils.create_dataset_csv(data_dir, batch_size, img_res, max_size=max_size)
 print('Done with dataset')

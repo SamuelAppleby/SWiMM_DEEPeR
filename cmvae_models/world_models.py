@@ -1,8 +1,10 @@
 import tensorflow as tf
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense, Conv2DTranspose, Conv2D, Reshape
 
-class WMEncoder(Model):
+tf = tf.compat.v1
+tf.disable_v2_behavior()
+
+
+class WMEncoder(tf.keras.Model):
     def __init__(self, num_outputs):
         super(WMEncoder, self).__init__()
         self.create_model(num_outputs)
@@ -18,18 +20,17 @@ class WMEncoder(Model):
         return mu, logvar
 
     def create_model(self, num_outputs):
-
         print('[WMEncoder] Creating layers')
 
-        self.dense1 = Dense(units=num_outputs, name="enc_fc_mu")
-        self.dense2 = Dense(units=num_outputs, name="enc_fc_log_var")
-        self.reshape = Reshape((-1, 2*2*256))
+        self.dense1 = tf.keras.layers.Dense(units=num_outputs, name="enc_fc_mu")
+        self.dense2 = tf.keras.layers.Dense(units=num_outputs, name="enc_fc_log_var")
+        self.reshape = tf.keras.layers.Reshape((-1, 2 * 2 * 256))
 
         # for 64x64 img
-        self.conv1 = Conv2D(filters=32, kernel_size=4, strides=2, activation='relu')
-        self.conv2 = Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')
-        self.conv3 = Conv2D(filters=128, kernel_size=4, strides=2, activation='relu')
-        self.conv4 = Conv2D(filters=256, kernel_size=4, strides=2, activation='relu')
+        self.conv1 = tf.keras.layers.Conv2D(filters=32, kernel_size=4, strides=2, activation='relu')
+        self.conv2 = tf.keras.layers.Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')
+        self.conv3 = tf.keras.layers.Conv2D(filters=128, kernel_size=4, strides=2, activation='relu')
+        self.conv4 = tf.keras.layers.Conv2D(filters=256, kernel_size=4, strides=2, activation='relu')
 
         print('[WMEncoder] Done with creating model')
 
@@ -64,7 +65,7 @@ class WMEncoder(Model):
 #         print('[WMDecoder] Done with creating model')
 
 
-class WMDecoder(Model):
+class WMDecoder(tf.keras.Model):
     def __init__(self):
         super(WMDecoder, self).__init__()
         self.create_model()
@@ -76,23 +77,22 @@ class WMDecoder(Model):
         x4 = self.deconv2(x3)
         x5 = self.deconv3(x4)
         img_recon = self.deconv4(x5)
-        #x7 = self.deconv5(x6)
-        #img_recon = self.deconv6(x7)
+        # x7 = self.deconv5(x6)
+        # img_recon = self.deconv6(x7)
         return img_recon
 
     def create_model(self):
-
         print('[WMDecoder] Creating layers')
 
-        self.dense = Dense(units=1024, name='p_img_dense')
-        self.reshape = Reshape((1, 1, 1024))
+        self.dense = tf.keras.layers.Dense(units=1024, name='p_img_dense')
+        self.reshape = tf.keras.layers.Reshape((1, 1, 1024))
 
         # for 64x64 img
-        self.deconv1 = Conv2DTranspose(filters=128, kernel_size=5, strides=2, activation='relu')
-        self.deconv2 = Conv2DTranspose(filters=64, kernel_size=5, strides=2, activation='relu')
-        self.deconv3 = Conv2DTranspose(filters=32, kernel_size=6, strides=2, activation='relu')
-        self.deconv4 = Conv2DTranspose(filters=3, kernel_size=6, strides=2, activation='sigmoid')
-        #self.deconv5 = Conv2DTranspose(filters=16, kernel_size=5, strides=1, padding='valid', activation='relu', dilation_rate=1)
-        #self.deconv6 = Conv2DTranspose(filters=3, kernel_size=6, strides=1, padding='valid', activation='tanh')
+        self.deconv1 = tf.keras.layers.Conv2DTranspose(filters=128, kernel_size=5, strides=2, activation='relu')
+        self.deconv2 = tf.keras.layers.Conv2DTranspose(filters=64, kernel_size=5, strides=2, activation='relu')
+        self.deconv3 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=6, strides=2, activation='relu')
+        self.deconv4 = tf.keras.layers.Conv2DTranspose(filters=3, kernel_size=6, strides=2, activation='sigmoid')
+        # self.deconv5 = Conv2DTranspose(filters=16, kernel_size=5, strides=1, padding='valid', activation='relu', dilation_rate=1)
+        # self.deconv6 = Conv2DTranspose(filters=3, kernel_size=6, strides=1, padding='valid', activation='tanh')
 
         print('[WMDecoder] Done with creating model')

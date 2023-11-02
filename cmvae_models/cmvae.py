@@ -1,19 +1,20 @@
-'''
+"""
 file: cmvae.py
 author: Kirsten Richardson
 date: 2021
 NB rolled back from TF2 to TF1, and three not four state variables
 
 code taken from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
-author: Rogerio Bonatti et al
-'''
+author: Rogerio Bonatti et al.
+"""
 
 import tensorflow as tf
-tf = tf.compat.v1
-tf.disable_v2_behavior()
 from cmvae_models import dronet
 from cmvae_models import decoders
 from cmvae_models import transformer
+
+tf = tf.compat.v1
+tf.disable_v2_behavior()
 
 
 # model definition class
@@ -65,21 +66,17 @@ class CmvaeDirect(object):
     def _build_graph(self):
         self.graph = tf.Graph()
         with self.graph.as_default():
-
             # build data pipeline
-
             # placeholders to receive data at beginning of training/testing loop each epoch
-            if self.big_data:
-                self.img_data = tf.placeholder(tf.string, shape=None)
-            else:
-                self.img_data = tf.placeholder(tf.float32, shape=[None, self.res, self.res, 3])
             self.state_data = tf.placeholder(tf.float64, shape=[None, self.state_dim])
             self.batch_size = tf.placeholder(tf.int64)
 
             # convert to tf format dataset and prepare batches
             if self.big_data:
+                self.img_data = tf.placeholder(tf.string, shape=None)
                 dataset = tf.data.Dataset.from_tensor_slices((self.img_data, self.state_data)).map(self.load_images).batch(self.batch_size)
             else:
+                self.img_data = tf.placeholder(tf.float32, shape=[None, self.res, self.res, 3])
                 dataset = tf.data.Dataset.from_tensor_slices((self.img_data, self.state_data)).batch(self.batch_size)
 
             # create iterator of the correct shape and type
@@ -145,14 +142,14 @@ class CmvaeDirect(object):
 
     def encode(self, x):
         """
-        :param img_gt: (np.ndarray)
+        :param x: (np.ndarray)
         :return: (np.ndarray), (np.ndarray), (np.ndarray)
         """
         return self.sess.run([self.means, self.stddev, self.z], feed_dict={self.img_gt: x})
-    
+
     def encode_with_pred(self, x):
         """
-        :param img_gt: (np.ndarray)
+        :param x: (np.ndarray)
         :return: (np.ndarray), (np.ndarray), (np.ndarray)
         """
         return self.sess.run([self.means, self.stddev, self.z, self.state_recon], feed_dict={self.img_gt: x})
@@ -165,7 +162,6 @@ class CmvaeDirect(object):
         return self.sess.run([self.img_recon, self.state_recon], feed_dict={self.z: z})
 
     def extract_state_params(self, z):
-
         # extract part of z vector
         r_params = self.R_params(z)
         theta_params = self.Theta_params(z)
@@ -184,7 +180,7 @@ class CmvaeDirect(object):
         image = tf.image.decode_png(image, channels=3, dtype=tf.uint8)
         # if big_data argument set to False and image dataset created with function in dataset_utils.py, then cv2 used to 
         # read in images and numpy array will be in BGR order. However, here the tf function will read in the image in the
-        # order BGR. Therefore flipping first and last channel for consistency, so that no matter if big_data is true or false,
+        # order BGR. Therefore, flipping first and last channel for consistency, so that no matter if big_data is true or false,
         # model will train on BGR ordered arrays
         image = tf.reverse(image, axis=[-1])
         # resize to height and width training with

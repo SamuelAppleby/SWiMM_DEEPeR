@@ -1,18 +1,20 @@
-'''
+"""
 file: dronet.py
 author: Kirsten Richardson
 date: 2021
 NB rolled back from TF2 to TF1, and three not four state variables
 
 code taken from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
-author: Rogerio Bonatti et al
-'''
+author: Rogerio Bonatti et al.
+"""
 
 import tensorflow as tf
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, BatchNormalization, Lambda, Concatenate, Conv2DTranspose, Reshape, ReLU
 
-class Dronet(Model):
+tf = tf.compat.v1
+tf.disable_v2_behavior()
+
+
+class Dronet(tf.keras.Model):
     def __init__(self, num_outputs):
         super(Dronet, self).__init__()
         self.create_model(num_outputs)
@@ -70,7 +72,7 @@ class Dronet(Model):
     def create_model(self, num_outputs):
         print('[Dronet] Starting dronet')
 
-        self.max0 = tf.keras.layers.MaxPooling2D(pool_size=2, strides=2)  
+        self.max0 = tf.keras.layers.MaxPooling2D(pool_size=2, strides=2)
 
         self.bn0 = tf.keras.layers.BatchNormalization()
         self.bn1 = tf.keras.layers.BatchNormalization()
@@ -79,16 +81,16 @@ class Dronet(Model):
         self.bn4 = tf.keras.layers.BatchNormalization()
         self.bn5 = tf.keras.layers.BatchNormalization()
 
-        self.conv0 = Conv2D(filters=32, kernel_size=5, strides=2, padding='same', activation='linear')
-        self.conv1 = Conv2D(filters=32, kernel_size=3, strides=2, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
-        self.conv2 = Conv2D(filters=32, kernel_size=3, strides=1, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
-        self.conv3 = Conv2D(filters=32, kernel_size=1, strides=2, padding='same', activation='linear')
-        self.conv4 = Conv2D(filters=64, kernel_size=3, strides=2, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
-        self.conv5 = Conv2D(filters=64, kernel_size=3, strides=1, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
-        self.conv6 = Conv2D(filters=64, kernel_size=1, strides=2, padding='same', activation='linear')
-        self.conv7 = Conv2D(filters=128, kernel_size=3, strides=2, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
-        self.conv8 = Conv2D(filters=128, kernel_size=3, strides=1, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
-        self.conv9 = Conv2D(filters=128, kernel_size=1, strides=2, padding='same', activation='linear')
+        self.conv0 = tf.keras.layers.Conv2D(filters=32, kernel_size=5, strides=2, padding='same', activation='linear')
+        self.conv1 = tf.keras.layers.Conv2D(filters=32, kernel_size=3, strides=2, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
+        self.conv2 = tf.keras.layers.Conv2D(filters=32, kernel_size=3, strides=1, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
+        self.conv3 = tf.keras.layers.Conv2D(filters=32, kernel_size=1, strides=2, padding='same', activation='linear')
+        self.conv4 = tf.keras.layers.Conv2D(filters=64, kernel_size=3, strides=2, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
+        self.conv5 = tf.keras.layers.Conv2D(filters=64, kernel_size=3, strides=1, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
+        self.conv6 = tf.keras.layers.Conv2D(filters=64, kernel_size=1, strides=2, padding='same', activation='linear')
+        self.conv7 = tf.keras.layers.Conv2D(filters=128, kernel_size=3, strides=2, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
+        self.conv8 = tf.keras.layers.Conv2D(filters=128, kernel_size=3, strides=1, padding='same', activation='linear', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(1e-4))
+        self.conv9 = tf.keras.layers.Conv2D(filters=128, kernel_size=1, strides=2, padding='same', activation='linear')
 
         self.dense0 = tf.keras.layers.Dense(units=64, activation='relu')
         self.dense1 = tf.keras.layers.Dense(units=32, activation='relu')

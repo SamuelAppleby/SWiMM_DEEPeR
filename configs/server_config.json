@@ -6,7 +6,6 @@
         "tpCameraCollider" : true,
         "motorConfig": {
           "stabilityForce": 0.2,
-          "stabilityThreshold": 1,
           "linearThrustPower": [
             70,
             180,
@@ -37,6 +36,7 @@
         "enableUI": true,
         "enableSecondaryCameras": true,
         "actionInference": "maintain",
+        "randomiseRestart": true,
         "faunaConfig": {
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,

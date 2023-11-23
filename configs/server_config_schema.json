@@ -58,9 +58,6 @@
                                 "motorConfig": {
                                     "type": "object",
                                     "properties": {
-                                        "stabilityThreshold": {
-                                            "type": "number"
-                                        },
                                         "stabilityForce": {
                                             "type": "number"
                                         },
@@ -82,7 +79,6 @@
                                         }
                                     },
                                     "required": [
-                                        "stabilityThreshold",
                                         "stabilityForce",
                                         "linearThrustPower",
                                         "AngularThrustPower"
@@ -112,6 +108,9 @@
                                     "type": "boolean"
                                 },
                                 "actionInference":{
+                                    "type": "string"
+                                },
+                                "randomiseRestart":{
                                     "type": "string"
                                 },
                                 "faunaConfig": {
@@ -324,6 +323,7 @@
                                 "enableUI",
                                 "enableSecondaryCameras",
                                 "actionInference",
+                                "randomiseRestart",
                                 "faunaConfig"
                             ]
                         }

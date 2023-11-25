@@ -1,4 +1,4 @@
-CALL .\..\.venv\Scripts\activate.bat
-cd ..\benchmarking\scripts\gym_underwater
-python image_similarity.py --dir_orig C:\Users\sambu\Downloads\images_high --dir_unity_scaled C:\Users\sambu\Downloads\images_high_scaled --dir_output C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPer\benchmarking\results --resize --num_samples 1000
-python image_similarity.py --dir_orig C:\Users\sambu\Downloads\images_low --dir_unity_scaled C:\Users\sambu\Downloads\images_low_scaled --dir_output C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPer\benchmarking\results --resize --num_samples 1000
+call ..\.venv\Scripts\activate
+cd ..\benchmarking\scripts
+python image_similarity.py --dir_orig ..\..\data\image_validation\1920x1080\images --dir_unity_scaled ..\..\data\image_validation\1920x1080\64x64 --dir_output ..\..\benchmarking\results --resize --num_samples 1000
+python image_similarity.py --dir_orig ..\..\data\image_validation\640x360\images --dir_unity_scaled ..\..\data\image_validation\640x360\64x64 --dir_output ..\..\benchmarking\results --resize --num_samples 1000

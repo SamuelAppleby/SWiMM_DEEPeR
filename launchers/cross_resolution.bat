@@ -1,3 +1,3 @@
-CALL .\..\.venv\Scripts\activate.bat
+call ..\.venv\Scripts\activate
 cd ..\benchmarking\scripts
-python3 image_similarity.py --dir_high_scaled C:\Users\sambu\Downloads\images_high_scaled --dir_low_scaled C:\Users\sambu\Downloads\images_low_scaled --dir_raw C:\Users\sambu\Downloads\images_raw --dir_output C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPer\benchmarking\results --cross_resolution --num_samples 1000
+python image_similarity.py --dir_high_scaled ..\..\data\image_validation\1920x1080\64x64 --dir_low_scaled ..\..\data\image_validation\640x360\64x64 --dir_raw ..\..\data\image_validation\64x64\images --dir_output ..\..\benchmarking\results --cross_resolution --num_samples 1000

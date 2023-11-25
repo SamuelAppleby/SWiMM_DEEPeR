@@ -1,4 +1,5 @@
 benchmarking/images
+benchmarking/results
 .venv/
 *.pyc
 .idea/

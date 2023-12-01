@@ -22,11 +22,11 @@ if not defined SearchFound (
 )
 
 :found
-for %%I in ("%s%") do set "dir=%%~dpI"
-if "%dir:~-1%"=="\" set "dir=%dir:~0,-1%"
+@REM for %%I in ("%s%") do set "dir=%%~dpI"
+@REM if "%dir:~-1%"=="\" set "dir=%dir:~0,-1%"
 call ..\.venv\Scripts\activate
 echo Starting TensorBoard...
-start /B tensorboard --host localhost --port 6006 --logdir "%dir%" --reload_interval=10
+start /B tensorboard --host localhost --port 6006 --logdir "%s%" --reload_interval=10
 timeout /nobreak /t 5 > nul
 for /f "tokens=5" %%a in ('netstat -ano ^| find "6006" ^| find "LISTENING"') do (
     set "tensorboardPID=%%a"

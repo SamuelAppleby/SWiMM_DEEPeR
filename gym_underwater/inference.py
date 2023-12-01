@@ -41,7 +41,7 @@ ALGOS = {
 }
 
 print("Loading environment configuration ...")
-with open(os.path.abspath(os.path.join(os.pardir, 'configs', 'config.yml')), 'r') as f:
+with open(os.path.join(os.pardir, 'configs', 'config.yml'), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 # early check on path to trained model if -i arg passed
@@ -67,7 +67,7 @@ set_random_seed(env_config['seed'])
 # Set up a reward log if you want one
 log_dir = os.path.dirname(env_config['model_path'])
 os.environ['OPENAI_LOG_FORMAT'] = 'csv'
-os.environ['OPENAI_LOGDIR'] = os.path.abspath(log_dir)
+os.environ['OPENAI_LOGDIR'] = log_dir
 logger.configure()
 
 # Wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error

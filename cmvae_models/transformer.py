@@ -1,17 +1,4 @@
-"""
-file: transformer.py
-author: Kirsten Richardson
-date: 2021
-NB rolled back from TF2 to TF1, and three not four state variables
-
-code taken from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
-author: Rogerio Bonatti et al.
-"""
-
 import tensorflow as tf
-
-tf = tf.compat.v1
-tf.disable_v2_behavior()
 
 
 class NonLinearTransformer(tf.keras.Model):
@@ -20,16 +7,40 @@ class NonLinearTransformer(tf.keras.Model):
         self.create_model()
 
     def call(self, x):
-        x1 = self.dense0(x)
-        x2 = self.dense1(x1)
-        x3 = self.dense2(x2)
-        return x3
+        return self.network(x)
 
     def create_model(self):
-        print('[NonLinearTransformer] Creating layers')
+        print('[NonLinearTransformer] Starting create_model')
+        dense0 = tf.keras.layers.Dense(units=64, activation='relu')
+        dense1 = tf.keras.layers.Dense(units=32, activation='relu')
+        dense2 = tf.keras.layers.Dense(units=1, activation='linear')
+        self.network = tf.keras.Sequential([
+            dense0,
+            dense1,
+            dense2],
+            name='nonlineartransformer')
 
-        self.dense0 = tf.keras.layers.Dense(units=64, activation='relu')
-        self.dense1 = tf.keras.layers.Dense(units=32, activation='relu')
-        self.dense2 = tf.keras.layers.Dense(units=1, activation='linear')
+        print('[NonLinearTransformer] Done with create_model')
 
-        print('[NonLinearTransformer] Done with creating model')
+
+class TestNet(tf.keras.Model):
+    def __init__(self):
+        super(TestNet, self).__init__()
+        self.create_model()
+
+    def call(self, x):
+        x = tf.keras.layers.Flatten()(x)
+        return self.network(x)
+
+    def create_model(self):
+        print('[NonLinearTransformer] Starting create_model')
+        dense0 = tf.keras.layers.Dense(units=64, activation='relu')
+        dense1 = tf.keras.layers.Dense(units=32, activation='relu')
+        dense2 = tf.keras.layers.Dense(units=1, activation='linear')
+        self.network = tf.keras.Sequential([
+            dense0,
+            dense1,
+            dense2],
+            name='nonlineartransformer')
+
+        print('[NonLinearTransformer] Done with create_model')

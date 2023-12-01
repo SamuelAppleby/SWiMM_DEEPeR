@@ -1,23 +1,9 @@
-"""
-file: eval_cmvae.py
-author: Kirsten Richardson
-date: 2021
-NB rolled back from TF2 to TF1, and three not four state variables
-
-code taken from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
-author: Rogerio Bonatti et al.
-"""
-
-import tensorflow as tf
+import argparse
 import os
 import sys
-import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
-import random
-import yaml
+import tensorflow as tf
 
-# code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
 sys.path.insert(0, import_path)
@@ -25,38 +11,39 @@ sys.path.insert(0, import_path)
 import cmvae_models.cmvae
 import cmvae_utils
 
-tf = tf.compat.v1
-tf.disable_v2_behavior()
+cmvae_utils.dataset_utils.seed_environment()
 
-# define testing meta parameters
-output_dir = os.path.abspath(os.path.join(curr_dir, os.pardir, 'data', 'cmvae_03-15-2023_nz_10'))
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_dir', help='Directory where the images/state data is contained', default="", type=str)
+parser.add_argument('--weights_path', help='Directory where the pretrained model is', default="", type=str)
+args = parser.parse_args()
 
-model_to_eval = 'cmvae_model_49.ckpt'
+if args.data_dir == '':
+    print('No data directory specified, quitting!')
+    quit()
 
-n_z = 10  # 20
+# define training meta parameters
+data_dir = args.data_dir
+weights_path = args.weights_path
+output_dir = os.path.join(os.path.dirname(weights_path), 'results')
+
+if not os.path.isdir(output_dir):
+    os.makedirs(output_dir)
+
+# DEFINE TESTING META PARAMETERS
+n_z = 10
 img_res = 64
-learning_rate = 1e-4
-beta = 8.0
-num_imgs_display = 8  # 50
-columns = 4  # 10
-rows = 4  # 10
+num_imgs_display = 8
+columns = 4
+rows = 4
 read_table = True
 
 num_interp_z = 10
-idx_close = 2385  # NB: image filename minus 1
-idx_far = 2768
+idx_close = 615
+idx_far = 703
 
 z_range_mural = [-0.02, 0.02]
 z_num_mural = 11
-
-with open(os.path.abspath(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml')), 'r') as f:
-    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-
-# seeding for reproducibility
-seed = env_config['seed']
-tf.set_random_seed(seed)
-np.random.seed(seed)
-random.seed(seed)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 # 0 = all messages are logged (default behavior)
@@ -67,70 +54,50 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 # allow growth is possible using an env var in tf2.0
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-# Load test raw data
-images_np, raw_table = cmvae_utils.dataset_utils.create_test_dataset_csv(os.path.join(output_dir, os.pardir, 'vae_test_set', '64x64'), img_res, read_table=read_table)
+# Load test dataset
+images_np, raw_table = cmvae_utils.dataset_utils.create_test_dataset_csv(data_dir, img_res, read_table=read_table)
 print('Done with dataset')
 
-###### DEBUGGING ########
-
-# test_image = ((images_np[1] + 1.0) / 2.0 * 255.0).astype(np.uint8)
-
-# cv2.imshow('test', test_image)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-# print(raw_table[1])
-
-#########################
+images_np = images_np[:1000, :]
+if read_table is True:
+    raw_table = raw_table[:1000, :]
 
 # create model
-model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, state_dim=3, res=img_res, learning_rate=learning_rate, beta=beta, trainable_model=True, big_data=False)
+model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, gate_dim=3, res=img_res, trainable_model=True)
 
-# load trained weights from checkpoint
-print('Loading weights from {}'.format(os.path.join(output_dir, model_to_eval)))
-model.load_weights(os.path.join(output_dir, model_to_eval))
+print('Loading weights from {}'.format(os.path.join(output_dir, weights_path)))
+model.load_weights(weights_path)
+# tf.status.expect_partial()
+del model
+sys.exit()
 
-# initialize dataset and dataset iterator
-model.sess.run(model.init_op, feed_dict={model.img_data: images_np, model.state_data: raw_table, model.batch_size: 1})
+img_recon, gate_recon, means, stddev, z = model(images_np, mode=0)
+img_recon = img_recon.numpy()
+gate_recon = gate_recon.numpy()
+z = z.numpy()
 
-pbar = tqdm(total=len(raw_table))
-# initialise output variables with first run of graph
-z, img_recon, state_recon = model.sess.run([model.z, model.img_recon, model.state_recon])
-pbar.update()
-# concat output to initial variables with each subsequent run of graph
-for _ in range(len(raw_table) - 1):
-    latent_vector, image_reconstruction, state_prediction = model.sess.run([
-        model.z,
-        model.img_recon,
-        model.state_recon
-    ])
-    z = np.concatenate([z, latent_vector], axis=0)
-    img_recon = np.concatenate([img_recon, image_reconstruction], axis=0)
-    state_recon = np.concatenate([state_recon, state_prediction], axis=0)
-    pbar.update(1)
-pbar.close()
-
-# de-normalization of states and images
+# de-normalization of gates and images
 images_np = ((images_np + 1.0) / 2.0 * 255.0).astype(np.uint8)
 img_recon = ((img_recon + 1.0) / 2.0 * 255.0).astype(np.uint8)
-state_recon = cmvae_utils.dataset_utils.de_normalize_state(state_recon)
+gate_recon = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon)
 
-# get stats for state predictions
-cmvae_utils.stats_utils.calculate_state_stats(state_recon, raw_table, output_dir)
+# if not read_table:
+#     sys.exit()
+
+# get stats for gate reconstruction
+if read_table is True:
+    cmvae_utils.stats_utils.calculate_gate_stats(gate_recon, raw_table, output_dir)
 
 # show some reconstruction figures
 fig = plt.figure(figsize=(20, 20))
-# create array of num_imgs_display indexes to use with random sampler rather than using index 0 to num_imgs_display so more variation
-imgs_to_use = np.random.choice(range(len(raw_table)), num_imgs_display, replace=False)
 for i in range(1, num_imgs_display + 1):
-    img_to_use = imgs_to_use[i - 1]
     idx_orig = (i - 1) * 2 + 1
     fig.add_subplot(rows, columns, idx_orig)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[img_to_use, :])
+    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np[i - 1, :])
     plt.axis('off')
     plt.imshow(img_display)
     fig.add_subplot(rows, columns, idx_orig + 1)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon[img_to_use, :])
+    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon[i - 1, :])
     plt.axis('off')
     plt.imshow(img_display)
 fig.savefig(os.path.join(output_dir, 'reconstruction_results.png'))
@@ -142,33 +109,27 @@ z_far = z[idx_far, :]
 z_interp = cmvae_utils.geom_utils.interp_vector(z_close, z_far, num_interp_z)
 
 # get the image predictions
-# add dimension to front so (1,10) not (10,1)
-z_feed = z_interp[0].reshape(1, -1)
-# initialise output variable with first call to decode
-img_recon_interp, state_recon_interp = model.decode(z_feed)
-# concat output to initial variable with each subsequent call to decode
-for i in range(1, len(z_interp)):
-    z_feed = z_interp[i].reshape(1, -1)
-    x, y = model.decode(z_feed)
-    img_recon_interp = np.concatenate([img_recon_interp, x], axis=0)
-    state_recon_interp = np.concatenate([state_recon_interp, y], axis=0)
+img_recon_interp, gate_recon_interp = model.decode(z_interp, mode=0)
+img_recon_interp = img_recon_interp.numpy()
+gate_recon_interp = gate_recon_interp.numpy()
 
-# de-normalization of states and images
+# de-normalization of gates and images
 img_recon_interp = ((img_recon_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
-state_recon_interp = cmvae_utils.dataset_utils.de_normalize_state(state_recon_interp)
+gate_recon_interp = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interp)
 
 # join predictions with array and print
 indices = np.array([np.arange(num_interp_z)]).transpose()
-results = np.concatenate((indices, state_recon_interp), axis=1)
+results = np.concatenate((indices, gate_recon_interp), axis=1)
 print('Img index | Predictions: = \n{}'.format(results))
 
 fig, axs = plt.subplots(1, 3, tight_layout=True)
-axs[0].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 0], 'b-', label='r')
-axs[1].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 1], 'b-', label=r'$\theta$')
-axs[2].plot(np.arange(state_recon_interp.shape[0]), state_recon_interp[:, 2], 'b-', label=r'$\psi$')
+axs[0].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 0], 'b-', label='r')
+axs[1].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 1], 'b-', label=r'$\theta$')
+axs[2].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 2], 'b-', label=r'$\psi$')
 
 for idx in range(3):
-    y_ticks_array = state_recon_interp[:, idx][np.array([0, state_recon_interp[:, idx].shape[0] - 1])]
+    # axs[idx].grid()
+    y_ticks_array = gate_recon_interp[:, idx][np.array([0, gate_recon_interp[:, idx].shape[0] - 1])]
     y_ticks_array = np.around(y_ticks_array, decimals=1)
     if idx > 0:
         y_ticks_array = y_ticks_array
@@ -215,7 +176,8 @@ for i in range(1, z_num_mural * n_z + 1):
     fig3.add_subplot(rows, columns, i)
     z = np.zeros((1, n_z)).astype(np.float32)
     z[0, int((i - 1) / columns)] = z_values[i % columns - 1]
-    img_recon_interp, state_recon_interp = model.decode(z)
+    img_recon_interp, gate_recon_interp = model.decode(z, mode=0)
+    img_recon_interp = img_recon_interp.numpy()
     img_recon_interp = ((img_recon_interp[0, :] + 1.0) / 2.0 * 255.0).astype(np.uint8)
     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
     plt.axis('off')
@@ -224,19 +186,18 @@ fig3.savefig(os.path.join(output_dir, 'z_mural.png'))
 # plt.show()
 
 # single-channel version of above
-fig4 = plt.figure(figsize=(96, 96))
-columns = z_num_mural
-rows = 1
-z_values = cmvae_utils.geom_utils.interp_vector(z_range_mural[0], z_range_mural[1], z_num_mural)
-for i in range(1, z_num_mural + 1):
-    fig4.add_subplot(rows, columns, i)
-    z = np.zeros((1, n_z)).astype(np.float32)
-    z[0, 2] = z_values[i-1] # interp across yaw feature
-    z[0, 0] = 0.02 # but hard code distance feature to 'close'
-    img_recon_interp, state_recon_interp = model.decode(z)
-    img_recon_interp = ((img_recon_interp[0, :] + 1.0) / 2.0 * 255.0).astype(np.uint8)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
-    plt.axis('off')
-    plt.imshow(img_display)
-fig4.savefig(os.path.join(output_dir, 'yaw_up_close.png'))
-# plt.show()
+# fig4 = plt.figure(figsize=(96, 96))
+# columns = z_num_mural
+# rows = 1
+# z_values = cmvae_utils.geom_utils.interp_vector(z_range_mural[0], z_range_mural[1], z_num_mural)
+# for i in range(1, z_num_mural + 1):
+#     fig4.add_subplot(rows, columns, i)
+#     z = np.zeros((1, n_z)).astype(np.float32)
+#     z[0, 2] = z_values[i - 1]  # interp across yaw feature
+#     z[0, 0] = 0.02  # but hard code distance feature to 'close'
+#     img_recon_interp, state_recon_interp = model.decode(z, mode=0)
+#     img_recon_interp = ((img_recon_interp[0, :] + 1.0) / 2.0 * 255.0).astype(np.uint8)
+#     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
+#     plt.axis('off')
+#     plt.imshow(img_display)
+# fig4.savefig(os.path.join(output_dir, 'yaw_up_close.png'))

@@ -46,7 +46,7 @@ ALGOS = {
 }
 
 print('Loading environment configuration ...')
-with open(os.path.abspath(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml')), 'r') as f:
+with open(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml'), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 # early check on path to trained model if -i arg passed
@@ -64,7 +64,7 @@ if env_config['obs'] == 'vae':
 
 # load hyperparameters from yaml file into dict
 print('Loading hyperparameters ...')
-with open(os.path.abspath(os.path.join(curr_dir, os.pardir, 'configs', '{}.yml'.format(env_config['algo']))), 'r') as f:
+with open(os.path.join(curr_dir, os.pardir, 'configs', '{}.yml'.format(env_config['algo'])), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
 # add seed provided by config
@@ -85,26 +85,22 @@ set_random_seed(hyperparams.get('seed', 0))
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.abspath(os.path.join(curr_dir, os.pardir, "logs", env_config['algo']))
+algo_specific_path = os.path.join(curr_dir, os.pardir, "logs", env_config['algo'])
 run_id = 0
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
     run_num = path.split(os.sep)[-1]
     if run_num.isdigit() and int(run_num) > run_id:
         run_id = int(run_num)
-run_specific_path = os.path.abspath(os.path.join(algo_specific_path, str(run_id + 1)))
+run_specific_path = os.path.join(algo_specific_path, str(run_id + 1))
 os.makedirs(run_specific_path, exist_ok=True)
 
-with open('train_output.txt', 'w') as log_file:
-    print('Logging directory: {}'.format(run_specific_path))
-    log_file.write('Logging directory: {}\n'.format(run_specific_path))
-
-hyperparams['tensorboard_log'] = os.path.abspath(run_specific_path)
+hyperparams['tensorboard_log'] = run_specific_path
 
 if not env_config['monitor']:
-    log_dir = os.path.abspath(os.path.join('tmp', 'gym', '{}'.format(int(time.time()))))
+    log_dir = os.path.join('tmp', 'gym', '{}'.format(int(time.time())))
 else:
-    log_dir = os.path.abspath(run_specific_path)
+    log_dir = run_specific_path
 
 os.makedirs(log_dir, exist_ok=True)
 
@@ -197,10 +193,10 @@ model.learn(**kwargs)
 env.reset()
 
 # Save final model, regardless of state
-model.save(os.path.abspath(os.path.join(str(model.tensorboard_log), 'final_model')))
+model.save(os.path.join(str(model.tensorboard_log), 'final_model'))
 
 # Save hyperparams
-with open(os.path.abspath(os.path.join(run_specific_path, 'config.yml')), 'w') as f:
+with open(os.path.join(run_specific_path, 'config.yml'), 'w') as f:
     yaml.dump(saved_hyperparams, f)
 
 if normalize:

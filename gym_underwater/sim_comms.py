@@ -100,10 +100,10 @@ class UnitySimHandler:
         logger.setLevel(logging.INFO)
 
         self.debug_logs = debug
-        self.debug_logs_dir = os.path.abspath(os.path.join(os.pardir, 'Logs'))
-        self.image_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'images'))
-        self.packets_sent_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_sent'))
-        self.packets_received_dir = os.path.abspath(os.path.join(self.debug_logs_dir, 'packets_received'))
+        self.debug_logs_dir = os.path.join(os.pardir, 'Logs')
+        self.image_dir = os.path.join(self.debug_logs_dir, 'images')
+        self.packets_sent_dir = os.path.join(self.debug_logs_dir, 'packets_sent')
+        self.packets_received_dir = os.path.join(self.debug_logs_dir, 'packets_received')
 
         self.sock = None
         self.addr = None
@@ -120,7 +120,7 @@ class UnitySimHandler:
         self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
 
         conf_arr = process_and_validate_configs({
-            os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json')): os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config_schema.json'))
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config_schema.json')
         })
 
         self.server_config = conf_arr.pop()
@@ -196,7 +196,7 @@ class UnitySimHandler:
             json_dict = json.loads(json_str)
 
             if self.debug_logs:
-                with open(os.path.abspath(os.path.join(self.packets_received_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num))), 'w', encoding='utf-8') as f:
+                with open(os.path.join(self.packets_received_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num)), 'w', encoding='utf-8') as f:
                     json.dump(json_dict, f, ensure_ascii=False, indent=4)
                     f.close()
 
@@ -215,7 +215,7 @@ class UnitySimHandler:
                 if self.msg['msgType'] == "reset_episode":
                     self.clean_and_create_debug_directories()
                 else:
-                    with open(os.path.abspath(os.path.join(self.packets_sent_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num))), 'w', encoding='utf-8') as f:
+                    with open(os.path.join(self.packets_sent_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num)), 'w', encoding='utf-8') as f:
                         json.dump(self.msg, f, ensure_ascii=False, indent=4)
                         f.close()
 
@@ -370,8 +370,7 @@ class UnitySimHandler:
         image = bytearray(base64.b64decode(payload['telemetry_data']['jpg_image']))
 
         if self.debug_logs:
-            write_image_to_file_incrementally(image, os.path.abspath(
-                os.path.join(self.image_dir, 'episode_{}_step{}.jpg'.format(self.episode_num, self.step_num))))
+            write_image_to_file_incrementally(image, os.path.join(self.image_dir, 'episode_{}_step{}.jpg'.format(self.episode_num, self.step_num)))
 
         image = np.array(Image.open(BytesIO(image)))
 

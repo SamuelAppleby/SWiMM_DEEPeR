@@ -1,19 +1,22 @@
-"""
-file: dataset_utils.py
-author: Kirsten Richardson
-date: 2021
-NB rolled back from TF2 to TF1, and three not four state variables
-
-code taken from: https://github.com/microsoft/AirSim-Drone-Racing-VAE-Imitation
-author: Rogerio Bonatti et al.
-"""
+import random
 
 import numpy as np
+import tensorflow as tf
 import os
 import glob
 import cv2
-from sklearn.model_selection import train_test_split
+import yaml
 from natsort import natsorted
+from sklearn.model_selection import train_test_split
+
+
+def seed_environment():
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
+        env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+
+    # seeding for reproducibility
+    seed = env_config['seed']
+    tf.keras.utils.set_random_seed(seed)
 
 
 def convert_bgr2rgb(img_bgr):
@@ -24,10 +27,56 @@ def convert_rgb2bgr(img_rgb):
     return cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
 
 
-def normalize_state(pose):
-    # normalization of ranges as used in image_gen.py to [-1, 1] range
-    r_range = [2, 20]
-    cam_fov = 79.7249       # HORIZONTAL
+def normalize_v(v):
+    # normalization of velocities from whatever to [-1, 1] range
+    v_x_range = [-1, 7]
+    v_y_range = [-3, 3]
+    v_z_range = [-3, 3]
+    v_yaw_range = [-1, 1]
+    if len(v.shape) == 1:
+        # means that it's a 1D vector of velocities
+        v[0] = 2.0 * (v[0] - v_x_range[0]) / (v_x_range[1] - v_x_range[0]) - 1.0
+        v[1] = 2.0 * (v[1] - v_y_range[0]) / (v_y_range[1] - v_y_range[0]) - 1.0
+        v[2] = 2.0 * (v[2] - v_z_range[0]) / (v_z_range[1] - v_z_range[0]) - 1.0
+        v[3] = 2.0 * (v[3] - v_yaw_range[0]) / (v_yaw_range[1] - v_yaw_range[0]) - 1.0
+    elif len(v.shape) == 2:
+        # means that it's a 2D vector of velocities
+        v[:, 0] = 2.0 * (v[:, 0] - v_x_range[0]) / (v_x_range[1] - v_x_range[0]) - 1.0
+        v[:, 1] = 2.0 * (v[:, 1] - v_y_range[0]) / (v_y_range[1] - v_y_range[0]) - 1.0
+        v[:, 2] = 2.0 * (v[:, 2] - v_z_range[0]) / (v_z_range[1] - v_z_range[0]) - 1.0
+        v[:, 3] = 2.0 * (v[:, 3] - v_yaw_range[0]) / (v_yaw_range[1] - v_yaw_range[0]) - 1.0
+    else:
+        raise Exception('Error in data format of V shape: {}'.format(v.shape))
+    return v
+
+
+def de_normalize_v(v):
+    # normalization of velocities from [-1, 1] range to whatever
+    v_x_range = [-1, 7]
+    v_y_range = [-3, 3]
+    v_z_range = [-3, 3]
+    v_yaw_range = [-1, 1]
+    if len(v.shape) == 1:
+        # means that it's a 1D vector of velocities
+        v[0] = (v[0] + 1.0) / 2.0 * (v_x_range[1] - v_x_range[0]) + v_x_range[0]
+        v[1] = (v[1] + 1.0) / 2.0 * (v_y_range[1] - v_y_range[0]) + v_y_range[0]
+        v[2] = (v[2] + 1.0) / 2.0 * (v_z_range[1] - v_z_range[0]) + v_z_range[0]
+        v[3] = (v[3] + 1.0) / 2.0 * (v_yaw_range[1] - v_yaw_range[0]) + v_yaw_range[0]
+    elif len(v.shape) == 2:
+        # means that it's a 2D vector of velocities
+        v[:, 0] = (v[:, 0] + 1.0) / 2.0 * (v_x_range[1] - v_x_range[0]) + v_x_range[0]
+        v[:, 1] = (v[:, 1] + 1.0) / 2.0 * (v_y_range[1] - v_y_range[0]) + v_y_range[0]
+        v[:, 2] = (v[:, 2] + 1.0) / 2.0 * (v_z_range[1] - v_z_range[0]) + v_z_range[0]
+        v[:, 3] = (v[:, 3] + 1.0) / 2.0 * (v_yaw_range[1] - v_yaw_range[0]) + v_yaw_range[0]
+    else:
+        raise Exception('Error in data format of V shape: {}'.format(v.shape))
+    return v
+
+
+def normalize_gate(pose):
+    # normalization of velocities from whatever to [-1, 1] range
+    r_range = [2, 10]
+    cam_fov = 79.95185  # HORIZONTAL
     alpha = cam_fov / 2.0  # (cam_fov/180.0*np.pi/2.0)
     theta_range = [-alpha, alpha]  # [-90, 90]
     psi_range = [-180, 180]
@@ -46,10 +95,10 @@ def normalize_state(pose):
     return pose
 
 
-def de_normalize_state(pose):
-    # normalization of ranges as used in image_gen.py to [-1, 1] range
-    r_range = [2, 20]
-    cam_fov = 79.7249       # HORIZONTAL
+def de_normalize_gate(pose):
+    # normalization of velocities from [-1, 1] range to whatever
+    r_range = [2, 10]
+    cam_fov = 79.95185  # HORIZONTAL
     alpha = cam_fov / 2.0  # (cam_fov/180.0*np.pi/2.0)
     theta_range = [-alpha, alpha]  # [-90, 90]
     psi_range = [-180, 180]
@@ -70,9 +119,8 @@ def de_normalize_state(pose):
 
 def read_images(data_dir, res, max_size=None):
     print('Going to read image file list')
-    files_list = glob.glob(os.path.abspath(os.path.join(data_dir, 'images', '*.jpg')))
+    files_list = glob.glob(os.path.join(data_dir, 'images', '*.jpg'))
     print('Done. Starting sorting.')
-    # files_list.sort()  # make sure we're reading the images in order later
     files_list = natsorted(files_list)
     print('Done. Before images_np init')
     if max_size is not None:
@@ -83,12 +131,10 @@ def read_images(data_dir, res, max_size=None):
     print('Done. Going to read images.')
     idx = 0
     for img_name in files_list:
-        # read in image with cv2 (pixel order BGR)
+        # read data in BGR format by default!!!
+        # notice that model is going to be trained in BGR
         im = cv2.imread(img_name, cv2.IMREAD_COLOR)
-
-        if im.shape[0] is not res or im.shape[1] is not res:
-            im = cv2.resize(im, (res, res))
-
+        im = cv2.resize(im, (res, res))
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 10000 == 0:
@@ -104,11 +150,9 @@ def read_images(data_dir, res, max_size=None):
 
 def create_dataset_csv(data_dir, batch_size, res, max_size=None):
     print('Going to read file list')
-    files_list = glob.glob(os.path.join(data_dir, 'images' + os.sep + '*.jpg'))  # took out the preceding images dir
+    files_list = glob.glob(os.path.join(data_dir, 'images', '*.jpg'))  # took out the preceding images dir
     print('Done. Starting sorting.')
-    # files_list.sort()  # make sure we're reading the images in order later
     files_list = natsorted(files_list)
-
     print('Done. Before images_np init')
     if max_size is not None:
         size_data = max_size
@@ -116,16 +160,11 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
         size_data = len(files_list)
     images_np = np.zeros((size_data, res, res, 3)).astype(np.float32)
 
-    print('Going to read csv file.')
-    # prepare state R THETA PSI as np array reading from a file
-    raw_table = np.loadtxt(os.path.abspath(os.path.join(data_dir, 'state_data.csv')), delimiter=',')  # changed name of csv and delimiter from space to comma
-    raw_table = raw_table[:size_data, :]
-
     print('Done. Going to read images.')
-
     idx = 0
     for file in files_list:
-        # read in image with cv2 (pixel order BGR)
+        # read data in BGR format by default!!!
+        # notice that model is going to be trained in BGR
         im = cv2.imread(file, cv2.IMREAD_COLOR)
 
         if im.shape[0] is not res or im.shape[1] is not res:
@@ -140,89 +179,85 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
             # reached the last point -- exit loop of images
             break
 
+    print('Going to read csv file.')
+    # prepare gate R THETA PSI PHI as np array reading from a file
+    raw_table = np.loadtxt(os.path.join(data_dir, 'state_data.csv'), delimiter=',')  # changed name of csv and delimiter from space to comma
+    raw_table = raw_table[:size_data, :]
+
     # sanity check
     if raw_table.shape[0] != images_np.shape[0]:
         raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(images_np.shape[0], raw_table.shape[0]))
     raw_table.astype(np.float32)
 
     # print some useful statistics
-    print("Average state values: {}".format(np.mean(raw_table, axis=0)))
-    print("Median  state values: {}".format(np.median(raw_table, axis=0)))
-    print("STD of  state values: {}".format(np.std(raw_table, axis=0)))
-    print("Max of  state values: {}".format(np.max(raw_table, axis=0)))
-    print("Min of  state values: {}".format(np.min(raw_table, axis=0)))
+    print("Average gate values: {}".format(np.mean(raw_table, axis=0)))
+    print("Median  gate values: {}".format(np.median(raw_table, axis=0)))
+    print("STD of  gate values: {}".format(np.std(raw_table, axis=0)))
+    print("Max of  gate values: {}".format(np.max(raw_table, axis=0)))
+    print("Min of  gate values: {}".format(np.min(raw_table, axis=0)))
 
-    # normalize state variables to [-1, 1] range
-    raw_table = normalize_state(raw_table)
+    # normalize distances to gate to [-1, 1] range
+    raw_table = normalize_gate(raw_table)
 
-    img_train, img_test, state_train, state_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
+    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
 
-    # calculate number of batches
-    num_train_imgs = img_train.shape[0]
-    n_batches_train = (num_train_imgs + batch_size - 1) // batch_size
-    num_test_imgs = img_test.shape[0]
-    n_batches_test = (num_test_imgs + batch_size - 1) // batch_size
-    print("Amount of training data: {}".format(num_train_imgs))
-    print("Number of training batches: {}".format(n_batches_train))
-    print("Amount of test data: {}".format(num_test_imgs))
-    print("Number of test batches: {}".format(n_batches_test))
-
-    # combine image and state data
-    ds_train = [img_train, state_train]
-    ds_test = [img_test, state_test]
-
-    return ds_train, ds_test, n_batches_train, n_batches_test
+    return img_train, img_test, dist_train, dist_test
 
 
-def create_dataset_filepaths(data_dir, batch_size, max_size=None):
+def create_dataset_csv_new(data_dir, batch_size, res, max_size=None, start_idx=0):
     print('Going to read file list')
-    files_list = glob.glob(os.path.abspath(os.path.join(data_dir, 'images', '*.jpg')))  # took out the preceding images dir
+    files_list = glob.glob(os.path.join(data_dir, 'images', '*.jpg'))  # took out the preceding images dir
     print('Done. Starting sorting.')
-    # files_list.sort()  # make sure we're reading the images in order later
     files_list = natsorted(files_list)
-    print('Done. Calculating data size and capping at max_size if using')
+    print('Done. Before images_np init')
     if max_size is not None:
         size_data = max_size
     else:
         size_data = len(files_list)
+    images_np = np.zeros((size_data, res, res, 3)).astype(np.float32)
+
+    # Remove first start_idx rows
+    files_list = files_list[start_idx:start_idx + size_data]
+
+    print('Done. Going to read images.')
+    idx = 0
+    for file in files_list:
+        # read data in BGR format by default!!!
+        # notice that model is going to be trained in BGR
+        im = cv2.imread(file, cv2.IMREAD_COLOR)
+
+        if im.shape[0] is not res or im.shape[1] is not res:
+            im = cv2.resize(im, (res, res))
+
+        im = im / 255.0 * 2.0 - 1.0
+        images_np[idx, :] = im
+        if idx % 10000 == 0:
+            print('image idx = {}'.format(start_idx + idx))
+        idx = idx + 1
 
     print('Going to read csv file.')
-    # prepare state R THETA PSI as np array reading from a file
-    raw_table = np.loadtxt(data_dir + os.sep + 'state_data.csv', delimiter=',')  # changed name of csv and delimiter from space to comma
-    raw_table = raw_table[:size_data, :]
+    # prepare gate R THETA PSI PHI as np array reading from a file
+    raw_table = np.loadtxt(os.path.join(data_dir, 'state_data.csv'), delimiter=',')  # changed name of csv and delimiter from space to comma
+    raw_table = raw_table[start_idx:start_idx + size_data, :]
 
     # sanity check
-    if raw_table.shape[0] != len(files_list):
-        raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(len(files_list), raw_table.shape[0]))
+    if raw_table.shape[0] != images_np.shape[0]:
+        raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(images_np.shape[0], raw_table.shape[0]))
     raw_table.astype(np.float32)
 
     # print some useful statistics
-    print("Average state values: {}".format(np.mean(raw_table, axis=0)))
-    print("Median  state values: {}".format(np.median(raw_table, axis=0)))
-    print("STD of  state values: {}".format(np.std(raw_table, axis=0)))
-    print("Max of  state values: {}".format(np.max(raw_table, axis=0)))
-    print("Min of  state values: {}".format(np.min(raw_table, axis=0)))
+    print("Average gate values: {}".format(np.mean(raw_table, axis=0)))
+    print("Median  gate values: {}".format(np.median(raw_table, axis=0)))
+    print("STD of  gate values: {}".format(np.std(raw_table, axis=0)))
+    print("Max of  gate values: {}".format(np.max(raw_table, axis=0)))
+    print("Min of  gate values: {}".format(np.min(raw_table, axis=0)))
 
-    # normalize state variables to [-1, 1] range
-    raw_table = normalize_state(raw_table)
+    # normalize distances to gate to [-1, 1] range
+    raw_table = normalize_gate(raw_table)
 
-    img_train, img_test, state_train, state_test = train_test_split(files_list, raw_table, test_size=0.1, random_state=42)
+    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
 
-    # calculate number of batches
-    num_train_imgs = len(img_train)
-    n_batches_train = (num_train_imgs + batch_size - 1) // batch_size
-    num_test_imgs = len(img_test)
-    n_batches_test = (num_test_imgs + batch_size - 1) // batch_size
-    print("Amount of training data: {}".format(num_train_imgs))
-    print("Number of training batches: {}".format(n_batches_train))
-    print("Amount of test data: {}".format(num_test_imgs))
-    print("Number of test batches: {}".format(n_batches_test))
-
-    # combine image and state data
-    ds_train = [img_train, state_train]
-    ds_test = [img_test, state_test]
-
-    return ds_train, ds_test, n_batches_train, n_batches_test
+    return img_train, img_test, dist_train, dist_test
 
 
 def create_unsup_dataset_multiple_sources(data_dir_list, batch_size, res):
@@ -231,42 +266,31 @@ def create_unsup_dataset_multiple_sources(data_dir_list, batch_size, res):
     for data_dir in data_dir_list:
         img_array = read_images(data_dir, res, max_size=None)
         images_np = np.concatenate((images_np, img_array), axis=0)
-    # make fake distances to target as -1
+    # make fake distances to gate as -1
     num_items = images_np.shape[0]
     print('Real_life dataset has {} images total'.format(num_items))
-    raw_table = (-1.0 * np.ones((num_items, 3))).astype(np.float32)
+    raw_table = (-1.0 * np.ones((num_items, 4))).astype(np.float32)
     # separate the actual dataset:
-    img_train, img_test, state_train, state_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
-    # calculate number of batches
-    num_train_imgs = img_train.shape[0]
-    n_batches_train = (num_train_imgs + batch_size - 1) // batch_size
-    num_test_imgs = img_test.shape[0]
-    n_batches_test = (num_test_imgs + batch_size - 1) // batch_size
-    print("Amount of training data: {}".format(num_train_imgs))
-    print("Number of training batches: {}".format(n_batches_train))
-    print("Amount of test data: {}".format(num_test_imgs))
-    print("Number of test batches: {}".format(n_batches_test))
-
-    # combine image and state data
-    ds_train = [img_train, state_train]
-    ds_test = [img_test, state_test]
-
-    return ds_train, ds_test, n_batches_train, n_batches_test
+    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
+    # convert to tf format dataset and prepare batches
+    ds_train = tf.data.Dataset.from_tensor_slices((img_train, dist_train)).batch(batch_size)
+    ds_test = tf.data.Dataset.from_tensor_slices((img_test, dist_test)).batch(batch_size)
+    return ds_train, ds_test
 
 
 def create_test_dataset_csv(data_dir, res, read_table=True):
     # prepare image dataset from a folder
     print('Going to read file list')
-    files_list = glob.glob(os.path.abspath(os.path.join(data_dir, 'images', '*.jpg')))  # took out the preceding images dir
+    files_list = glob.glob(os.path.join(data_dir, 'images', '*.jpg'))  # took out the preceding images dir
     print('Done. Starting sorting.')
-    # files_list.sort()  # make sure we're reading the images in order later
     files_list = natsorted(files_list)
     print('Done. Before images_np init')
     images_np = np.zeros((len(files_list), res, res, 3)).astype(np.float32)
     print('After images_np init')
     idx = 0
     for file in files_list:
-        # read in image with cv2 (pixel order BGR)
+        # read data in BGR format by default!!!
+        # notice that model was trained in BGR
         im = cv2.imread(file, cv2.IMREAD_COLOR)
 
         if im.shape[0] is not res or im.shape[1] is not res:
@@ -279,18 +303,88 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     if not read_table:
         return images_np, None
 
-    # prepare state R THETA PSI as np array reading from a file
-    raw_table = np.loadtxt(os.path.abspath(os.path.join(data_dir, 'state_data.csv')), delimiter=',')  # changed name of csv file and delimiter from space to comma
+    # prepare gate R THETA PSI PHI as np array reading from a file
+    raw_table = np.loadtxt(os.path.join(data_dir, 'state_data.csv'), delimiter=',')  # changed name of csv file and delimiter from space to comma
     # sanity check
     if raw_table.shape[0] != images_np.shape[0]:
         raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(images_np.shape[0], raw_table.shape[0]))
     raw_table.astype(np.float32)
 
     # print some useful statistics
-    print("Average state values: {}".format(np.mean(raw_table, axis=0)))
-    print("Median  state values: {}".format(np.median(raw_table, axis=0)))
-    print("STD of  state values: {}".format(np.std(raw_table, axis=0)))
-    print("Max of  state values: {}".format(np.max(raw_table, axis=0)))
-    print("Min of  state values: {}".format(np.min(raw_table, axis=0)))
+    print("Average gate values: {}".format(np.mean(raw_table, axis=0)))
+    print("Median  gate values: {}".format(np.median(raw_table, axis=0)))
+    print("STD of  gate values: {}".format(np.std(raw_table, axis=0)))
+    print("Max of  gate values: {}".format(np.max(raw_table, axis=0)))
+    print("Min of  gate values: {}".format(np.min(raw_table, axis=0)))
 
     return images_np, raw_table
+
+
+def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=None):
+    vel_table = np.loadtxt(data_dir + '/proc_vel.txt', delimiter=',').astype(np.float32)
+    with open(data_dir + '/proc_images.txt') as f:
+        img_table = f.read().splitlines()
+
+    # sanity check
+    if vel_table.shape[0] != len(img_table):
+        raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(len(img_table), vel_table.shape[0]))
+
+    size_data = len(img_table)
+    images_np = np.zeros((size_data, res, res, 3)).astype(np.float32)
+
+    print('Done. Going to read images.')
+    idx = 0
+    for img_name in img_table:
+        if base_path is not None:
+            img_name = img_name.replace('/home/rb/data', base_path)
+        # read data in BGR format by default!!!
+        # notice that model is going to be trained in BGR
+        im = cv2.imread(img_name, cv2.IMREAD_COLOR)
+        im = cv2.resize(im, (res, res))
+        im = im / 255.0 * 2.0 - 1.0
+        images_np[idx, :] = im
+        if idx % 1000 == 0:
+            print('image idx = {} out of {} images'.format(idx, size_data))
+        idx = idx + 1
+        if idx == size_data:
+            # reached the last point -- exit loop of images
+            break
+
+    # print some useful statistics and normalize distances
+    print("Num samples: {}".format(vel_table.shape[0]))
+    print("Average vx: {}".format(np.mean(vel_table[:, 0])))
+    print("Average vy: {}".format(np.mean(vel_table[:, 1])))
+    print("Average vz: {}".format(np.mean(vel_table[:, 2])))
+    print("Average vyaw: {}".format(np.mean(vel_table[:, 3])))
+
+    # normalize the values of velocities to the [-1, 1] range
+    vel_table = normalize_v(vel_table)
+
+    img_train, img_test, v_train, v_test = train_test_split(images_np, vel_table, test_size=0.1, random_state=42)
+
+    if data_mode == 'train':
+        # convert to tf format dataset and prepare batches
+        ds_train = tf.data.Dataset.from_tensor_slices((img_train, v_train)).batch(batch_size)
+        ds_test = tf.data.Dataset.from_tensor_slices((img_test, v_test)).batch(batch_size)
+        return ds_train, ds_test
+    elif data_mode == 'test':
+        return img_test, v_test
+
+
+def create_dataset_multiple_sources(data_dir_list, batch_size, res, data_mode='train', base_path=None):
+    # load all the images and velocities in one single large dataset
+    images_np = np.empty((0, res, res, 3)).astype(np.float32)
+    vel_table = np.empty((0, 4)).astype(np.float32)
+    for data_dir in data_dir_list:
+        img_array, v_array = create_dataset_txt(data_dir, batch_size, res, data_mode='test', base_path=base_path)
+        images_np = np.concatenate((images_np, img_array), axis=0)
+        vel_table = np.concatenate((vel_table, v_array), axis=0)
+    # separate the actual dataset:
+    img_train, img_test, v_train, v_test = train_test_split(images_np, vel_table, test_size=0.1, random_state=42)
+    if data_mode == 'train':
+        # convert to tf format dataset and prepare batches
+        ds_train = tf.data.Dataset.from_tensor_slices((img_train, v_train)).batch(batch_size)
+        ds_test = tf.data.Dataset.from_tensor_slices((img_test, v_test)).batch(batch_size)
+        return ds_train, ds_test
+    elif data_mode == 'test':
+        return img_test, v_test

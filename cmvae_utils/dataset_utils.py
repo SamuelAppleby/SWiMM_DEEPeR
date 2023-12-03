@@ -306,6 +306,8 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     # prepare gate R THETA PSI PHI as np array reading from a file
     raw_table = np.loadtxt(os.path.join(data_dir, 'state_data.csv'), delimiter=',')  # changed name of csv file and delimiter from space to comma
     # sanity check
+    if raw_table.ndim == 1:
+        raw_table = raw_table[np.newaxis, :]
     if raw_table.shape[0] != images_np.shape[0]:
         raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(images_np.shape[0], raw_table.shape[0]))
     raw_table.astype(np.float32)

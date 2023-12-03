@@ -42,7 +42,7 @@ else:
 
 print('Running on: {}'.format(device[0]))
 data_dir = args.data_dir
-output_dir = os.path.join(data_dir, datetime.now().strftime('%m-%d-%Y_%H-%M-%S'))
+output_dir = os.path.join(data_dir, 'results')
 
 # check if output folder exists
 if not os.path.isdir(output_dir):

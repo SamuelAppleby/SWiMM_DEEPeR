@@ -38,7 +38,7 @@ def read_files_from_dir(dir, resize_img=False):
     return arr
 
 
-def unity_python_similarity(dir_orig, dir_unity_sample, num_samples, output_dir):
+def unity_python_similarity(dir_orig, dir_unity_sample, num_samples):
     orig_res = Image.open(os.path.join(dir_orig, '1.jpg'))
     file_names_orig = os.listdir(dir_orig)
     file_names_unity = os.listdir(dir_unity_sample)
@@ -56,6 +56,7 @@ def unity_python_similarity(dir_orig, dir_unity_sample, num_samples, output_dir)
     python_scaled = read_files_from_dir(orig_files_rand, resize_img=True)
     unity_scaled = read_files_from_dir(unity_files_rand, resize_img=False)
 
+    output_dir = os.path.join(dir_orig, os.pardir, os.pardir, 'results')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -79,7 +80,7 @@ def unity_python_similarity(dir_orig, dir_unity_sample, num_samples, output_dir)
         print(str(num_samples) + ' samples between unity and python\n' + 'Average:' + str(np.average(pair_res)) + '\n' + 'Standard Deviation:' + str(np.std(pair_res)))
 
 
-def cross_resolution_similarity(dir_low_scaled, dir_high_scaled, dir_raw, num_samples, output_dir):
+def cross_resolution_similarity(dir_low_scaled, dir_high_scaled, dir_raw, num_samples):
     file_names_low = os.listdir(dir_low_scaled)
     file_names_high = os.listdir(dir_high_scaled)
     file_names_raw = os.listdir(dir_raw)
@@ -100,6 +101,7 @@ def cross_resolution_similarity(dir_low_scaled, dir_high_scaled, dir_raw, num_sa
     high_scaled = read_files_from_dir(files_rand_high, resize_img=False)
     raw = read_files_from_dir(files_rand_raw, resize_img=False)
 
+    output_dir = os.path.join(dir_low_scaled, os.pardir, os.pardir, 'results')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -137,7 +139,6 @@ def main():
     parser.add_argument('--dir_low_scaled', help='Directory 2', default=None, type=str)
     parser.add_argument('--dir_raw', help='Directory 2', default=None, type=str)
 
-    parser.add_argument('--dir_output', help='Directory 2', default=None, type=str)
     parser.add_argument('--num_samples', help='Directory 2', default=1000, type=int)
 
     parser.add_argument('--resize', help='Run experiment  for unity/python', action='store_true')
@@ -145,9 +146,9 @@ def main():
     args = parser.parse_args()
 
     if args.resize:
-        unity_python_similarity(args.dir_orig, args.dir_unity_scaled, args.num_samples, args.dir_output)
+        unity_python_similarity(args.dir_orig, args.dir_unity_scaled, args.num_samples)
     elif args.cross_resolution:
-        cross_resolution_similarity(args.dir_low_scaled, args.dir_high_scaled, args.dir_raw, args.num_samples, args.dir_output)
+        cross_resolution_similarity(args.dir_low_scaled, args.dir_high_scaled, args.dir_raw, args.num_samples)
 
 
 if __name__ == '__main__':

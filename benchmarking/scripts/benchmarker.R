@@ -4,7 +4,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 options(scipen = 0)
 options(digits = 3)
 
-df_resize <- read.csv(file = "C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR/benchmarking/results/resizing.csv")
+df_resize <- read.csv(file = "C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR/data/image_similarity/results/resizing.csv")
 df_resize <- subset(df_resize, select=c(width, height, cosine_similarity))
 
 df_resize$resolution <- ifelse(df_resize$width == 1920, "high_raw_sim", "low_raw_sim")
@@ -21,7 +21,7 @@ calculate_summary_stats <- function(res) {
 
 df_resize <- as.data.frame(sapply(c("high_raw_sim", "low_raw_sim"), calculate_summary_stats))
 
-df_cross_res <- read.csv(file = "C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR/benchmarking/results/cross_resolution.csv")
+df_cross_res <- read.csv(file = "C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR/data/image_similarity/results/cross_resolution.csv")
 
 df_cross_res <- subset(df_cross_res, select=c(low_high_sim, low_raw_sim, high_raw_sim))
 

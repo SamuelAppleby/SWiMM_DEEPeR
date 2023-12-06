@@ -1,9 +1,9 @@
-import argparse
-from datetime import datetime
 import numpy as np
 import tensorflow as tf
 import os
 import sys
+
+import yaml
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
@@ -12,24 +12,19 @@ sys.path.insert(0, import_path)
 import cmvae_models.cmvae
 import cmvae_utils
 
-cmvae_utils.dataset_utils.seed_environment()
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
+    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+    cmvae_utils.dataset_utils.seed_environment(env_config['seed'])
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', help='Directory where the images/state data is contained', default="", type=str)
-parser.add_argument('--model_dir', help='Directory where the pretrained model is', default="", type=str)
-parser.add_argument('--n_z', help='Number of features to encode to', default=10, type=int)
-parser.add_argument('--epochs', help='Number of epochs for the training run', default=30, type=int)
-parser.add_argument('--use_cpu', help='Even with a cuda gpu enabled, force cpu instead', action='store_true')
-parser.add_argument('--load_during_training', help='For large datasets, create the tensor slices per batch', action='store_true')
-parser.add_argument('--max_size', help='Maximum number of images and state data to sample', default=None, type=int)
-args = parser.parse_args()
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
+    cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-if args.data_dir == '':
+if cmvae_config['train_dir'] == '':
     print('No data directory specified, quitting!')
     quit()
 
 device = []
-if args.use_cpu:
+if cmvae_config['use_cpu']:
     os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
     device = tf.config.list_physical_devices('CPU')
 else:
@@ -41,27 +36,25 @@ else:
             print(e)
 
 print('Running on: {}'.format(device[0]))
-data_dir = args.data_dir
-output_dir = os.path.join(data_dir, 'results')
+train_dir = cmvae_config['train_dir']
+output_dir = os.path.join(train_dir, 'results')
 
 # check if output folder exists
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
-pretrained_model_path = args.model_dir
-
 # DEFINE TRAINING META PARAMETERS
 batch_size = 32
-epochs = args.epochs
-n_z = args.n_z
+epochs = cmvae_config['epochs']
+n_z = cmvae_config['n_z']
 latent_space_constraints = True
 img_res = 64
 learning_rate = 1e-4
-load_during_training = args.load_during_training
+load_during_training = cmvae_config['load_during_training']
 mode = 0
-max_size = args.max_size
-
-# tf.config.run_functions_eagerly(True)
+max_size = cmvae_config['max_size']
+window_size = cmvae_config['window_size']
+loss_threshold = cmvae_config['loss_threshold']
 
 # CUSTOM TF FUNCTIONS
 @tf.function
@@ -209,7 +202,7 @@ test_loss_rec_gate = tf.keras.metrics.Mean(name='test_loss_rec_gate')
 test_loss_kl = tf.keras.metrics.Mean(name='test_loss_kl')
 metrics_writer = tf.summary.create_file_writer(output_dir)
 
-img_train, img_test, dist_train, dist_test = cmvae_utils.dataset_utils.create_dataset_csv(data_dir, batch_size, img_res, max_size)
+img_train, img_test, dist_train, dist_test = cmvae_utils.dataset_utils.create_dataset_csv(train_dir, batch_size, img_res, max_size)
 
 ds_train = None
 ds_test = None
@@ -221,7 +214,9 @@ if not load_during_training:
 n_batches_train = (len(img_train) + batch_size - 1) // batch_size
 n_batches_test = (len(img_test) + batch_size - 1) // batch_size
 
-lowest_loss = np.Inf
+lowest_loss = 1e6
+current_window_loss = 1e6
+bad_epochs = 0
 # train
 print('Start training ...')
 for epoch in range(epochs):
@@ -276,13 +271,27 @@ for epoch in range(epochs):
                 with open(os.path.join(curr_dir, os.pardir, 'launchers', 'train_output.txt'), 'w') as log_file:
                     log_file.write('Tensorboard event file: {}\n'.format(output_dir))
 
-        print('Epoch {} | TRAIN: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {}'
-              .format(epoch, train_loss_rec_img.result(), train_loss_rec_gate.result(), train_loss_kl.result(), train_total_loss,
-                      test_loss_rec_img.result(), test_loss_rec_gate.result(), test_loss_kl.result(), test_total_loss))
-        if test_total_loss < lowest_loss:
-            print('Best model found, total test loss: {}. Saving weights to {}'.format(test_total_loss, output_dir))
-            model.save_weights(os.path.join(output_dir, 'best_model.ckpt'))
-            lowest_loss = test_total_loss
+            print('Epoch {} | TRAIN: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {}'
+                  .format(epoch, train_loss_rec_img.result(), train_loss_rec_gate.result(), train_loss_kl.result(), train_total_loss,
+                          test_loss_rec_img.result(), test_loss_rec_gate.result(), test_loss_kl.result(), test_total_loss))
+
+            if test_total_loss < lowest_loss:
+                print('Best model found, total test loss: {}. Saving weights to {}'.format(test_total_loss, output_dir))
+                model.save_weights(os.path.join(output_dir, 'best_model.ckpt'))
+                if window_size is not None:
+                    if ((current_window_loss - test_total_loss) / current_window_loss) > loss_threshold:
+                        bad_epochs = 0
+                        current_window_loss = test_total_loss
+                        print('Checkpoint reset, require next loss of: {}%'.format((current_window_loss * (1 - loss_threshold))))
+                    else:
+                        bad_epochs += 1
+                lowest_loss = test_total_loss
+            elif window_size is not None:
+                bad_epochs += 1
+
+            if (window_size is not None) and (bad_epochs == window_size):
+                print('No better loss after: {} epochs'.format(bad_epochs))
+                break
 
         reset_metrics()  # reset all the accumulators of metrics
 

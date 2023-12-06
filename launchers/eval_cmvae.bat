@@ -1,5 +1,5 @@
 @echo off
 call ..\.venv\Scripts\activate
 cd ..\cmvae_scripts
-start python train_cmvae.py
+start python eval_cmvae.py
 exit

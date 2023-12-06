@@ -49,15 +49,15 @@ if env_config['model_path'] != '':
     assert os.path.exists(env_config['model_path']) and os.path.isfile(env_config['model_path']) and env_config['model_path'].endswith('.zip'), \
         'The argument model_path must be a valid path to a .zip file'
 
-# if using pretrained vae, create instance of vae object and load trained weights from path provided
+# if using pretrained cmvae, create instance of cmvae object and load trained weights from path provided
 print("Obs: {}".format(env_config['obs']))
-vae = None
-if env_config['obs'] == 'vae':
-    print('Loading VAE ...')
-    vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
-    vae.load_weights(env_config['vae_path'])
+cmvae = None
+if env_config['obs'] == 'cmvae':
+    print('Loading CMVAE ...')
+    cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
+    cmvae.load_weights(env_config['cmvae_path'])
 else:
-    print('For inference, must provide a valid vae path!')
+    print('For inference, must provide a valid cmvae path!')
     quit()
 
 # if seed provided, use it, otherwise use zero
@@ -71,7 +71,7 @@ os.environ['OPENAI_LOGDIR'] = log_dir
 logger.configure()
 
 # Wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=env_config.get('seed', 0))])
+env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=env_config.get('seed', 0))])
 
 # load trained model
 print("Loading pretrained agent ...")

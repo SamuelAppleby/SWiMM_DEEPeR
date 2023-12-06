@@ -12,11 +12,12 @@ import sys
 
 # specialist imports
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.utils import constant_fn
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 from torch.utils.tensorboard import SummaryWriter
 from stable_baselines3 import SAC
+
+import cmvae_utils
 
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -28,6 +29,24 @@ import cmvae_models.cmvae
 from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule
 from gym_underwater.algos.callbacks import SwimCallback
 from gym_underwater.sim_comms import Protocol
+
+print('Loading environment configuration ...')
+with open(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml'), 'r') as f:
+    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+    cmvae_utils.dataset_utils.seed_environment(env_config['seed'])
+
+# early check on path to trained model if -i arg passed
+if env_config['model_path'] != '':
+    assert os.path.exists(env_config['model_path']) and os.path.isfile(env_config['model_path']) and env_config['model_path'].endswith('.zip'), \
+        'The argument model_path must be a valid path to a .zip file'
+
+# if using pretrained vae, create instance of vae object and load trained weights from path provided
+print("Obs: {}".format(env_config['obs']))
+cmvae = None
+if env_config['obs'] == 'vae':
+    print('Loading CMVAE ...')
+    cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=10, gate_dim=3, res=64, trainable_model=False)  # TODO these args should really be dynamically read in
+    cmvae.load_weights(env_config['cmvae_path'])
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
@@ -45,29 +64,11 @@ ALGOS = {
     'sac': SAC,
 }
 
-print('Loading environment configuration ...')
-with open(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml'), 'r') as f:
-    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-
-# early check on path to trained model if -i arg passed
-if env_config['model_path'] != '':
-    assert os.path.exists(env_config['model_path']) and os.path.isfile(env_config['model_path']) and env_config['model_path'].endswith('.zip'), \
-        'The argument model_path must be a valid path to a .zip file'
-
-# if using pretrained vae, create instance of vae object and load trained weights from path provided
-print("Obs: {}".format(env_config['obs']))
-vae = None
-if env_config['obs'] == 'vae':
-    print('Loading VAE ...')
-    vae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
-    vae.load_weights(env_config['vae_path'])
-
 # load hyperparameters from yaml file into dict
 print('Loading hyperparameters ...')
 with open(os.path.join(curr_dir, os.pardir, 'configs', '{}.yml'.format(env_config['algo'])), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
-# add seed provided by config
 hyperparams['seed'] = env_config['seed']
 
 # this ordered (alphabetical) dict will be saved out alongside model so know which hyperparams were used for training
@@ -75,13 +76,9 @@ hyperparams['seed'] = env_config['seed']
 saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyperparams.keys())])
 
 # if using vae, save out which model file and which feature dims were used
-if vae is not None:
-    saved_hyperparams['vae_path'] = env_config['vae_path']
-    saved_hyperparams['z_size'] = vae.z_size
-
-# if seed provided, use it, otherwise use zero
-# Note: this stable baselines utility function seeds tensorflow, np.random, and random
-set_random_seed(hyperparams.get('seed', 0))
+if cmvae is not None:
+    saved_hyperparams['cmvae_path'] = env_config['cmvae_path']
+    saved_hyperparams['z_size'] = cmvae.z_size
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
@@ -134,7 +131,7 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(vae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=hyperparams.get('seed', 0))])
+env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=hyperparams.get('seed', 0))])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:

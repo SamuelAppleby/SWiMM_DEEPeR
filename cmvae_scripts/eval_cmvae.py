@@ -3,6 +3,7 @@ import os
 import sys
 
 import numpy as np
+import yaml
 from matplotlib import pyplot as plt
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -12,23 +13,22 @@ sys.path.insert(0, import_path)
 import cmvae_models.cmvae
 import cmvae_utils
 
-cmvae_utils.dataset_utils.seed_environment()
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
+    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+    cmvae_utils.dataset_utils.seed_environment(env_config['seed'])
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', help='Directory where the images/state data is contained', default="", type=str)
-parser.add_argument('--interpolation_dir', help='Directory where the images/state data is contained for interpolation', default="", type=str)
-parser.add_argument('--weights_path', help='Directory where the pretrained model is', default="", type=str)
-args = parser.parse_args()
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
+    cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-if args.data_dir == '':
+if cmvae_config['test_dir'] == '':
     print('No data directory specified, quitting!')
     quit()
 
 # define training meta parameters
-data_dir = args.data_dir
-weights_path = args.weights_path
-output_dir = os.path.join(data_dir, 'results')
-interpolation_dir = args.interpolation_dir
+test_dir = cmvae_config['test_dir']
+weights_path = cmvae_config['weights_path']
+output_dir = os.path.join(test_dir, 'results')
+interpolation_dir = cmvae_config['interpolation_dir']
 output_dir_interp = os.path.join(interpolation_dir, 'results')
 
 if not os.path.isdir(output_dir):
@@ -58,7 +58,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 # Load test dataset
-images_np, raw_table = cmvae_utils.dataset_utils.create_test_dataset_csv(data_dir, img_res)
+images_np, raw_table = cmvae_utils.dataset_utils.create_test_dataset_csv(test_dir, img_res)
 print('Done with dataset')
 
 images_np = images_np[:1000, :]
@@ -110,17 +110,9 @@ img_recon_interps = ((img_recon_interps + 1.0) / 2.0 * 255.0).astype(np.uint8)
 gate_recon_interps = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interps)
 
 # show interpolation btw two images in latent space
-z_r_min = z_interps[0, :]
-z_r_max = z_interps[1, :]
-z_r_interp = cmvae_utils.geom_utils.interp_vector(z_r_min, z_r_max, num_interp_z)
-
-z_theta_min = z_interps[2, :]
-z_theta_max = z_interps[3, :]
-z_theta_interp = cmvae_utils.geom_utils.interp_vector(z_theta_min, z_theta_max, num_interp_z)
-
-z_min_psi = z_interps[4, :]
-z_max_psi = z_interps[5, :]
-z_psi_interp = cmvae_utils.geom_utils.interp_vector(z_min_psi, z_max_psi, num_interp_z)
+z_r_interp = cmvae_utils.geom_utils.interp_vector(z_interps[0, :], z_interps[1, :], num_interp_z)
+z_theta_interp = cmvae_utils.geom_utils.interp_vector(z_interps[2, :], z_interps[3, :], num_interp_z)
+z_psi_interp = cmvae_utils.geom_utils.interp_vector(z_interps[4, :], z_interps[5, :], num_interp_z)
 
 z_interp = [z_r_interp, z_theta_interp, z_psi_interp]
 

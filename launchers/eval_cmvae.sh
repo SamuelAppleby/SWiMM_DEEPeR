@@ -1,4 +1,4 @@
 source ../.venv/bin/activate
 cd ../cmvae_scripts
-python3 train_cmvae.py
+python3 eval_cmvae.py
 exit

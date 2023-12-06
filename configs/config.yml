@@ -1,12 +1,10 @@
 ## THIS FILE CONTAINS ALL THE TRAINING/INFERENCE PARAMETERS AND GYM ENVIRONMENT PARAMETERS  ###
-
 ## THE FOLLOWING ARE GLOBAL PARAMETERS  ###
-
 # Observation type. CHOICES: 'image', 'vector', 'vae'
 obs: 'vae'
 
 # If you want to pass image observation through pretrained encoder, provide filepath, else pass empty string
-vae_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\vae_training_set\64x64\cmvae_03-15-2023_nz_10\cmvae_model_49.ckpt'
+cmvae_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training\results\best_model.ckpt'
 
 # If using image obs, declare desired output size of scaling function
 img_scale: !!python/tuple [64,64,3]

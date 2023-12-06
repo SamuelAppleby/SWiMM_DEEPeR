@@ -10,12 +10,7 @@ from natsort import natsorted
 from sklearn.model_selection import train_test_split
 
 
-def seed_environment():
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
-        env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-
-    # seeding for reproducibility
-    seed = env_config['seed']
+def seed_environment(seed):
     tf.keras.utils.set_random_seed(seed)
 
 

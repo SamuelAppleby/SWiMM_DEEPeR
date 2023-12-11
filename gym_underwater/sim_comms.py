@@ -8,12 +8,12 @@ from enum import IntEnum
 import socket
 from threading import Thread
 
+import cv2
 import numpy as np
 import math
 from io import BytesIO
 from PIL import Image
 from jsonschema.validators import validate
-from skimage.transform import resize
 from datetime import datetime
 
 
@@ -375,7 +375,7 @@ class UnitySimHandler:
         image = np.array(Image.open(BytesIO(image)))
 
         if image.shape != self.img_scale:
-            image = resize(image, self.img_scale, 0).astype(np.uint8)
+            image = cv2.resize(image, self.img_scale).astype(np.uint8)
 
         self.image_array = image
 

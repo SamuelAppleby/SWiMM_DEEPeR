@@ -1,17 +1,10 @@
-import random
-
 import numpy as np
 import tensorflow as tf
 import os
 import glob
 import cv2
-import yaml
 from natsort import natsorted
 from sklearn.model_selection import train_test_split
-
-
-def seed_environment(seed):
-    tf.keras.utils.set_random_seed(seed)
 
 
 def convert_bgr2rgb(img_bgr):

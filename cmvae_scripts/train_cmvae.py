@@ -1,8 +1,6 @@
-import numpy as np
-import tensorflow as tf
 import os
+import shutil
 import sys
-
 import yaml
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -12,10 +10,6 @@ sys.path.insert(0, import_path)
 import cmvae_models.cmvae
 import cmvae_utils
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
-    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-    cmvae_utils.dataset_utils.seed_environment(env_config['seed'])
-
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
     cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
@@ -23,38 +17,42 @@ if cmvae_config['train_dir'] == '':
     print('No data directory specified, quitting!')
     quit()
 
-device = []
 if cmvae_config['use_cpu']:
     os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
-    device = tf.config.list_physical_devices('CPU')
 else:
-    gpus = tf.config.list_physical_devices('GPU')
-    if gpus:
-        try:
-            device = tf.config.list_physical_devices('GPU')
-        except RuntimeError as e:
-            print(e)
+    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    os.environ['TF_DETERMINISTIC_OPS'] = '1'
+    os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-print('Running on: {}'.format(device[0]))
+import tensorflow as tf
+
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
+    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+    tf.keras.utils.set_random_seed(env_config['seed'])
+
+print('Devices: {}'.format(tf.config.list_physical_devices()))
+
 train_dir = cmvae_config['train_dir']
 output_dir = os.path.join(train_dir, 'results')
 
-# check if output folder exists
-if not os.path.isdir(output_dir):
-    os.makedirs(output_dir)
+if os.path.exists(output_dir):
+    shutil.rmtree(output_dir)
+
+os.makedirs(output_dir)
 
 # DEFINE TRAINING META PARAMETERS
-batch_size = 32
+batch_size = cmvae_config['batch_size']
 epochs = cmvae_config['epochs']
 n_z = cmvae_config['n_z']
-latent_space_constraints = True
+latent_space_constraints = cmvae_config['latent_space_constraints']
 img_res = 64
-learning_rate = 1e-4
+learning_rate = float(cmvae_config['learning_rate'])
 load_during_training = cmvae_config['load_during_training']
 mode = 0
 max_size = cmvae_config['max_size']
 window_size = cmvae_config['window_size']
 loss_threshold = cmvae_config['loss_threshold']
+
 
 # CUSTOM TF FUNCTIONS
 @tf.function
@@ -113,6 +111,7 @@ def compute_loss_unsupervised(img_gt, gate_gt, img_recon, gate_recon, means, std
         # img_loss = tf.losses.mean_absolute_error(img_gt, img_recon)
         gate_loss = tf.losses.mean_squared_error(gate_gt, gate_recon)
         kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum((1 + stddev - tf.math.pow(means, 2) - tf.math.exp(stddev)), axis=1))
+        return img_loss, gate_loss, kl_loss
     # elif mode == 1:
     #     # labels = tf.reshape(labels, predictions.shape)
     #     # recon_loss = tf.losses.mean_squared_error(labels, predictions)
@@ -121,7 +120,6 @@ def compute_loss_unsupervised(img_gt, gate_gt, img_recon, gate_recon, means, std
     # print('Labels: {}'.format(labels))
     # print('Lrec: {}'.format(recon_loss))
     # copute KL loss: D_KL(Q(z|X,y) || P(z|X))
-    return img_loss, gate_loss, kl_loss
 
 
 @tf.function
@@ -140,7 +138,7 @@ def train(img_gt, gate_gt, epoch, mode):
     #     model.p_img.trainable = False
     #     model.p_gate.trainable = True
     with tf.GradientTape() as tape:
-        img_recon, gate_recon, means, stddev, z = model(img_gt, mode)
+        img_recon, gate_recon, means, stddev, z = model(img_gt, training=True, mode=mode)
         img_loss, gate_loss, kl_loss = compute_loss_unsupervised(img_gt, gate_gt, img_recon, gate_recon, means, stddev, mode)
         img_loss = tf.reduce_mean(img_loss)
         gate_loss = tf.reduce_mean(gate_loss)
@@ -166,7 +164,7 @@ def train(img_gt, gate_gt, epoch, mode):
 
 @tf.function
 def test(img_gt, gate_gt, mode):
-    img_recon, gate_recon, means, stddev, z = model(img_gt, mode)
+    img_recon, gate_recon, means, stddev, z = model(img_gt, training=False, mode=mode)
     img_loss, gate_loss, kl_loss = compute_loss_unsupervised(img_gt, gate_gt, img_recon, gate_recon, means, stddev, mode)
     img_loss = tf.reduce_mean(img_loss)
     gate_loss = tf.reduce_mean(gate_loss)
@@ -176,16 +174,7 @@ def test(img_gt, gate_gt, mode):
         test_loss_kl.update_state(kl_loss)
 
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-# 0 = all messages are logged (default behavior)
-# 1 = INFO messages are not printed
-# 2 = INFO and WARNING messages are not printed
-# 3 = INFO, WARNING, and ERROR messages are not printed
-
-# allow growth is possible using an env var in tf2.0
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
-if latent_space_constraints is True:
+if latent_space_constraints:
     model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, gate_dim=3, res=img_res, trainable_model=True)
 else:
     model = cmvae_models.cmvae.Cmvae(n_z=n_z, gate_dim=3, res=img_res, trainable_model=True)

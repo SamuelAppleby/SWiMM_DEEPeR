@@ -1,5 +1,5 @@
-import argparse
 import os
+import shutil
 import sys
 
 import numpy as np
@@ -13,16 +13,27 @@ sys.path.insert(0, import_path)
 import cmvae_models.cmvae
 import cmvae_utils
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
-    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-    cmvae_utils.dataset_utils.seed_environment(env_config['seed'])
-
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
     cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 if cmvae_config['test_dir'] == '':
     print('No data directory specified, quitting!')
     quit()
+
+if cmvae_config['use_cpu']:
+    os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
+else:
+    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    os.environ['TF_DETERMINISTIC_OPS'] = '1'
+    os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+
+import tensorflow as tf
+
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
+    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+    tf.keras.utils.set_random_seed(env_config['seed'])
+
+print('Devices: {}'.format(tf.config.list_physical_devices()))
 
 # define training meta parameters
 test_dir = cmvae_config['test_dir']
@@ -31,11 +42,15 @@ output_dir = os.path.join(test_dir, 'results')
 interpolation_dir = cmvae_config['interpolation_dir']
 output_dir_interp = os.path.join(interpolation_dir, 'results')
 
-if not os.path.isdir(output_dir):
-    os.makedirs(output_dir)
+if os.path.exists(output_dir):
+    shutil.rmtree(output_dir)
 
-if not os.path.isdir(output_dir_interp):
-    os.makedirs(output_dir_interp)
+os.makedirs(output_dir)
+
+if os.path.exists(output_dir_interp):
+    shutil.rmtree(output_dir_interp)
+
+os.makedirs(output_dir_interp)
 
 # DEFINE TESTING META PARAMETERS
 n_z = 10
@@ -70,7 +85,7 @@ model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, gate_dim=3, res=img_res)
 print('Loading weights from {}'.format(os.path.join(output_dir, weights_path)))
 model.load_weights(weights_path)
 
-img_recon, gate_recon, means, stddev, z = model(images_np, mode=0)
+img_recon, gate_recon, means, stddev, z = model(images_np, training=False, mode=0)
 img_recon = img_recon.numpy()
 gate_recon = gate_recon.numpy()
 z = z.numpy()

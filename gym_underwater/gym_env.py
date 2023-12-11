@@ -104,7 +104,7 @@ class UnderwaterEnv(gymnasium.Env):
             if pred:
                 _, _, z, pred = self.cmvae.encode_with_pred(observation)
                 # denormalize state predictions
-                pred = cmvae_utils.dataset_utils.de_normalize_state(pred)
+                pred = cmvae_utils.dataset_utils.de_normalize_gate(pred)
                 print("Distance: {}, Prediction: {}, Thrust: {}, Steer: {}".format(self.handler.raw_d, pred[0], action[0], action[1]))
             else:
                 _, _, z = self.cmvae.encode(observation)

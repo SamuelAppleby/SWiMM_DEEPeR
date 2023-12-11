@@ -1,7 +1,6 @@
 import csv
 import os
 import time
-from collections import deque
 import numpy as np
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import TensorBoardOutputFormat

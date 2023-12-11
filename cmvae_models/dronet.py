@@ -7,6 +7,7 @@ class Dronet(tf.keras.Model):
         self.include_top = include_top
         self.create_model(num_outputs)
 
+    @tf.function
     def call(self, img):
         # Input
         x1 = self.conv0(img)
@@ -14,7 +15,6 @@ class Dronet(tf.keras.Model):
 
         # First residual block
         x2 = self.bn0(x1)
-        # x2 = x1
         x2 = tf.keras.layers.Activation('relu')(x2)
         x2 = self.conv1(x2)
 
@@ -97,6 +97,5 @@ class Dronet(tf.keras.Model):
         self.dense0 = tf.keras.layers.Dense(units=64, activation='relu')
         self.dense1 = tf.keras.layers.Dense(units=32, activation='relu')
         self.dense2 = tf.keras.layers.Dense(units=num_outputs, activation='linear')
-        # self.dense_phi_rel = tf.keras.layers.Dense(units=2, activation='tanh')
 
         print('[Dronet] Done with dronet')

@@ -6,6 +6,7 @@ class NonLinearTransformer(tf.keras.Model):
         super(NonLinearTransformer, self).__init__()
         self.create_model()
 
+    @tf.function
     def call(self, x):
         return self.network(x)
 
@@ -28,6 +29,7 @@ class TestNet(tf.keras.Model):
         super(TestNet, self).__init__()
         self.create_model()
 
+    @tf.function
     def call(self, x):
         x = tf.keras.layers.Flatten()(x)
         return self.network(x)

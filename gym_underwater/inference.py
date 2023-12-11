@@ -4,7 +4,6 @@ import csv
 import os
 import sys
 import yaml
-import gymnasium
 
 # specialist imports
 import numpy as np
@@ -54,7 +53,7 @@ print("Obs: {}".format(env_config['obs']))
 cmvae = None
 if env_config['obs'] == 'cmvae':
     print('Loading CMVAE ...')
-    cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=10, state_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
+    cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=10, gate_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
     cmvae.load_weights(env_config['cmvae_path'])
 else:
     print('For inference, must provide a valid cmvae path!')

@@ -6,6 +6,7 @@ class ImgDecoder(tf.keras.Model):
         super(ImgDecoder, self).__init__()
         self.create_model()
 
+    @tf.function
     def call(self, z):
         return self.network(z)
 
@@ -41,6 +42,7 @@ class GateDecoder(tf.keras.Model):
         super(GateDecoder, self).__init__()
         self.create_model(gate_dim)
 
+    @tf.function
     def call(self, z):
         return self.network(z)
 

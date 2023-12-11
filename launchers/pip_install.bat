@@ -1,4 +1,4 @@
 cd ..
-IF EXIST .venv RMDIR /S /Q .venv
+if exist .venv rmdir /S /Q .venv
 mkdir .venv
-pipenv install --dev
+pipenv install

@@ -17,6 +17,7 @@ class Cmvae(tf.keras.Model):
         self.mean_params = Lambda(lambda x: x[:, : n_z])
         self.stddev_params = Lambda(lambda x: x[:, n_z:])
 
+    @tf.function
     def call(self, x, mode):
         # Possible modes for reconstruction:
         # 0: img -> img + gate
@@ -84,6 +85,7 @@ class CmvaeDirect(tf.keras.Model):
         self.Theta_params = tf.keras.layers.Lambda(lambda x: x[:, 1])
         self.Psi_params = tf.keras.layers.Lambda(lambda x: x[:, 2])
 
+    @tf.function
     def call(self, x, mode):
         # Possible modes for reconstruction:
         # 0: img -> img + gate

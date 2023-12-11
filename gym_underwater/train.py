@@ -17,8 +17,6 @@ from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 from torch.utils.tensorboard import SummaryWriter
 from stable_baselines3 import SAC
 
-import cmvae_utils
-
 # code to go up a directory so higher level modules can be imported
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 import_path = os.path.join(curr_dir, '..')
@@ -30,10 +28,11 @@ from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedu
 from gym_underwater.algos.callbacks import SwimCallback
 from gym_underwater.sim_comms import Protocol
 
+# TODO Pytorch determinism and seeding
 print('Loading environment configuration ...')
 with open(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml'), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-    cmvae_utils.dataset_utils.seed_environment(env_config['seed'])
+    # tf.keras.utils.set_random_seed(env_config['seed'])
 
 # early check on path to trained model if -i arg passed
 if env_config['model_path'] != '':
@@ -82,7 +81,7 @@ if cmvae is not None:
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = os.path.join(curr_dir, os.pardir, "logs", env_config['algo'])
+algo_specific_path = str(os.path.join(curr_dir, os.pardir, "logs", env_config['algo']))
 run_id = 0
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
@@ -131,7 +130,8 @@ if 'normalize' in hyperparams.keys():
     del hyperparams['normalize']
 
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=hyperparams.get('seed', 0))])
+env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir,
+                            env_config['ep_length_threshold'], seed=hyperparams.get('seed', 0))])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:
@@ -155,11 +155,10 @@ else:
     print("Training from scratch: initialising new model ...")
     model = ALGOS[env_config['algo']](env=env, **hyperparams)
 
-kwargs = {'total_timesteps': n_timesteps, 'callback': SwimCallback(), 'log_interval': env_config['log_interval'], 'reset_num_timesteps': True,  'progress_bar': True}
+kwargs = {'total_timesteps': n_timesteps, 'callback': SwimCallback(), 'log_interval': env_config['log_interval'], 'reset_num_timesteps': True, 'progress_bar': True}
 
 if env_config['algo'] == 'sac':
     kwargs.update({'tb_log_name': 'SAC'})
-
 
 # off_policy_algorithm forces no csv output, so recreate the function and set a custom logger
 save_path, format_strings = model.tensorboard_log, ['stdout']

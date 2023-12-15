@@ -1,5 +1,5 @@
 {
-  "msgType": "process_server_config",
+  "msgType": "processServerConfig",
   "payload": {
     "serverConfig": {
       "roverConfig": {
@@ -22,9 +22,9 @@
             64,
             64
           ],
+          "focalLength": 2.97,
           "sensorWidth": 4.98,
-          "sensorHeight": 3.74,
-          "focalLength": 2.97
+          "sensorHeight": 3.74
         },
         "structureConfig": {
           "ballastMass": 1.2
@@ -37,13 +37,15 @@
         "enableSecondaryCameras": true,
         "actionInference": "maintain",
         "randomiseRestart": true,
+        "optD": 6,
+        "maxD": 4,
         "faunaConfig": {
           "spawnTimer": 5,
           "spawnContainerRatio": 0.8,
           "spawnRadius": 10,
           "aiGroups": [
             {
-              "prefabName": "dolphin",
+              "prefabName": "target",
               "maxAmount": 1,
               "maxSpawn": 1,
               "enableSpawner": true,

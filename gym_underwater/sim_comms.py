@@ -233,7 +233,7 @@ class UnitySimHandler:
         self.do_process_msgs = False
 
         self.msg = {
-            'msgType': 'end_simulation',
+            'msgType': 'endSimulation',
             'payload': {
             }
         }
@@ -273,7 +273,7 @@ class UnitySimHandler:
         self.episode_num = ep_n
         self.step_num = 0
         self.msg = {
-            'msgType': 'reset_episode',
+            'msgType': 'resetEpisode',
             'payload': {}
         }
 
@@ -383,7 +383,7 @@ class UnitySimHandler:
 
     def send_action(self, action, step_n):
         self.msg = {
-            'msgType': 'receive_json_controls',
+            'msgType': 'receiveJsonControls',
             'payload': {
                 'jsonControls': {
                     'swayThrust': '0',
@@ -412,7 +412,7 @@ class UnitySimHandler:
         # and the pos_z argument has been allocated to the y-axis array index
         # due to the difference in axis naming between scipy (incoming) and unity (outgoing)
         self.msg = {
-            'msgType': 'set_position',
+            'msgType': 'setPosition',
             'payload': {
                 'objectPositions': [
                     {

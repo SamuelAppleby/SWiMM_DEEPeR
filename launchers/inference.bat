@@ -1,6 +1,6 @@
-CALL ../.venv/Scripts/activate
+call ../.venv/Scripts/activate
 cd ../gym_underwater
-START python inference.py
+start python inference.py
 cd ..\builds\windows
-START SWiMM_DEEPeR.exe mode_server_control
-EXIT
+SWiMM_DEEPeR.exe modeServerControl
+exit

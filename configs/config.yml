@@ -41,5 +41,5 @@ reward_log_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\L
 # Set seed with arbitrary int so that can report with results
 seed: 31
 
-# Episode length threshold. 0 means unlimited episode length.
+# Episode length threshold. 0 for unlimited length.
 ep_length_threshold: 3000

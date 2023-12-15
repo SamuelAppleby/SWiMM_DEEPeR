@@ -1,3 +1,3 @@
 cd ..\builds\windows
-START SWiMM_DEEPeR.exe mode_screenshot vae_interpolate data_dir ..\..\data\screenshot
+START SWiMM_DEEPeR.exe modeScreenshot dataDir ..\..\data\screenshot
 EXIT

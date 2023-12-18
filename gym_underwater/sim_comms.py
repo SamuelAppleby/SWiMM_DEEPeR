@@ -29,8 +29,9 @@ class Protocol(IntEnum):
 
 class EpisodeTerminationType(IntEnum):
     MAXIMUM_DISTANCE = 0
-    OUT_OF_VIEW = 1
-    THRESHOLD_REACHED = 2
+    TARGET_OUT_OF_VIEW = 1
+    TARGET_COLLISION = 2
+    THRESHOLD_REACHED = 3
 
 
 def process_and_validate_configs(dir_map):
@@ -80,7 +81,8 @@ class UnitySimHandler:
         self.img_scale = img_scale
         self.image_array = np.zeros(img_scale)
         self.last_obs = np.zeros(img_scale)
-        self.hit = []
+        self.hit = False
+        self.target_in_view = False
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
         self.rover_fwd = np.zeros(3)
@@ -263,7 +265,7 @@ class UnitySimHandler:
         logger.debug("resetting")
         self.image_array = np.zeros((256, 256, 3))
         self.last_obs = self.image_array
-        self.hit = []
+        self.hit = False
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
         self.rover_fwd = np.zeros(3)
@@ -317,6 +319,16 @@ class UnitySimHandler:
         return reward
 
     def determine_episode_over(self):
+        if self.hit:
+            print('[EPISODE TERMINATED] Due to collision with target')
+            logger.debug(f"game over: target hit")
+            self.episode_termination_type = EpisodeTerminationType.TARGET_COLLISION
+            return True
+        if self.target_in_view:
+            print('[EPISODE TERMINATED] Due to target out of view')
+            logger.debug(f"game over: target out of view")
+            self.episode_termination_type = EpisodeTerminationType.TARGET_OUT_OF_VIEW
+            return True
         if (self.ep_length_threshold > 0) and (self.step_num == self.ep_length_threshold):
             print('[EPISODE TERMINATED]: Maximum episode length reached: {}'.format(self.ep_length_threshold))
             logger.debug(f"game over: episode threshold {self.ep_length_threshold}")
@@ -327,11 +339,7 @@ class UnitySimHandler:
             logger.debug(f"game over: distance {self.raw_d}")
             self.episode_termination_type = EpisodeTerminationType.MAXIMUM_DISTANCE
             return True
-        if "Dolphin" in self.hit:
-            print('[EPISODE TERMINATED] Due to collision: {}'.format(self.hit))
-            logger.debug(f"game over: hit {self.hit}")
-            self.episode_termination_type = EpisodeTerminationType.OUT_OF_VIEW
-            return True
+
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -357,17 +365,18 @@ class UnitySimHandler:
         self.sim_ready = True
 
     def on_telemetry(self, payload):
-        self.rover_pos = np.array([payload['telemetry_data']['position'][0], payload['telemetry_data']['position'][1],
-                                   payload['telemetry_data']['position'][2]])
-        self.hit = payload['telemetry_data']['collision_objects']
-        self.rover_fwd = np.array([payload['telemetry_data']["fwd"][0], payload['telemetry_data']['fwd'][1],
-                                   payload['telemetry_data']['fwd'][2]])
+        self.rover_pos = np.array([payload['telemetryData']['position'][0], payload['telemetryData']['position'][1],
+                                   payload['telemetryData']['position'][2]])
+        self.rover_fwd = np.array([payload['telemetryData']["fwd"][0], payload['telemetryData']['fwd'][1],
+                                   payload['telemetryData']['fwd'][2]])
 
-        for target in payload['telemetry_data']['targets']:
+        for target in payload['telemetryData']['targets']:
             self.target_pos = np.array([target['position'][0], target['position'][1], target['position'][2]])
             self.target_fwd = np.array([target['fwd'][0], target['fwd'][1], target['fwd'][2]])
+            self.hit = target['colliding']
+            self.target_in_view = target['inView']
 
-        image = bytearray(base64.b64decode(payload['telemetry_data']['jpg_image']))
+        image = bytearray(base64.b64decode(payload['telemetryData']['jpgImage']))
 
         if self.debug_logs:
             write_image_to_file_incrementally(image, os.path.join(self.image_dir, 'episode_{}_step{}.jpg'.format(self.episode_num, self.step_num)))
@@ -389,12 +398,10 @@ class UnitySimHandler:
                     'swayThrust': '0',
                     'heaveThrust': '0',
                     'surgeThrust': action[0].__str__(),
-                    'pitchThurst': '0',
+                    'pitchThrust': '0',
                     'yawThrust': action[1].__str__(),
                     'rollThrust': '0',
-                    'manualMode': '0',
-                    'stabilizeMode': '0',
-                    'depthHoldMode': '1'
+                    'mode': '0',
                 }
             }
         }
@@ -416,7 +423,7 @@ class UnitySimHandler:
             'payload': {
                 'objectPositions': [
                     {
-                        'object_name': object_pos,
+                        'objectName': object_pos,
                         'position': [pos_x, pos_z, pos_y],
                         'rotation': q
                     }

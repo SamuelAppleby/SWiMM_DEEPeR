@@ -1,11 +1,10 @@
 import argparse
 import csv
 import os
-from random import random
 
 from PIL import Image
 import numpy as np
-from skimage.transform import resize
+from cv2 import resize
 from numpy.linalg import norm
 from numpy.random import default_rng
 
@@ -31,7 +30,7 @@ def read_files_from_dir(dir, resize_img=False):
         if file.endswith('.jpg'):
             img = np.array(Image.open(file))
             if resize_img:
-                arr.append(resize(img, (64, 64), 0, preserve_range=True).astype(np.uint8))
+                arr.append(resize(img, (64, 64)).astype(np.uint8))
             else:
                 arr.append(img)
 
@@ -53,8 +52,8 @@ def unity_python_similarity(dir_orig, dir_unity_sample, num_samples):
         orig_files_rand.append(os.path.join(dir_orig, file_names_orig[num]))
         unity_files_rand.append(os.path.join(dir_unity_sample, file_names_unity[num]))
 
-    python_scaled = read_files_from_dir(orig_files_rand, resize_img=True)
     unity_scaled = read_files_from_dir(unity_files_rand, resize_img=False)
+    python_scaled = read_files_from_dir(orig_files_rand, resize_img=True)
 
     output_dir = os.path.join(dir_orig, os.pardir, os.pardir, 'results')
     if not os.path.exists(output_dir):
@@ -141,13 +140,13 @@ def main():
 
     parser.add_argument('--num_samples', help='Directory 2', default=1000, type=int)
 
-    parser.add_argument('--resize', help='Run experiment  for unity/python', action='store_true')
-    parser.add_argument('--cross_resolution', help='Run experiment  for cross resolution', action='store_true')
+    parser.add_argument('--exp_resize', help='Run experiment  for unity/python', action='store_true')
+    parser.add_argument('--exp_cross_resolution', help='Run experiment  for cross resolution', action='store_true')
     args = parser.parse_args()
 
-    if args.resize:
+    if args.exp_resize:
         unity_python_similarity(args.dir_orig, args.dir_unity_scaled, args.num_samples)
-    elif args.cross_resolution:
+    elif args.exp_cross_resolution:
         cross_resolution_similarity(args.dir_low_scaled, args.dir_high_scaled, args.dir_raw, args.num_samples)
 
 

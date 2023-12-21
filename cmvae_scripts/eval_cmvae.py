@@ -6,9 +6,8 @@ import numpy as np
 import yaml
 from matplotlib import pyplot as plt
 
-curr_dir = os.path.dirname(os.path.abspath(__file__))
-import_path = os.path.join(curr_dir, '..')
-sys.path.insert(0, import_path)
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, par_dir)
 
 import cmvae_models.cmvae
 import cmvae_utils
@@ -28,6 +27,8 @@ else:
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 import tensorflow as tf
+##TODO remove
+tf.config.run_functions_eagerly(True)
 
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
@@ -38,9 +39,9 @@ print('Devices: {}'.format(tf.config.list_physical_devices()))
 # define training meta parameters
 test_dir = cmvae_config['test_dir']
 weights_path = cmvae_config['weights_path']
-output_dir = os.path.join(test_dir, 'results')
+output_dir = os.path.join(test_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
 interpolation_dir = cmvae_config['interpolation_dir']
-output_dir_interp = os.path.join(interpolation_dir, 'results')
+output_dir_interp = os.path.join(interpolation_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
 
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
@@ -53,11 +54,12 @@ if os.path.exists(output_dir_interp):
 os.makedirs(output_dir_interp)
 
 # DEFINE TESTING META PARAMETERS
-n_z = 10
-img_res = 64
 num_imgs_display = 8
 columns = 4
 rows = 4
+n_z = cmvae_config['n_z']
+latent_space_constraints = cmvae_config['latent_space_constraints']
+img_res = cmvae_config['img_res']
 
 num_interp_z = 9
 z_range_mural = [-0.02, 0.02]
@@ -72,18 +74,21 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 # allow growth is possible using an env var in tf2.0
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
+# create model
+if latent_space_constraints:
+    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, seed=env_config['seed'])
+else:
+    model = cmvae_models.cmvae.Cmvae(n_z=n_z, gate_dim=3, seed=env_config['seed'])
+
+print('Loading weights from {}'.format(os.path.join(output_dir, weights_path)))
+model.load_weights(weights_path)
+
 # Load test dataset
 images_np, raw_table = cmvae_utils.dataset_utils.create_test_dataset_csv(test_dir, img_res)
 print('Done with dataset')
 
 images_np = images_np[:1000, :]
 raw_table = raw_table[:1000, :]
-
-# create model
-model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, gate_dim=3, res=img_res)
-
-print('Loading weights from {}'.format(os.path.join(output_dir, weights_path)))
-model.load_weights(weights_path)
 
 img_recon, gate_recon, means, stddev, z = model(images_np, training=False, mode=0)
 img_recon = img_recon.numpy()

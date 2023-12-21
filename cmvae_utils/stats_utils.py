@@ -11,8 +11,7 @@ def calculate_gate_stats(predictions, poses, output_dir):
     # display averages
     mean_pred = np.mean(predictions, axis=0)
     mean_pose = np.mean(poses, axis=0)
-    print('Means (prediction, GT) : R({} , {}) Theta({} , {}) Psi({} , {})'.format(
-        mean_pred[0], mean_pose[0], mean_pred[1], mean_pose[1], mean_pred[2], mean_pose[2]), file=f)
+    print('Means (prediction, GT) : R({} , {}) Theta({} , {}) Psi({} , {})'.format(mean_pred[0], mean_pose[0], mean_pred[1], mean_pose[1], mean_pred[2], mean_pose[2]), file=f)
     # display mean absolute error
     abs_diff = np.abs(predictions - poses)
     mae = np.mean(abs_diff, axis=0)

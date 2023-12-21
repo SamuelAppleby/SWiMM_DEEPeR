@@ -3,43 +3,46 @@
 # Should we exclusively use cpu
 use_cpu: False
 
+# Number of features to encode down to
+n_z: 10
+
+# If using image obs, declare desired output size of scaling function
+img_res: !!python/tuple [64,64,3]
+
+# Should we use latent space constraints (i.e. CmvaeDirect)
+latent_space_constraints: True
+
 ## TRAINING ##
 # Directory to the training set (contains state_data.csv and images directory)
-train_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training'
+train_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training_seed_2'
 
 # Batch size
 batch_size: 32
 
-# Leanring Rate
+# Learning Rate
 learning_rate: 1e-4
-
-# Number of features to encode down to
-n_z: 10
-
-# Should we use latent space constraints (i.e. CmvaeDirect)
-latent_space_constraints: True
 
 # Larger datasets may not have their tensors fit in RAM/VRAM, so instead generate the tensors per call per batch (reduces performance by ~60%)
 load_during_training: True
 
 # Maximum size of samples allowed to be taken from the training set
-max_size: 10000
+max_size: ~
 
 # Maximum number of epochs to run
-epochs: 100
+epochs: 5
 
 # How many epochs to monitor sufficient validation loss has been met for early stopping, with respect to loss_threshold. Set to ~ for no early stopping.
 window_size: ~
 
-# The minimum fracitonal gain required over window_size episodes to avoid early stopping
+# The minimum fractional gain required over window_size episodes to avoid early stopping
 loss_threshold: 0.01
 
 ## INFERENCE ##
 # Directory to the training set (contains state_data.csv and images directory)
-test_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_test'
+test_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_test_seed_3'
 
 # Path to the trained models checkpoint (requires .index and data file)
-weights_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training\gpu_1\best_model.ckpt'
+weights_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training_seed_2\results_seed_2_device_gpu\best_model.ckpt'
 
 # Directory to the interpolated set (contains state_data.csv and images directory)
-interpolation_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_interpolation'
+interpolation_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_interpolation_seed_5'

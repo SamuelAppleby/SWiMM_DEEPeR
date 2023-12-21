@@ -16,6 +16,9 @@ class SwimCallback(BaseCallback):
         self.best_mean_reward = -np.inf
 
     def _on_training_start(self) -> None:
+        """
+        This method is called before the first rollout starts.
+        """
         self.best_mean_reward_log = os.path.join(self.locals['self'].tensorboard_log, 'best_episode_rewards.csv')
 
         with open(self.best_mean_reward_log, 'w', newline='') as csv_file:
@@ -24,7 +27,35 @@ class SwimCallback(BaseCallback):
 
         return
 
+    def _on_rollout_start(self) -> None:
+        """
+        A rollout is the collection of environment interaction
+        using the current policy.
+        This event is triggered before collecting new samples.
+        """
+        pass
+
+    def _on_step(self) -> bool:
+        """
+        This method will be called by the model after each call to `env.step()`.
+
+        For child callback (of an `EventCallback`), this will be called
+        when the event is triggered.
+
+        :return: If the callback returns False, training is aborted early.
+        """
+        if (self.locals['num_collected_steps'] % 100) == 0:
+            print('Current Episode Steps: {}'.format(self.locals['num_collected_steps']))
+
+        if self.training_env.buf_dones[0]:
+            self.logger.record("rollout/episode_termination", self.training_env.envs[0].handler.episode_termination_type)
+
+        return True
+
     def _on_rollout_end(self) -> None:
+        """
+        This event is triggered before updating the policy.
+        """
         print('Episode finished. \nReward: {:.2f} \nSteps: {}'.format(self.training_env.envs[0].episode_returns[-1], self.training_env.envs[0].episode_lengths[-1]))
 
         current_mean_rew = safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer])
@@ -48,11 +79,8 @@ class SwimCallback(BaseCallback):
                         log_file.write('Tensorboard event file: {}\n'.format(_format.writer.file_writer.event_writer._file_name))
         return
 
-    def _on_step(self) -> bool:
-        if (self.locals['num_collected_steps'] % 100) == 0:
-            print('Current Episode Steps: {}'.format(self.locals['num_collected_steps']))
-
-        if self.training_env.buf_dones[0]:
-            self.logger.record("rollout/episode_termination", self.training_env.envs[0].handler.episode_termination_type)
-
-        return True
+    def _on_training_end(self) -> None:
+        """
+        This event is triggered before exiting the `learn()` method.
+        """
+        pass

@@ -2,10 +2,10 @@ import os
 import shutil
 import sys
 import yaml
+from tqdm import tqdm
 
-curr_dir = os.path.dirname(os.path.abspath(__file__))
-import_path = os.path.join(curr_dir, '..')
-sys.path.insert(0, import_path)
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, par_dir)
 
 import cmvae_models.cmvae
 import cmvae_utils
@@ -33,7 +33,7 @@ with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'c
 print('Devices: {}'.format(tf.config.list_physical_devices()))
 
 train_dir = cmvae_config['train_dir']
-output_dir = os.path.join(train_dir, 'results')
+output_dir = os.path.join(train_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
 
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
@@ -45,7 +45,7 @@ batch_size = cmvae_config['batch_size']
 epochs = cmvae_config['epochs']
 n_z = cmvae_config['n_z']
 latent_space_constraints = cmvae_config['latent_space_constraints']
-img_res = 64
+img_res = cmvae_config['img_res']
 learning_rate = float(cmvae_config['learning_rate'])
 load_during_training = cmvae_config['load_during_training']
 mode = 0
@@ -175,7 +175,7 @@ def test(img_gt, gate_gt, mode):
 
 
 if latent_space_constraints:
-    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, gate_dim=3, res=img_res, trainable_model=True)
+    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, res=img_res, seed=env_config['seed'])
 else:
     model = cmvae_models.cmvae.Cmvae(n_z=n_z, gate_dim=3, res=img_res, trainable_model=True)
 
@@ -191,7 +191,7 @@ test_loss_rec_gate = tf.keras.metrics.Mean(name='test_loss_rec_gate')
 test_loss_kl = tf.keras.metrics.Mean(name='test_loss_kl')
 metrics_writer = tf.summary.create_file_writer(output_dir)
 
-img_train, img_test, dist_train, dist_test = cmvae_utils.dataset_utils.create_dataset_csv(train_dir, batch_size, img_res, max_size)
+img_train, img_test, dist_train, dist_test = cmvae_utils.dataset_utils.create_dataset_csv(train_dir, model.img_res, max_size, env_config['seed'])
 
 ds_train = None
 ds_test = None
@@ -206,9 +206,10 @@ n_batches_test = (len(img_test) + batch_size - 1) // batch_size
 lowest_loss = 1e6
 current_window_loss = 1e6
 bad_epochs = 0
+
 # train
 print('Start training ...')
-for epoch in range(epochs):
+for epoch in tqdm(range(epochs)):
     if not load_during_training:
         for train_images, train_labels in ds_train:
             train(train_images, train_labels, epoch, mode)
@@ -221,7 +222,7 @@ for epoch in range(epochs):
         img_test_cpy = img_test
         dist_test_cpy = dist_test
 
-        for _ in range(n_batches_train):
+        for _ in tqdm(range(n_batches_train)):
             ds_train = tf.data.Dataset.from_tensor_slices((img_train_cpy[:batch_size], dist_train_cpy[:batch_size])).batch(batch_size)
             for train_images, train_labels in ds_train:
                 train(train_images, train_labels, epoch, mode)
@@ -229,18 +230,16 @@ for epoch in range(epochs):
                     img_train_cpy = img_train_cpy[batch_size:]
                     dist_train_cpy = dist_train_cpy[batch_size:]
 
-        for _ in range(n_batches_test):
+        for _ in tqdm(range(n_batches_test)):
             ds_test = tf.data.Dataset.from_tensor_slices((img_test_cpy[:batch_size], dist_test_cpy[:batch_size])).batch(batch_size)
             for test_images, test_labels in ds_test:
                 test(test_images, test_labels, mode)
                 if len(img_test_cpy) > batch_size:
                     img_test_cpy = img_test_cpy[batch_size:]
                     dist_test_cpy = dist_test_cpy[batch_size:]
-
     # save model
-    if epoch % 5 == 0 and epoch > 0:
-        print('Saving weights to {}'.format(output_dir))
-        model.save_weights(os.path.join(output_dir, "cmvae_model_{}.ckpt".format(epoch)))
+    if (((epoch + 1) % 5) == 0) or (epoch + 1 == epochs):
+        model.save_weights(os.path.join(output_dir, 'cmvae_model_{}.ckpt'.format(epoch)))
 
     if mode == 0:
         with metrics_writer.as_default():
@@ -257,7 +256,7 @@ for epoch in range(epochs):
             tf.summary.scalar('test/total_loss', test_total_loss, step=epoch)
 
             if epoch == 0:
-                with open(os.path.join(curr_dir, os.pardir, 'launchers', 'train_output.txt'), 'w') as log_file:
+                with open(os.path.join(par_dir, 'launchers', 'train_output.txt'), 'w') as log_file:
                     log_file.write('Tensorboard event file: {}\n'.format(output_dir))
 
             print('Epoch {} | TRAIN: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {}'
@@ -280,9 +279,9 @@ for epoch in range(epochs):
 
             if (window_size is not None) and (bad_epochs == window_size):
                 print('No better loss after: {} epochs'.format(bad_epochs))
+                model.save_weights(os.path.join(output_dir, 'cmvae_model_{}.ckpt'.format(epoch)))
                 break
 
         reset_metrics()  # reset all the accumulators of metrics
 
 print('End of training')
-model.save_weights(os.path.join(output_dir, 'cmvae_model_{}.ckpt'.format(epochs - 1)))

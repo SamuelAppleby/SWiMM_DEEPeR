@@ -75,14 +75,15 @@ def on_disconnect():
 
 
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_scale, debug, protocol, host, ep_len_threshold):
+    def __init__(self, opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed):
         self.sim_ready = False
         self.server_connected = False
-        self.img_scale = img_scale
-        self.image_array = np.zeros(img_scale)
-        self.last_obs = np.zeros(img_scale)
+        self.img_res = img_res
+        self.image_array = np.zeros(self.img_res)
+        self.image_array = np.zeros(self.img_res)
+        self.last_obs = np.zeros(self.img_res)
         self.hit = False
-        self.target_in_view = False
+        self.target_out_of_view = False
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
         self.rover_fwd = np.zeros(3)
@@ -92,6 +93,7 @@ class UnitySimHandler:
         self.opt_d = opt_d
         self.max_d = max_d
         self.ep_length_threshold = ep_len_threshold
+        self.seed = seed
 
         self.fns = {
             "connection_request": self.connection_request,
@@ -122,12 +124,14 @@ class UnitySimHandler:
         self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
 
         conf_arr = process_and_validate_configs({
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config_schema.json')
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs',
+                                                                                                                               'server_config_schema.json')
         })
 
         self.server_config = conf_arr.pop()
         self.server_config['payload']['serverConfig']['envConfig']['optD'] = self.opt_d
         self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.max_d
+        self.server_config['payload']['serverConfig']['envConfig']['seed'] = self.seed
 
         self.protocol = protocol
         self.full_host = host.split(':')
@@ -158,7 +162,7 @@ class UnitySimHandler:
         self.sock.bind((host, port))
         print(f"[+] Listening on {host}:{port}")
 
-        # the remaining network related code, receiving json and sending json, is ran in a thread
+        # the remaining network related code, receiving json and sending json, is run in a thread
         self.do_process_msgs = True
         self.th = Thread(target=self.proc_msg, daemon=True)
         self.th.start()
@@ -261,11 +265,12 @@ class UnitySimHandler:
     def quit(self):
         self.stop()
 
-    def send_reset(self, ep_n):
+    def reset(self, ep_n):
         logger.debug("resetting")
-        self.image_array = np.zeros((256, 256, 3))
+        self.image_array[:] = 0
         self.last_obs = self.image_array
         self.hit = False
+        self.target_out_of_view = False
         self.rover_pos = np.zeros(3)
         self.target_pos = np.zeros(3)
         self.rover_fwd = np.zeros(3)
@@ -278,6 +283,7 @@ class UnitySimHandler:
             'msgType': 'resetEpisode',
             'payload': {}
         }
+        print('resetting')
 
     def observe(self, obs):
         while self.last_obs is self.image_array:
@@ -324,7 +330,7 @@ class UnitySimHandler:
             logger.debug(f"game over: target hit")
             self.episode_termination_type = EpisodeTerminationType.TARGET_COLLISION
             return True
-        if self.target_in_view:
+        if self.target_out_of_view:
             print('[EPISODE TERMINATED] Due to target out of view')
             logger.debug(f"game over: target out of view")
             self.episode_termination_type = EpisodeTerminationType.TARGET_OUT_OF_VIEW
@@ -339,15 +345,15 @@ class UnitySimHandler:
             logger.debug(f"game over: distance {self.raw_d}")
             self.episode_termination_type = EpisodeTerminationType.MAXIMUM_DISTANCE
             return True
+        return False
 
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def on_recv_message(self, message):
-        if "msg_type" not in message:
-            logger.warning("expected msg_type field")
+        if "msgType" not in message:
+            logger.warning("expected msgType field")
             return
-        msg_type = message["msg_type"]
+        msg_type = message["msgType"]
         payload = message["payload"]
         logger.debug("got message :" + msg_type)
         if msg_type in self.fns:
@@ -374,7 +380,8 @@ class UnitySimHandler:
             self.target_pos = np.array([target['position'][0], target['position'][1], target['position'][2]])
             self.target_fwd = np.array([target['fwd'][0], target['fwd'][1], target['fwd'][2]])
             self.hit = target['colliding']
-            self.target_in_view = target['inView']
+            self.target_out_of_view = target['outOfView']
+            print(self.target_out_of_view)
 
         image = bytearray(base64.b64decode(payload['telemetryData']['jpgImage']))
 
@@ -383,12 +390,12 @@ class UnitySimHandler:
 
         image = np.array(Image.open(BytesIO(image)))
 
-        if image.shape != self.img_scale:
-            image = cv2.resize(image, self.img_scale).astype(np.uint8)
+        if image.shape != self.img_res:
+            image = cv2.resize(image, self.img_res).astype(np.uint8)
 
         self.image_array = image
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing comms ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def send_action(self, action, step_n):
         self.msg = {

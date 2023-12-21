@@ -17,10 +17,8 @@ from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 from torch.utils.tensorboard import SummaryWriter
 from stable_baselines3 import SAC
 
-# code to go up a directory so higher level modules can be imported
-curr_dir = os.path.dirname(os.path.abspath(__file__))
-import_path = os.path.join(curr_dir, '..')
-sys.path.insert(0, import_path)
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, par_dir)
 
 # local imports
 import cmvae_models.cmvae
@@ -30,7 +28,7 @@ from gym_underwater.sim_comms import Protocol
 
 # TODO Pytorch determinism and seeding
 print('Loading environment configuration ...')
-with open(os.path.join(curr_dir, os.pardir, 'configs', 'config.yml'), 'r') as f:
+with open(os.path.join(par_dir, 'configs', 'config.yml'), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
     # tf.keras.utils.set_random_seed(env_config['seed'])
 
@@ -42,10 +40,12 @@ if env_config['model_path'] != '':
 # if using pretrained vae, create instance of vae object and load trained weights from path provided
 print("Obs: {}".format(env_config['obs']))
 cmvae = None
-if env_config['obs'] == 'vae':
-    print('Loading CMVAE ...')
-    cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=10, gate_dim=3, res=64, trainable_model=False)  # TODO these args should really be dynamically read in
-    cmvae.load_weights(env_config['cmvae_path'])
+if env_config['obs'] == 'cmvae':
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
+        cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+        print('Loading CMVAE ...')
+        cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=cmvae_config['n_z'], gate_dim=3, res=cmvae_config['img_res'])
+        cmvae.load_weights(env_config['cmvae_path'])
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
@@ -60,12 +60,12 @@ else:
 
 # Dictionary of available algorithms
 ALGOS = {
-    'sac': SAC,
+    'sac': SAC
 }
 
 # load hyperparameters from yaml file into dict
 print('Loading hyperparameters ...')
-with open(os.path.join(curr_dir, os.pardir, 'configs', '{}.yml'.format(env_config['algo'])), 'r') as f:
+with open(os.path.join(par_dir, 'configs', '{}.yml'.format(env_config['algo'])), 'r') as f:
     hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)['UnderwaterEnv']
 
 hyperparams['seed'] = env_config['seed']
@@ -77,12 +77,12 @@ saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyper
 # if using vae, save out which model file and which feature dims were used
 if cmvae is not None:
     saved_hyperparams['cmvae_path'] = env_config['cmvae_path']
-    saved_hyperparams['z_size'] = cmvae.z_size
+    saved_hyperparams['z_size'] = int(cmvae.q_img.dense2.units / 2)
 
 # generate filepaths according to base/algo/run/... where run number is generated dynamically 
 print("Generating filepaths ...")
-algo_specific_path = str(os.path.join(curr_dir, os.pardir, "logs", env_config['algo']))
-run_id = 0
+algo_specific_path = str(os.path.join(par_dir, "logs", env_config['algo']))
+run_id = -1
 # if run is first run for algo, this for loop won't execute
 for path in glob.glob(algo_specific_path + "/[0-9]*"):
     run_num = path.split(os.sep)[-1]
@@ -95,10 +95,9 @@ hyperparams['tensorboard_log'] = run_specific_path
 
 if not env_config['monitor']:
     log_dir = os.path.join('tmp', 'gym', '{}'.format(int(time.time())))
+    os.makedirs(log_dir, exist_ok=True)
 else:
     log_dir = run_specific_path
-
-os.makedirs(log_dir, exist_ok=True)
 
 if isinstance(hyperparams['learning_rate'], str):
     schedule, initial_value = hyperparams['learning_rate'].split('_')
@@ -129,9 +128,11 @@ if 'normalize' in hyperparams.keys():
         normalize = True
     del hyperparams['normalize']
 
+img_res = env_config['img_res'] if cmvae is None else cmvae_config['img_res']
+
 # wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir,
-                            env_config['ep_length_threshold'], seed=hyperparams.get('seed', 0))])
+env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], img_res, env_config['debug_logs'],
+                            args.protocol, args.host, log_dir, env_config['ep_length_threshold'], env_config['seed'])])
 
 # if normalising, wrap environment with VecNormalize wrapper from SB
 if normalize:
@@ -143,30 +144,25 @@ if os.path.isfile(env_config['model_path']):
     print("Loading pretrained agent ...")
     # Policy should not be changed
     del hyperparams['policy']  # network architecture already set so don't need
-    model = SAC.load(path=env_config['model_path'], env=env, **hyperparams)
+    model = ALGOS[env_config['algo']].load(path=env_config['model_path'], env=env, **hyperparams)
 
     if normalize:
         print("Loading saved running average ...")
         exp_folder = env_config['model'].split('.zip')[0]
         env.load(exp_folder, env)
-
 else:
     # Train an agent from scratch
     print("Training from scratch: initialising new model ...")
     model = ALGOS[env_config['algo']](env=env, **hyperparams)
 
-kwargs = {'total_timesteps': n_timesteps, 'callback': SwimCallback(), 'log_interval': env_config['log_interval'], 'reset_num_timesteps': True, 'progress_bar': True}
-
-if env_config['algo'] == 'sac':
-    kwargs.update({'tb_log_name': 'SAC'})
+kwargs = {'total_timesteps': n_timesteps, 'callback': SwimCallback(), 'log_interval': env_config['log_interval'], 'tb_log_name': env_config['algo'], 'reset_num_timesteps': True, 'progress_bar': True}
 
 # off_policy_algorithm forces no csv output, so recreate the function and set a custom logger
 save_path, format_strings = model.tensorboard_log, ['stdout']
 
 if model.tensorboard_log is not None and SummaryWriter is None:
-    raise ImportError('Trying to log data to tensorboard but tensorboard is not installed.')
-
-if model.tensorboard_log is not None and SummaryWriter is not None:
+    if SummaryWriter is None:
+        raise ImportError('Trying to log data to tensorboard but tensorboard is not installed.')
     # latest_run_id = get_latest_run_id(model.tensorboard_log, kwargs['tb_log_name'])
     # if not kwargs['reset_num_timesteps']:
     #     # Continue training in the same directory

@@ -12,9 +12,8 @@ from gymnasium import spaces
 from gymnasium.utils import seeding
 
 # code to go up a directory so higher level modules can be imported
-curr_dir = os.path.dirname(os.path.abspath(__file__))
-import_path = os.path.join(curr_dir, '..')
-sys.path.insert(0, import_path)
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, par_dir)
 
 # local imports
 from gym_underwater.sim_comms import UnitySimHandler
@@ -30,7 +29,7 @@ class UnderwaterEnv(gymnasium.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, cmvae, obs, opt_d, max_d, scale, debug, protocol, host, ep_len_threshold):
+    def __init__(self, cmvae, obs, opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed):
         print("Starting underwater environment ..")
 
         # set logging level
@@ -39,19 +38,16 @@ class UnderwaterEnv(gymnasium.Env):
 
         # initialise VAE
         self.cmvae = cmvae
-        self.z_size = None
-        if cmvae is not None:
-            self.z_size = cmvae.z_size
+        self.z_size = int(cmvae.q_img.dense2.units / 2) if cmvae is not None else None
 
         # make obs arg instance variable
         self.obs = obs
-        self.scale = scale
 
         self.episode_num = 0
         self.step_num = 0
 
         # create instance of class that deals with Unity comms
-        self.handler = UnitySimHandler(opt_d, max_d, scale, debug, protocol, host, ep_len_threshold)
+        self.handler = UnitySimHandler(opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed)
 
         # action space declaration
         print("Declaring action space")
@@ -64,10 +60,10 @@ class UnderwaterEnv(gymnasium.Env):
         # observation space declaration
         print("Declaring observation space")
         if self.obs == 'image':
-            self.observation_space = spaces.Box(low=0, high=255, shape=self.scale, dtype=np.uint8)
+            self.observation_space = spaces.Box(low=0, high=255, shape=self.handler.img_res, dtype=np.uint8)
         elif self.obs == 'vector':
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, 12), dtype=np.float32)
-        elif self.obs == 'vae':
+        elif self.obs == 'cmvae':
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, self.z_size), dtype=np.float32)
         else:
             raise ValueError('Invalid observation type: {}'.format(obs))
@@ -89,13 +85,14 @@ class UnderwaterEnv(gymnasium.Env):
     def observe_and_process_observation(self, action=None, pred=False):
         # retrieve results of action implementation
         observation, reward, terminated, truncated, info = self.handler.observe(self.obs)
+        print('what {}'.format(terminated))
 
         # if vae has been passed, raw image observation encoded to latent vector
         if self.cmvae is not None:
             # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
             observation = observation[:, :, ::-1]
             # resize to resolution used to train vae
-            observation = cv2.resize(observation, (self.cmvae.res, self.cmvae.res))
+            observation = cv2.resize(observation, (self.handler.img_res[0], self.handler.img_res[1]))
             # normalize pixel values
             observation = observation / 255.0 * 2.0 - 1.0
             # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
@@ -126,7 +123,7 @@ class UnderwaterEnv(gymnasium.Env):
         self.episode_num += 1
 
         # reset simulation to start state
-        self.handler.send_reset(self.episode_num)
+        self.handler.reset(self.episode_num)
         # fetch initial observation
         observation, _, _, _, info = self.observe_and_process_observation()
         return observation, info

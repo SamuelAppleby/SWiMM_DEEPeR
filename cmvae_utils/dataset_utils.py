@@ -115,14 +115,14 @@ def read_images(data_dir, res, max_size=None):
         size_data = max_size
     else:
         size_data = len(files_list)
-    images_np = np.zeros((size_data, res, res, 3)).astype(np.float32)
+    images_np = np.zeros(np.concatenate(([size_data], res))).astype(np.float32)
     print('Done. Going to read images.')
     idx = 0
     for img_name in files_list:
         # read data in BGR format by default!!!
         # notice that model is going to be trained in BGR
         im = cv2.imread(img_name, cv2.IMREAD_COLOR)
-        im = cv2.resize(im, (res, res))
+        im = cv2.resize(im, (res[0], res[1]))
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 10000 == 0:
@@ -136,7 +136,7 @@ def read_images(data_dir, res, max_size=None):
     return images_np
 
 
-def create_dataset_csv(data_dir, batch_size, res, max_size=None):
+def create_dataset_csv(data_dir, res, max_size=None, seed=None):
     print('Going to read file list')
     files_list = glob.glob(os.path.join(data_dir, 'images', '*.jpg'))  # took out the preceding images dir
     print('Done. Starting sorting.')
@@ -146,7 +146,7 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
         size_data = max_size
     else:
         size_data = len(files_list)
-    images_np = np.zeros((size_data, res, res, 3)).astype(np.float32)
+    images_np = np.zeros(np.concatenate(([size_data], res))).astype(np.float32)
 
     print('Done. Going to read images.')
     idx = 0
@@ -155,8 +155,8 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
         # notice that model is going to be trained in BGR
         im = cv2.imread(file, cv2.IMREAD_COLOR)
 
-        if im.shape[0] is not res or im.shape[1] is not res:
-            im = cv2.resize(im, (res, res))
+        if im.shape != res:
+            im = cv2.resize(im, (res[0], res[1]))
 
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
@@ -187,70 +187,14 @@ def create_dataset_csv(data_dir, batch_size, res, max_size=None):
     # normalize distances to gate to [-1, 1] range
     raw_table = normalize_gate(raw_table)
 
-    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
+    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=seed)
 
     return img_train, img_test, dist_train, dist_test
 
 
-def create_dataset_csv_new(data_dir, batch_size, res, max_size=None, start_idx=0):
-    print('Going to read file list')
-    files_list = glob.glob(os.path.join(data_dir, 'images', '*.jpg'))  # took out the preceding images dir
-    print('Done. Starting sorting.')
-    files_list = natsorted(files_list)
-    print('Done. Before images_np init')
-    if max_size is not None:
-        size_data = max_size
-    else:
-        size_data = len(files_list)
-    images_np = np.zeros((size_data, res, res, 3)).astype(np.float32)
-
-    # Remove first start_idx rows
-    files_list = files_list[start_idx:start_idx + size_data]
-
-    print('Done. Going to read images.')
-    idx = 0
-    for file in files_list:
-        # read data in BGR format by default!!!
-        # notice that model is going to be trained in BGR
-        im = cv2.imread(file, cv2.IMREAD_COLOR)
-
-        if im.shape[0] is not res or im.shape[1] is not res:
-            im = cv2.resize(im, (res, res))
-
-        im = im / 255.0 * 2.0 - 1.0
-        images_np[idx, :] = im
-        if idx % 10000 == 0:
-            print('image idx = {}'.format(start_idx + idx))
-        idx = idx + 1
-
-    print('Going to read csv file.')
-    # prepare gate R THETA PSI PHI as np array reading from a file
-    raw_table = np.loadtxt(os.path.join(data_dir, 'state_data.csv'), delimiter=',')  # changed name of csv and delimiter from space to comma
-    raw_table = raw_table[start_idx:start_idx + size_data, :]
-
-    # sanity check
-    if raw_table.shape[0] != images_np.shape[0]:
-        raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(images_np.shape[0], raw_table.shape[0]))
-    raw_table.astype(np.float32)
-
-    # print some useful statistics
-    print("Average gate values: {}".format(np.mean(raw_table, axis=0)))
-    print("Median  gate values: {}".format(np.median(raw_table, axis=0)))
-    print("STD of  gate values: {}".format(np.std(raw_table, axis=0)))
-    print("Max of  gate values: {}".format(np.max(raw_table, axis=0)))
-    print("Min of  gate values: {}".format(np.min(raw_table, axis=0)))
-
-    # normalize distances to gate to [-1, 1] range
-    raw_table = normalize_gate(raw_table)
-
-    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
-
-    return img_train, img_test, dist_train, dist_test
-
-
-def create_unsup_dataset_multiple_sources(data_dir_list, batch_size, res):
+def create_unsup_dataset_multiple_sources(data_dir_list, batch_size, res, seed=None):
     # load all the images in one single large dataset
-    images_np = np.empty((0, res, res, 3)).astype(np.float32)
+    images_np = np.empty(np.concatenate(([0], res))).astype(np.float32).astype(np.float32)
     for data_dir in data_dir_list:
         img_array = read_images(data_dir, res, max_size=None)
         images_np = np.concatenate((images_np, img_array), axis=0)
@@ -259,7 +203,7 @@ def create_unsup_dataset_multiple_sources(data_dir_list, batch_size, res):
     print('Real_life dataset has {} images total'.format(num_items))
     raw_table = (-1.0 * np.ones((num_items, 4))).astype(np.float32)
     # separate the actual dataset:
-    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=42)
+    img_train, img_test, dist_train, dist_test = train_test_split(images_np, raw_table, test_size=0.1, random_state=seed)
     # convert to tf format dataset and prepare batches
     ds_train = tf.data.Dataset.from_tensor_slices((img_train, dist_train)).batch(batch_size)
     ds_test = tf.data.Dataset.from_tensor_slices((img_test, dist_test)).batch(batch_size)
@@ -273,7 +217,7 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     print('Done. Starting sorting.')
     files_list = natsorted(files_list)
     print('Done. Before images_np init')
-    images_np = np.zeros((len(files_list), res, res, 3)).astype(np.float32)
+    images_np = np.zeros(np.concatenate(([len(files_list)], res))).astype(np.float32)
     print('After images_np init')
     idx = 0
     for file in files_list:
@@ -281,8 +225,8 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
         # notice that model was trained in BGR
         im = cv2.imread(file, cv2.IMREAD_COLOR)
 
-        if im.shape[0] is not res or im.shape[1] is not res:
-            im = cv2.resize(im, (res, res))
+        if im.shape != res:
+            im = cv2.resize(im, (res[0], res[1]))
 
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
@@ -310,7 +254,7 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     return images_np, raw_table
 
 
-def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=None):
+def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=None, seed=None):
     vel_table = np.loadtxt(data_dir + '/proc_vel.txt', delimiter=',').astype(np.float32)
     with open(data_dir + '/proc_images.txt') as f:
         img_table = f.read().splitlines()
@@ -320,7 +264,7 @@ def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=N
         raise Exception('Number of images ({}) different than number of entries in table ({}): '.format(len(img_table), vel_table.shape[0]))
 
     size_data = len(img_table)
-    images_np = np.zeros((size_data, res, res, 3)).astype(np.float32)
+    images_np = np.zeros(np.concatenate(([size_data], res))).astype(np.float32)
 
     print('Done. Going to read images.')
     idx = 0
@@ -330,7 +274,7 @@ def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=N
         # read data in BGR format by default!!!
         # notice that model is going to be trained in BGR
         im = cv2.imread(img_name, cv2.IMREAD_COLOR)
-        im = cv2.resize(im, (res, res))
+        im = cv2.resize(im, (res[0], res[1]))
         im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 1000 == 0:
@@ -350,7 +294,7 @@ def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=N
     # normalize the values of velocities to the [-1, 1] range
     vel_table = normalize_v(vel_table)
 
-    img_train, img_test, v_train, v_test = train_test_split(images_np, vel_table, test_size=0.1, random_state=42)
+    img_train, img_test, v_train, v_test = train_test_split(images_np, vel_table, test_size=0.1, random_state=seed)
 
     if data_mode == 'train':
         # convert to tf format dataset and prepare batches
@@ -361,16 +305,16 @@ def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=N
         return img_test, v_test
 
 
-def create_dataset_multiple_sources(data_dir_list, batch_size, res, data_mode='train', base_path=None):
+def create_dataset_multiple_sources(data_dir_list, batch_size, res, data_mode='train', base_path=None, seed=None):
     # load all the images and velocities in one single large dataset
-    images_np = np.empty((0, res, res, 3)).astype(np.float32)
+    images_np = np.empty(np.concatenate(([0], res))).astype(np.float32)
     vel_table = np.empty((0, 4)).astype(np.float32)
     for data_dir in data_dir_list:
         img_array, v_array = create_dataset_txt(data_dir, batch_size, res, data_mode='test', base_path=base_path)
         images_np = np.concatenate((images_np, img_array), axis=0)
         vel_table = np.concatenate((vel_table, v_array), axis=0)
     # separate the actual dataset:
-    img_train, img_test, v_train, v_test = train_test_split(images_np, vel_table, test_size=0.1, random_state=42)
+    img_train, img_test, v_train, v_test = train_test_split(images_np, vel_table, test_size=0.1, random_state=seed)
     if data_mode == 'train':
         # convert to tf format dataset and prepare batches
         ds_train = tf.data.Dataset.from_tensor_slices((img_train, v_train)).batch(batch_size)

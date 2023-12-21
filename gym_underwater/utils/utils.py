@@ -2,14 +2,14 @@ from stable_baselines3.common.monitor import Monitor
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae, obs, opt_d, max_d, img_scale, debug_logs, protocol, host, log_d, ep_len_threshold, seed):
+def make_env(cmvae, obs, opt_d, max_d, img_res, debug_logs, protocol, host, log_d, ep_len_threshold, seed):
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
 
     def _init():
         # create instance of environment
-        env_inst = UnderwaterEnv(cmvae, obs, opt_d, max_d, img_scale, debug_logs, protocol, host, ep_len_threshold)
+        env_inst = UnderwaterEnv(cmvae, obs, opt_d, max_d, img_res, debug_logs, protocol, host, ep_len_threshold, seed)
         print("Environment ready")
         if seed > 0:
             # seed the environment

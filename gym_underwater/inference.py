@@ -13,10 +13,8 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 
 from gym_underwater.sim_comms import Protocol
 
-# code to go up a directory so higher level modules can be imported
-curr_dir = os.path.dirname(os.path.abspath(__file__))
-import_path = os.path.join(curr_dir, '..')
-sys.path.insert(0, import_path)
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, par_dir)
 
 # local imports
 from stable_baselines3 import SAC
@@ -70,7 +68,7 @@ os.environ['OPENAI_LOGDIR'] = log_dir
 logger.configure()
 
 # Wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_scale'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=env_config.get('seed', 0))])
+env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=env_config.get('seed', 0))])
 
 # load trained model
 print("Loading pretrained agent ...")

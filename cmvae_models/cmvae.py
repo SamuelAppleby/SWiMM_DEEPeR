@@ -7,7 +7,7 @@ from cmvae_models import dronet, decoders, transformer
 
 # model definition class
 class Cmvae(tf.keras.Model):
-    def __init__(self, n_z, gate_dim=3, res=96, trainable_model=True):
+    def __init__(self, n_z, gate_dim=3, seed=None):
         super(Cmvae, self).__init__()
         # create the 3 base models:
         self.q_img = dronet.Dronet(num_outputs=n_z * 2, include_top=True)
@@ -16,6 +16,7 @@ class Cmvae(tf.keras.Model):
         # Create sampler
         self.mean_params = Lambda(lambda x: x[:, : n_z])
         self.stddev_params = Lambda(lambda x: x[:, n_z:])
+        self.seed = seed
 
     @tf.function
     def call(self, x, mode):
@@ -26,7 +27,7 @@ class Cmvae(tf.keras.Model):
         x = self.q_img(x)
         means = self.mean_params(x)
         stddev = tf.math.exp(0.5 * self.stddev_params(x))
-        eps = random_normal(tf.shape(stddev))
+        eps = random_normal(tf.shape(stddev), seed=self.seed)
         z = means + eps * stddev
         if mode == 0:
             img_recon = self.p_img(z)
@@ -70,7 +71,7 @@ class Cmvae(tf.keras.Model):
 
 # model definition class
 class CmvaeDirect(tf.keras.Model):
-    def __init__(self, n_z, gate_dim=3, res=64, trainable_model=True):
+    def __init__(self, n_z, seed=None):
         super(CmvaeDirect, self).__init__()
         # create the base models:
         self.q_img = dronet.Dronet(num_outputs=n_z * 2, include_top=True)
@@ -84,6 +85,7 @@ class CmvaeDirect(tf.keras.Model):
         self.R_params = tf.keras.layers.Lambda(lambda x: x[:, 0])
         self.Theta_params = tf.keras.layers.Lambda(lambda x: x[:, 1])
         self.Psi_params = tf.keras.layers.Lambda(lambda x: x[:, 2])
+        self.seed = seed
 
     @tf.function
     def call(self, x, mode):
@@ -99,7 +101,7 @@ class CmvaeDirect(tf.keras.Model):
         x = self.q_img(x)
         means = self.mean_params(x)
         stddev = tf.math.exp(0.5 * self.stddev_params(x))
-        eps = tf.keras.backend.random_normal(tf.shape(stddev))
+        eps = tf.keras.backend.random_normal(tf.shape(stddev), seed=self.seed)
         z = means + eps * stddev
         return z, means, stddev
 

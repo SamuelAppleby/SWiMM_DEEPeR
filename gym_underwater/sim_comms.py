@@ -96,9 +96,9 @@ class UnitySimHandler:
         self.seed = seed
 
         self.fns = {
-            "connection_request": self.connection_request,
-            'client_ready': self.sim_ready_request,
-            "on_telemetry": self.on_telemetry
+            "connectionRequest": self.connection_request,
+            'clientReady': self.sim_ready_request,
+            "onTelemetry": self.on_telemetry
         }
 
         logger.setLevel(logging.INFO)
@@ -218,7 +218,8 @@ class UnitySimHandler:
             # print('Sending: {}'.format(json_str))
 
             if self.debug_logs:
-                if self.msg['msgType'] == "reset_episode":
+                # Let's only keep the latest episode's logging
+                if self.msg['msgType'] == "resetEpisode":
                     self.clean_and_create_debug_directories()
                 else:
                     with open(os.path.join(self.packets_sent_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num)), 'w', encoding='utf-8') as f:
@@ -349,19 +350,19 @@ class UnitySimHandler:
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     def on_recv_message(self, message):
-        if "msgType" not in message:
-            logger.warning("expected msgType field")
+        if 'msgType' not in message:
+            logger.warning('expected msgType field')
             return
-        msg_type = message["msgType"]
-        payload = message["payload"]
-        logger.debug("got message :" + msg_type)
+        msg_type = message['msgType']
+        payload = message['payload']
+        logger.debug('got message :' + msg_type)
         if msg_type in self.fns:
             self.fns[msg_type](payload)
         else:
             logger.warning(f"unknown message type {msg_type}")
 
     def connection_request(self, payload):
-        logger.debug("socket connected")
+        logger.debug('socket connected')
         self.server_connected = True
         return
 

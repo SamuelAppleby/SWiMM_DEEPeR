@@ -20,7 +20,7 @@ from gym_underwater.sim_comms import UnitySimHandler
 import cmvae_utils
 
 # remove warnings
-warnings.filterwarnings("ignore", category=UserWarning, module='gym')
+warnings.filterwarnings('ignore', category=UserWarning, module='gym')
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +30,7 @@ class UnderwaterEnv(gymnasium.Env):
     """
 
     def __init__(self, cmvae, obs, opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed):
-        print("Starting underwater environment ..")
+        print('Starting underwater environment ..')
 
         # set logging level
         logging.basicConfig(level=logging.INFO)
@@ -43,14 +43,14 @@ class UnderwaterEnv(gymnasium.Env):
         # make obs arg instance variable
         self.obs = obs
 
-        self.episode_num = 0
+        self.episode_num = -1
         self.step_num = 0
 
         # create instance of class that deals with Unity comms
         self.handler = UnitySimHandler(opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed)
 
         # action space declaration
-        print("Declaring action space")
+        print('Declaring action space')
         self.action_space = spaces.Box(
             low=np.array([-1.0, -1.0]),
             high=np.array([1.0, 1.0]),
@@ -85,7 +85,6 @@ class UnderwaterEnv(gymnasium.Env):
     def observe_and_process_observation(self, action=None, pred=False):
         # retrieve results of action implementation
         observation, reward, terminated, truncated, info = self.handler.observe(self.obs)
-        print('what {}'.format(terminated))
 
         # if vae has been passed, raw image observation encoded to latent vector
         if self.cmvae is not None:
@@ -102,7 +101,7 @@ class UnderwaterEnv(gymnasium.Env):
                 _, _, z, pred = self.cmvae.encode_with_pred(observation)
                 # denormalize state predictions
                 pred = cmvae_utils.dataset_utils.de_normalize_gate(pred)
-                print("Distance: {}, Prediction: {}, Thrust: {}, Steer: {}".format(self.handler.raw_d, pred[0], action[0], action[1]))
+                print('Distance: {}, Prediction: {}, Thrust: {}, Steer: {}'.format(self.handler.raw_d, pred[0], action[0], action[1]))
             else:
                 _, _, z = self.cmvae.encode(observation)
 

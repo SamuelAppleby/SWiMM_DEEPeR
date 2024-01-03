@@ -4,7 +4,7 @@
 obs: 'cmvae'
 
 # If you want to pass image observation through pretrained encoder, provide filepath, else pass empty string
-cmvae_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training\results\best_model.ckpt'
+cmvae_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training_seed_2\results_seed_2_device_gpu\best_model.ckpt'
 
 # If using image obs, declare desired output size of scaling function. NOTE this is DIFFERENT from cmvae img_res, which uses img_res contained in cmvae_config.
 img_res: !!python/tuple [64,64,3]
@@ -16,7 +16,6 @@ debug_logs: True
 seed: 3
 
 ### THE FOLLOWING ARE TRAINING PARAMETERS  ###
-
 # Algorithm to import from Stable Baselines. CHOICES: 'sac', 'ppo', 'ddpg'
 algo: 'sac'
 
@@ -37,7 +36,6 @@ max_d: 4
 log_interval: 1
 
 ### THE FOLLOWING ARE INFERENCE PARAMETERS  ###
-
 # Path to where to create reward log csv as an output of inference run
 reward_log_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\Logs\sac\1\inference.csv'
 

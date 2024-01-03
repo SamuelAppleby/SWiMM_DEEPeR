@@ -38,13 +38,19 @@ if env_config['model_path'] != '':
         'The argument model_path must be a valid path to a .zip file'
 
 # if using pretrained vae, create instance of vae object and load trained weights from path provided
+
 print("Obs: {}".format(env_config['obs']))
 cmvae = None
 if env_config['obs'] == 'cmvae':
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
         cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+        n_z = cmvae_config['n_z']
+        latent_space_constraints = cmvae_config['latent_space_constraints']
         print('Loading CMVAE ...')
-        cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=cmvae_config['n_z'], gate_dim=3, res=cmvae_config['img_res'])
+        if latent_space_constraints:
+            cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, seed=env_config['seed'])
+        else:
+            cmvae = cmvae_models.cmvae.Cmvae(n_z=n_z, gate_dim=3, seed=env_config['seed'])
         cmvae.load_weights(env_config['cmvae_path'])
 
 parser = argparse.ArgumentParser()

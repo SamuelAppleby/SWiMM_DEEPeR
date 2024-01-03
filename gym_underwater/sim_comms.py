@@ -119,7 +119,7 @@ class UnitySimHandler:
         self.server_config = None
         self.action_buffer_size = None
         self.observation_buffer_size = None
-        self.episode_num = 0
+        self.episode_num = -1
         self.step_num = 0
         self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
 
@@ -283,7 +283,6 @@ class UnitySimHandler:
             'msgType': 'resetEpisode',
             'payload': {}
         }
-        print('resetting')
 
     def observe(self, obs):
         while self.last_obs is self.image_array:
@@ -312,12 +311,12 @@ class UnitySimHandler:
         # normalize
         norm_heading = heading / np.linalg.norm(heading)
 
-        # calculate radial distance on the flat y-plane
-        self.raw_d = math.sqrt(math.pow(heading[0], 2) + math.pow(heading[2], 2))
-
         # calculate angle between rover's forward facing vector and heading vector
         self.a = math.degrees(
             math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
+
+        # calculate radial distance on the flat y-plane
+        self.raw_d = math.sqrt(math.pow(heading[0], 2) + math.pow(heading[2], 2))
 
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
         reward = 1.0 - ((math.pow((self.raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(self.a) / 180))
@@ -381,7 +380,6 @@ class UnitySimHandler:
             self.target_fwd = np.array([target['fwd'][0], target['fwd'][1], target['fwd'][2]])
             self.hit = target['colliding']
             self.target_out_of_view = target['outOfView']
-            print(self.target_out_of_view)
 
         image = bytearray(base64.b64decode(payload['telemetryData']['jpgImage']))
 

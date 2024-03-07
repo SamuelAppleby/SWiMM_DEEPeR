@@ -5,7 +5,7 @@ A Simulated Underwater Environment for Tracking Marine Mammals Using Deep Reinfo
 
 Presented at [IEEE Conference on Games '23](https://2023.ieee-cog.org/)
 
-### [Presentation]() | [Paper]()
+### [Presentation]() | [Paper](https://ieeexplore.ieee.org/document/10333168)
 
 <img src="docs/assets/environment.png" width="1000px"/>
 

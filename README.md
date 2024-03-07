@@ -39,6 +39,16 @@ chmod +x pip_install.sh (Optional)
 If you would like to use this paper for research, please cite as:
 
 ```
+@INPROCEEDINGS{10333168,
+  author={Appleby, Samuel and Crane, Kirsten and Bergami, Giacomo and McGough, A. Stephen},
+  booktitle={2023 IEEE Conference on Games (CoG)}, 
+  title={SWiMM DEEPeR: A Simulated Underwater Environment for Tracking Marine Mammals Using Deep Reinforcement Learning and BlueROV2}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1-8},
+  keywords={Training;Visualization;Target tracking;Oceans;Pipelines;Reinforcement learning;Games;Unity;active tracking;marine mammals;simulation environment;reinforcement learning;autoencoders},
+  doi={10.1109/CoG57401.2023.10333168}}
 ```
 
 

@@ -1,14 +1,10 @@
 import os
 import shutil
-import sys
 import yaml
 from tqdm import tqdm
 
-par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, par_dir)
-
 import cmvae_models.cmvae
-import cmvae_utils
+import cmvae_utils.dataset_utils
 
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
     cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
@@ -175,9 +171,9 @@ def test(img_gt, gate_gt, mode):
 
 
 if latent_space_constraints:
-    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, res=img_res, seed=env_config['seed'])
+    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, seed=env_config['seed'])
 else:
-    model = cmvae_models.cmvae.Cmvae(n_z=n_z, gate_dim=3, res=img_res, trainable_model=True)
+    model = cmvae_models.cmvae.Cmvae(n_z=n_z, gate_dim=3)
 
 # create optimizer
 optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
@@ -256,7 +252,7 @@ for epoch in tqdm(range(epochs)):
             tf.summary.scalar('test/total_loss', test_total_loss, step=epoch)
 
             if epoch == 0:
-                with open(os.path.join(par_dir, 'launchers', 'train_output.txt'), 'w') as log_file:
+                with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'launchers', 'train_output.txt'), 'w') as log_file:
                     log_file.write('Tensorboard event file: {}\n'.format(output_dir))
 
             print('Epoch {} | TRAIN: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {}'

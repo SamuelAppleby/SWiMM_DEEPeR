@@ -1,41 +1,16 @@
-# generic imports
-import argparse
 import csv
 import os
-import sys
 import yaml
-
-# specialist imports
 import numpy as np
-from stable_baselines3.common import logger
-from stable_baselines3.common.utils import set_random_seed, safe_mean
-from stable_baselines3.common.vec_env import DummyVecEnv
 
-from gym_underwater.sim_comms import Protocol
-
-par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, par_dir)
-
-# local imports
-from stable_baselines3 import SAC
-from gym_underwater.utils.utils import make_env
 import cmvae_models.cmvae
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--host', help='Override the host for network (with port)', default='127.0.0.1:60260', type=str)
-parser.add_argument('-tcp', help='Enable tcp', action='store_true')
-parser.add_argument('-udp', help='Enable udp', action='store_true')
-args = parser.parse_args()
+from stable_baselines3.common import logger
+from stable_baselines3.common.utils import set_random_seed, safe_mean
+from stable_baselines3 import SAC
 
-if args.udp and not args.tcp:
-    args.protocol = Protocol.UDP
-else:
-    args.protocol = Protocol.TCP
-
-# Dictionary of available algorithms
-ALGOS = {
-    'sac': SAC,
-}
+from gym_underwater.utils.utils import make_env
+from gym_underwater.args import args
 
 print("Loading environment configuration ...")
 with open(os.path.join(os.pardir, 'configs', 'config.yml'), 'r') as f:
@@ -68,7 +43,8 @@ os.environ['OPENAI_LOGDIR'] = log_dir
 logger.configure()
 
 # Wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
-env = DummyVecEnv([make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'], env_config['debug_logs'], args.protocol, args.host, log_dir, env_config['ep_length_threshold'], seed=env_config.get('seed', 0))])
+env = make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'] if cmvae is None else cmvae_config['img_res'],
+               hyperparams['tensorboard_log'] if env_config['debug_logs'] else None, args.protocol, args.host, env_config['seed'])
 
 # load trained model
 print("Loading pretrained agent ...")
@@ -102,6 +78,7 @@ while len(env.envs[0].episode_lengths) < 5:
         episode_times.append(env.envs[0].episode_times[-1] - env.envs[0].episode_times[-2] if (len(env.envs[0].episode_times) > 1) else env.envs[0].episode_times[-1])
         print("Episode Time: ", episode_times[-1])
 
+        # TODO We must be able to grab the termination type from the infos
         with open(env_config['reward_log_path'], 'a', newline='') as csv_file:
             csv.writer(csv_file).writerow([len(env.envs[0].episode_lengths), info[-1]['episode']['l'], info[-1]['episode']['r'], episode_times[-1], env.envs[0].handler.episode_termination_type])
             csv_file.close()

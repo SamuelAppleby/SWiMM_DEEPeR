@@ -1,97 +1,113 @@
 {
-  "msgType": "processServerConfig",
-  "payload": {
-    "serverConfig": {
-      "roverConfig": {
-        "tpCameraCollider" : true,
-        "motorConfig": {
-          "stabilityForce": 0.2,
-          "linearThrustPower": [
-            70,
-            180,
-            70
-          ],
-          "angularThrustPower": [
-            0.5,
-            0.5,
-            0.5
-          ]
-        },
-        "camConfig": {
-          "resolution": [
-            64,
-            64
-          ],
-          "focalLength": 2.97,
-          "sensorWidth": 4.98,
-          "sensorHeight": 3.74
-        },
-        "structureConfig": {
-          "ballastMass": 1.2
-        }
-      },
-      "envConfig": {
-        "drawRewardRings": true,
-        "drawOptimumHeading": true,
-        "enableUI": true,
-        "enableSecondaryCameras": true,
-        "actionInference": "maintain",
-        "randomiseRestart": true,
-        "optD": 6,
-        "maxD": 4,
-        "faunaConfig": {
-          "spawnTimer": 5,
-          "spawnContainerRatio": 0.8,
-          "spawnRadius": 10,
-          "aiGroups": [
-            {
-              "prefabName": "target",
-              "maxAmount": 1,
-              "maxSpawn": 1,
-              "enableSpawner": true,
-              "randomMovement": true,
-              "randomizeStats": false,
-              "waypointAxes": [
-                true,
-                false,
-                true
-              ],
-              "rotationOffset": [
-                0,
-                0,
-                0
-              ],
-              "scale": 1,
-              "minSpeed": 0.04,
-              "maxSpeed": 0.04,
-              "spawnInfront": true,
-              "scaleVariance": 0
+    "msgType": "processServerConfig",
+    "payload": {
+        "serverConfig": {
+            "roverConfig": {
+                "tpCameraCollider": true,
+                "motorConfig": {
+                    "stabilityForce": 0.2,
+                    "linearThrustPower": [
+                        70.0,
+                        180.0,
+                        70.0
+                    ],
+                    "angularThrustPower": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ]
+                },
+                "camConfig": {
+                    "resolution": [
+                        64,
+                        64
+                    ],
+                    "focalLength": 2.97,
+                    "sensorWidth": 4.98,
+                    "sensorHeight": 3.74
+                },
+                "structureConfig": {
+                    "ballastMass": 1.2
+                }
             },
-            {
-              "prefabName": "whale",
-              "maxAmount": 1,
-              "maxSpawn": 1,
-              "enableSpawner": false,
-              "randomMovement": true,
-              "randomizeStats": false,
-              "waypointAxes": [
-                true,
-                false,
-                true
-              ],
-              "spawnInfront": true,
-              "rotationOffset": [
-                0,
-                180,
-                0
-              ],
-              "scale": 5,
-              "minSpeed": 1,
-              "maxSpeed": 7
+            "envConfig": {
+                "drawRewardRings": true,
+                "drawOptimumHeading": true,
+                "enableUI": true,
+                "enableSecondaryCameras": true,
+                "actionInference": "maintain",
+                "randomiseRestart": true,
+                "faunaConfig": {
+                    "spawnTimer": 5.0,
+                    "spawnContainerRatio": 0.8,
+                    "spawnRadius": 10.0,
+                    "aiGroups": [
+                        {
+                            "prefabName": "target",
+                            "maxAmount": 1,
+                            "maxSpawn": 1,
+                            "enableSpawner": true,
+                            "randomMovement": true,
+                            "randomizeStats": false,
+                            "waypointAxes": [
+                                true,
+                                false,
+                                true
+                            ],
+                            "rotationOffset": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "scale": 1.0,
+                            "minSpeed": 0.04,
+                            "maxSpeed": 0.04,
+                            "spawnInfront": true,
+                            "scaleVariance": 0.0
+                        },
+                        {
+                            "prefabName": "whale",
+                            "maxAmount": 1,
+                            "maxSpawn": 1,
+                            "enableSpawner": false,
+                            "randomMovement": true,
+                            "randomizeStats": false,
+                            "waypointAxes": [
+                                true,
+                                false,
+                                true
+                            ],
+                            "rotationOffset": [
+                                0.0,
+                                180.0,
+                                0.0
+                            ],
+                            "scale": 5.0,
+                            "minSpeed": 1.0,
+                            "maxSpeed": 7.0,
+                            "spawnInfront": true,
+                            "scaleVariance": 0.0
+                        }
+                    ]
+                },
+                "physicsConfig": {
+                    "layerProperties": [
+                        {
+                            "layer": "Default",
+                            "drag": 0.5,
+                            "angularDrag": 0.5
+                        },
+                        {
+                            "layer": "Water",
+                            "drag": 2.5,
+                            "angularDrag": 2.5
+                        }
+                    ]
+                },
+                "optD": 6,
+                "maxD": 4,
+                "seed": null
             }
-          ]
         }
-      }
     }
-  }
 }

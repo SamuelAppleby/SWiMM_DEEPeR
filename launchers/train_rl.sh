@@ -1,6 +1,5 @@
-source ../.venv/bin/activate
-cd ../gym_underwater
-python3 train.py "$@" &
+cd ..
+pipenv run python -m gym_underwater.train "$@" &
 cd ../builds/linux
 ./SWiMM_DEEPeR.x86_64 modeServerControl
 exit

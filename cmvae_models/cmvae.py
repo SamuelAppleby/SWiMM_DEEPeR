@@ -2,7 +2,9 @@ import tensorflow as tf
 from keras.backend import random_normal
 from keras.layers import Lambda
 
-from cmvae_models import dronet, decoders, transformer
+from . import decoders
+from . import dronet
+from . import transformer
 
 
 # model definition class
@@ -101,7 +103,7 @@ class CmvaeDirect(tf.keras.Model):
         x = self.q_img(x)
         means = self.mean_params(x)
         stddev = tf.math.exp(0.5 * self.stddev_params(x))
-        eps = tf.keras.backend.random_normal(tf.shape(stddev), seed=self.seed)
+        eps = tf.keras.backend.random_normal(tf.shape(stddev))
         z = means + eps * stddev
         return z, means, stddev
 

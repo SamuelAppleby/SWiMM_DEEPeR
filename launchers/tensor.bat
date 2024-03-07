@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-set "FILE_PATH=train_output.txt"
+set "FILE_PATH=tensorboard_dir.txt"
 set "SEARCH_STRING=Tensorboard event file:"
 
 call :processFile

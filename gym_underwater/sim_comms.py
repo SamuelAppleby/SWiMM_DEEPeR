@@ -1,13 +1,10 @@
 import base64
 import json
-import logging
 import os
 import shutil
 import time
-from enum import IntEnum
 import socket
-from threading import Thread
-
+import threading
 import cv2
 import numpy as np
 import math
@@ -16,22 +13,42 @@ from PIL import Image
 from jsonschema.validators import validate
 from datetime import datetime
 
+from stable_baselines3.common.type_aliases import TrainFrequencyUnit
 
-class Protocol(IntEnum):
-    UDP = 0
-    TCP = 1
-
-    def __lt__(self, other):
-        if self.__class__ is other.__class__:
-            return self.value < other.value
-        return NotImplemented
+from gym_underwater.enums import Protocol, EpisodeTerminationType, TrainingType
 
 
-class EpisodeTerminationType(IntEnum):
-    MAXIMUM_DISTANCE = 0
-    TARGET_OUT_OF_VIEW = 1
-    TARGET_COLLISION = 2
-    THRESHOLD_REACHED = 3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
+def write_image_to_file_incrementally(image, directory):
+    """
+    Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
+    """
+    with open(directory, 'wb') as f:
+        f.write(image)
+
+
+def calc_metrics(rov_pos, rov_fwd, target_pos):
+    # heading vector from rover to target
+    heading = target_pos - rov_pos
+
+    # normalize
+    norm_heading = heading / np.linalg.norm(heading)
+
+    # calculate radial distance on the flat y-plane
+    raw_d = math.sqrt(math.pow(heading[0], 2) + math.pow(heading[2], 2))
+
+    # calculate angle between rover's forward facing vector and heading vector
+    dot = np.dot(norm_heading, rov_fwd)
+
+    # floating-point inaccuracy may cause epsilon violations, so clamp to legal values
+    dot = np.clip(dot, -1, 1)
+    acos = np.arccos(dot)
+
+    a = np.degrees(acos)
+
+    assert not math.isnan(a)
+
+    return raw_d, a
 
 
 def process_and_validate_configs(dir_map):
@@ -58,42 +75,26 @@ def clean_and_remake(directory):
     os.makedirs(directory)
 
 
-logger = logging.getLogger(__name__)
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
-def write_image_to_file_incrementally(image, directory):
-    """
-    Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
-    """
-    with open(directory, 'wb') as f:
-        f.write(image)
-
-
-def on_disconnect():
-    logger.debug("socket disconnected")
+MAX_STEP_REWARD = 1.0
 
 
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed):
+    def __init__(self, opt_d, max_d, img_res, tensorboard_log, protocol, host, seed):
         self.sim_ready = False
         self.server_connected = False
         self.img_res = img_res
-        self.image_array = np.zeros(self.img_res)
-        self.image_array = np.zeros(self.img_res)
         self.last_obs = np.zeros(self.img_res)
-        self.hit = False
-        self.target_out_of_view = False
-        self.rover_pos = np.zeros(3)
-        self.target_pos = np.zeros(3)
-        self.rover_fwd = np.zeros(3)
-        self.target_fwd = np.zeros(3)
-        self.raw_d = 0.0
-        self.a = 0.0
+        self.rover_info = None
+        self.target_info = None
         self.opt_d = opt_d
         self.max_d = max_d
-        self.ep_length_threshold = ep_len_threshold
         self.seed = seed
+        self.msg_event = threading.Event()
+        self.image_array = np.zeros(self.img_res)
+        self.img_event = threading.Event()
+        self.cancel_event = threading.Event()
+        self.training_type = TrainingType.TRAINING
+        self.msg = None
 
         self.fns = {
             "connectionRequest": self.connection_request,
@@ -101,27 +102,29 @@ class UnitySimHandler:
             "onTelemetry": self.on_telemetry
         }
 
-        logger.setLevel(logging.INFO)
+        self.episode_num = -1
+        self.inference_test_num = (-1, -1)
+        self.eval_inference_freq = None
+        self.eval_packet_sent = 0
+        self.packet_received_num = 0
+        self.packet_sent_num = 0
+        self.image_num = 0
 
-        self.debug_logs = debug
-        self.debug_logs_dir = os.path.join(os.pardir, 'Logs')
-        self.image_dir = os.path.join(self.debug_logs_dir, 'images')
-        self.packets_sent_dir = os.path.join(self.debug_logs_dir, 'packets_sent')
-        self.packets_received_dir = os.path.join(self.debug_logs_dir, 'packets_received')
+        self.tensorboard_log = os.path.join(tensorboard_log, 'network') if tensorboard_log is not None else None
+        if self.tensorboard_log is not None:
+            self.debug_logs_dir = os.path.join(self.tensorboard_log, 'training', f'episode_{self.episode_num}')
+            clean_and_remake(os.path.dirname(os.path.dirname(self.debug_logs_dir)))
+            self.clean_and_create_debug_directories()
 
         self.sock = None
         self.addr = None
-        self.do_process_msgs = False
-        self.msg = {}
-        self.th = None
+        self.msg_discard = False
         self.conn = None
         self.network_config = None
         self.server_config = None
         self.action_buffer_size = None
         self.observation_buffer_size = None
-        self.episode_num = -1
-        self.step_num = 0
-        self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
+        self.threads = []
 
         conf_arr = process_and_validate_configs({
             os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs',
@@ -134,19 +137,11 @@ class UnitySimHandler:
         self.server_config['payload']['serverConfig']['envConfig']['seed'] = self.seed
 
         self.protocol = protocol
-        self.full_host = host.split(':')
-        self.address = (self.full_host[0], (int(self.full_host[1])))
+        full_host = host.split(':')
+        self.address = (full_host[0], (int(full_host[1])))
+
         self.observation_buffer_size = 8192
-
-        if self.debug_logs:
-            self.clean_and_create_debug_directories()
-
-        self.connect(*self.address)
-
-    def clean_and_create_debug_directories(self):
-        clean_and_remake(self.image_dir)
-        clean_and_remake(self.packets_sent_dir)
-        clean_and_remake(self.packets_received_dir)
+        self.read_write_thread = None
 
     def connect(self, host='127.0.0.1', port=60260):
         """
@@ -160,271 +155,315 @@ class UnitySimHandler:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.sock.bind((host, port))
-        print(f"[+] Listening on {host}:{port}")
-
-        # the remaining network related code, receiving json and sending json, is run in a thread
-        self.do_process_msgs = True
-        self.th = Thread(target=self.proc_msg, daemon=True)
-        self.th.start()
-
-    def proc_msg(self):
-        """
-        Continue to process messages from each connected client
-        """
+        print(f'Listening on {host}:{port}')
 
         if self.protocol == Protocol.TCP:
             try:
                 # wait for connection request
                 self.sock.listen(5)
                 self.conn, self.addr = self.sock.accept()
-                current_time = datetime.now().ctime()
-                print(
-                    f"[+] Connecting by {self.addr[0]}:{self.addr[1]} ({current_time})")
+                print(f'Connecting by {self.addr[0]}:{self.addr[1]} ({datetime.now().ctime()})')
+                self.server_connected = True
             except ConnectionRefusedError as refuse_error:
-                raise (Exception("Could not connect to server.")) from refuse_error
+                raise Exception('Could not connect to server.') from refuse_error
 
-        while self.do_process_msgs:
-            # print('Waiting to receive message')
-            # receive packets/datagrams
+        self.read_write_thread = threading.Thread(target=self.continue_read_write, daemon=True)
+
+    def set_obsv(self, image):
+        while self.img_event.is_set():
+            time.sleep(1 / 120)
+        self.image_array = image
+        self.img_event.set()
+
+    def set_msg(self, msg):
+        # For some rapidly occurring messages, we may have to briefly wait until the event is free
+        while self.msg_event.is_set():
+            time.sleep(1 / 120)
+
+        self.msg = msg
+        self.msg_event.set()
+
+    def stop(self):
+        """
+        Signal proc_msg loop to stop, wait for thread to finish, close socket
+        """
+        self.set_msg({
+            'msgType': 'endSimulation',
+            'payload': {
+            }
+        })
+
+    def render(self):
+        pass
+
+    def reset(self):
+        self.image_array[:] = 0
+        self.last_obs = self.image_array
+        self.rover_info = None
+        self.target_info = None
+        self.set_msg({
+            'msgType': 'resetEpisode',
+            'payload': {}
+        })
+
+    def observe(self, obs):
+        while not any(event.is_set() for event in [self.img_event, self.cancel_event]):
+            time.sleep(1 / 120)
+
+        if self.cancel_event.is_set():
+            self.read_write_thread.join()
+            # Our TCP socket might be bad, as training connect possibly recover, let's just raise the exception here
+            raise Exception(f'The network socket: {self.address[0]}:{self.address[1]} is bad, quitting')
+
+        assert self.image_array is not self.last_obs
+
+        self.last_obs = self.image_array
+        observation = self.image_array
+
+        info = {
+            'rover': self.rover_info,
+            'target': self.target_info
+        }
+
+        # for vector obs training run, overwrite image observation with vector obs
+        # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
+        if obs == 'vector':
+            observation = np.array([info['rover']['pos'][0], info['rover']['pos'][1], info['rover']['pos'][2], info['rover']['fwd'][0], info['rover']['fwd'][1], info['rover']['fwd'][2],
+                                    info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
+
+        raw_d, a = calc_metrics(np.array(info['rover']['pos']), np.array(info['rover']['fwd']), np.array(info['target']['pos']))
+        reward = self.calc_reward(raw_d, a)
+
+        over = None
+
+        # During inference, we still allow TimeLimit truncation but want to simulate the real-world inference, so no early reset
+        if self.training_type == TrainingType.TRAINING:
+            over = self.determine_episode_over(raw_d)
+
+        info.update({
+            'dist': raw_d,
+            'ang_error': a,
+            'episode_termination_type': over
+        })
+
+        # During training,we guarantee that reward is between
+        if (self.training_type == TrainingType.TRAINING) and over is None:
+            assert (-1 <= reward <= 1)
+
+        self.img_event.clear()
+
+        return observation, reward, True if over is not None else False, False, info
+
+    def calc_reward(self, raw_d, a):
+        # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
+        return (MAX_STEP_REWARD - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180)))
+
+    def determine_episode_over(self, raw_d):
+        if self.target_info['colliding']:
+            print('[EPISODE TERMINATED] Due to collision with target')
+            return EpisodeTerminationType.TARGET_COLLISION
+        if self.target_info['outOfView']:
+            print('[EPISODE TERMINATED] Due to target out of view')
+            return EpisodeTerminationType.TARGET_OUT_OF_VIEW
+        if abs(raw_d - self.opt_d) > self.max_d:
+            print(f'[EPISODE TERMINATED] Too far from the optimum distance: {abs(raw_d - self.opt_d)}')
+            return EpisodeTerminationType.MAXIMUM_DISTANCE
+        return None
+
+    def continue_read_write(self):
+        self.threads = [
+            threading.Thread(target=self.recv_msg, daemon=True),
+            threading.Thread(target=self.send_msg, daemon=True)
+        ]
+
+        for t in self.threads:
+            t.start()
+
+        while all(t.is_alive() for t in self.threads):
+            time.sleep(1 / 120)
+
+        self.cancel_event.set()
+
+        for t in self.threads:
+            t.join()
+
+        self.msg_event.clear()
+        self.img_event.clear()
+
+        if self.sock is not None:
+            print('Closing socket')
+            self.sock.close()
+            print('Socket disconnected')
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    def recv_msg(self):
+        """
+        Continue to process messages from each connected client
+        """
+        while not self.cancel_event.is_set():
             if self.protocol == Protocol.UDP:
                 data, self.addr = self.sock.recvfrom(self.observation_buffer_size)
             else:
                 data = self.conn.recv(self.observation_buffer_size)
 
             if not data:
-                print("[-] Invalid json")
-                self.stop()
+                print('Invalid json')
+                self.set_msg({
+                    'msgType': 'internalQuit',
+                    'payload': {
+                    }
+                })
                 return
 
-            # unpack and send json message
             json_str = data.decode('UTF-8')
-            # print('Received: {}'.format(json_str))
+
+            # print(f'Received: {json_str}')
+
             json_dict = json.loads(json_str)
 
-            if self.debug_logs:
-                with open(os.path.join(self.packets_received_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num)), 'w', encoding='utf-8') as f:
-                    json.dump(json_dict, f, ensure_ascii=False, indent=4)
+            if (self.tensorboard_log is not None) and not self.msg_discard:
+                with open(os.path.join(self.debug_logs_dir, 'packets_received', f'step_{self.packet_received_num}.json'), 'w', encoding='utf-8') as f:
+                    json.dump(json_dict, f, indent=2)
                     f.close()
+                    self.packet_received_num += 1
 
             self.on_recv_message(json_dict)
 
-            # wait to point something to self.msg variable dedicated to outgoing messages
-            # print('Waiting to send message')
-            while self.msg == {}:
-                time.sleep(1.0 / 120.0)
-
-            # print('Sending: {}'.format(str(self.msg.encode('utf-8'))))
-            json_str = json.dumps(self.msg)
-            # print('Sending: {}'.format(json_str))
-
-            if self.debug_logs:
-                # Let's only keep the latest episode's logging
-                if self.msg['msgType'] == "resetEpisode":
-                    self.clean_and_create_debug_directories()
-                else:
-                    with open(os.path.join(self.packets_sent_dir, 'episode_{}_step_{}.json'.format(self.episode_num, self.step_num)), 'w', encoding='utf-8') as f:
-                        json.dump(self.msg, f, ensure_ascii=False, indent=4)
-                        f.close()
-
-            if self.protocol == Protocol.UDP:
-                self.sock.sendto(bytes(json_str, encoding="utf-8"), self.addr)
-            else:
-                self.conn.sendall(bytes(json_str, encoding="utf-8"))
-
-            self.msg = {}
-
-    def stop(self):
-        """
-        Signal proc_msg loop to stop, wait for thread to finish, close socket
-        """
-        self.do_process_msgs = False
-
-        self.msg = {
-            'msgType': 'endSimulation',
-            'payload': {
-            }
-        }
-
-        if self.sock is not None:
-            print("[-] Closing socket")
-            self.sock.close()
-            on_disconnect()
-
-    def wait_until_loaded(self):
-        while not self.server_connected:
-            logger.info("waiting for sim...")
-            time.sleep(1.0)
-
-    def wait_until_client_ready(self):
-        while not self.sim_ready:
-            logger.info("waiting for client...")
-            time.sleep(1.0)
-
-    def render(self):
-        pass
-
-    def quit(self):
-        self.stop()
-
-    def reset(self, ep_n):
-        logger.debug("resetting")
-        self.image_array[:] = 0
-        self.last_obs = self.image_array
-        self.hit = False
-        self.target_out_of_view = False
-        self.rover_pos = np.zeros(3)
-        self.target_pos = np.zeros(3)
-        self.rover_fwd = np.zeros(3)
-        self.target_fwd = np.zeros(3)
-        self.raw_d = 0.0
-        self.a = 0.0
-        self.episode_num = ep_n
-        self.step_num = 0
-        self.msg = {
-            'msgType': 'resetEpisode',
-            'payload': {}
-        }
-
-    def observe(self, obs):
-        while self.last_obs is self.image_array:
-            time.sleep(1.0 / 120.0)
-
-        self.last_obs = self.image_array
-        observation = self.image_array
-
-        # for vector obs training run, overwrite image observation with vector obs 
-        # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
-        if obs == 'vector':
-            observation = [self.rover_pos[0], self.rover_pos[1], self.rover_pos[2],
-                           self.rover_fwd[0], self.rover_fwd[1], self.rover_fwd[2],
-                           self.target_pos[0], self.target_pos[1], self.target_pos[2],
-                           self.target_fwd[0], self.target_fwd[1], self.target_fwd[2]]
-
-        info = {"rov_pos": self.rover_pos, "targ_pos": self.target_pos, "dist": self.raw_d, "raw_dist": self.raw_d,
-                "rov_fwd": self.rover_fwd, "targ_fwd": self.target_fwd, "ang_error": self.a}
-
-        return observation, self.calc_reward(), self.determine_episode_over(), False, info
-
-    def calc_reward(self):
-        # heading vector from rover to target
-        heading = self.target_pos - self.rover_pos
-
-        # normalize
-        norm_heading = heading / np.linalg.norm(heading)
-
-        # calculate angle between rover's forward facing vector and heading vector
-        self.a = math.degrees(
-            math.atan2(norm_heading[0], norm_heading[2]) - math.atan2(self.rover_fwd[0], self.rover_fwd[2]))
-
-        # calculate radial distance on the flat y-plane
-        self.raw_d = math.sqrt(math.pow(heading[0], 2) + math.pow(heading[2], 2))
-
-        # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        reward = 1.0 - ((math.pow((self.raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(self.a) / 180))
-
-        return reward
-
-    def determine_episode_over(self):
-        if self.hit:
-            print('[EPISODE TERMINATED] Due to collision with target')
-            logger.debug(f"game over: target hit")
-            self.episode_termination_type = EpisodeTerminationType.TARGET_COLLISION
-            return True
-        if self.target_out_of_view:
-            print('[EPISODE TERMINATED] Due to target out of view')
-            logger.debug(f"game over: target out of view")
-            self.episode_termination_type = EpisodeTerminationType.TARGET_OUT_OF_VIEW
-            return True
-        if (self.ep_length_threshold > 0) and (self.step_num == self.ep_length_threshold):
-            print('[EPISODE TERMINATED]: Maximum episode length reached: {}'.format(self.ep_length_threshold))
-            logger.debug(f"game over: episode threshold {self.ep_length_threshold}")
-            self.episode_termination_type = EpisodeTerminationType.THRESHOLD_REACHED
-            return True
-        if math.fabs(self.raw_d - self.opt_d) > self.max_d:
-            print('[EPISODE TERMINATED] Too far from the optimum distance: {}'.format(abs(self.raw_d - self.opt_d)))
-            logger.debug(f"game over: distance {self.raw_d}")
-            self.episode_termination_type = EpisodeTerminationType.MAXIMUM_DISTANCE
-            return True
-        return False
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
+            if self.msg_discard:
+                self.msg_discard = False
 
     def on_recv_message(self, message):
         if 'msgType' not in message:
-            logger.warning('expected msgType field')
             return
         msg_type = message['msgType']
         payload = message['payload']
-        logger.debug('got message :' + msg_type)
         if msg_type in self.fns:
             self.fns[msg_type](payload)
         else:
-            logger.warning(f"unknown message type {msg_type}")
+            print(f'unknown message type {msg_type}')
 
     def connection_request(self, payload):
-        logger.debug('socket connected')
-        self.server_connected = True
         return
 
     def sim_ready_request(self, payload):
-        logger.debug('client ready')
         self.sim_ready = True
 
     def on_telemetry(self, payload):
-        self.rover_pos = np.array([payload['telemetryData']['position'][0], payload['telemetryData']['position'][1],
-                                   payload['telemetryData']['position'][2]])
-        self.rover_fwd = np.array([payload['telemetryData']["fwd"][0], payload['telemetryData']['fwd'][1],
-                                   payload['telemetryData']['fwd'][2]])
+        self.rover_info = payload['telemetryData']['rover']
+        self.target_info = payload['telemetryData']['target']
 
-        for target in payload['telemetryData']['targets']:
-            self.target_pos = np.array([target['position'][0], target['position'][1], target['position'][2]])
-            self.target_fwd = np.array([target['fwd'][0], target['fwd'][1], target['fwd'][2]])
-            self.hit = target['colliding']
-            self.target_out_of_view = target['outOfView']
+        image = bytearray(base64.b64decode(self.rover_info['obs']))
 
-        image = bytearray(base64.b64decode(payload['telemetryData']['jpgImage']))
-
-        if self.debug_logs:
-            write_image_to_file_incrementally(image, os.path.join(self.image_dir, 'episode_{}_step{}.jpg'.format(self.episode_num, self.step_num)))
+        if (self.tensorboard_log is not None) and not self.msg_discard:
+            write_image_to_file_incrementally(image, os.path.join(self.debug_logs_dir, 'images', f'step_{self.image_num}.jpg'))
+            self.image_num += 1
 
         image = np.array(Image.open(BytesIO(image)))
 
         if image.shape != self.img_res:
-            image = cv2.resize(image, self.img_res).astype(np.uint8)
+            image = cv2.resize(image, (self.img_res[0], self.img_res[1])).astype(np.uint8)
 
-        self.image_array = image
+        self.set_obsv(image)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
+    def send_msg(self):
+        """
+        Continue to process messages from each connected client
+        """
+        while not self.cancel_event.is_set():
+            while not self.msg_event.is_set():
+                time.sleep(1 / 120)
 
-    def send_action(self, action, step_n):
-        self.msg = {
-            'msgType': 'receiveJsonControls',
+            assert self.msg is not None
+
+            json_str = json.dumps(self.msg)
+            # print(f'Sending: {json_str}')
+
+            if self.tensorboard_log is not None:
+                match self.msg['msgType']:
+                    case 'inferenceStart':
+                        self.inference_test_num = (self.inference_test_num[0] + 1, -1)
+                        self.packet_sent_num = 0
+                        self.eval_packet_sent = 0
+                        self.debug_logs_dir = os.path.join(self.tensorboard_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
+                        self.clean_and_create_debug_directories()
+                    case 'action':
+                        if self.training_type == TrainingType.INFERENCE:
+                            self.eval_packet_sent += 1
+                    case _:
+                        pass
+
+                with open(os.path.join(self.debug_logs_dir, 'packets_sent', f'step_{self.packet_sent_num}.json'), 'w', encoding='utf-8') as f:
+                    json.dump(self.msg, f, indent=2)
+                    f.close()
+                    self.packet_sent_num += 1
+
+                match self.msg['msgType']:
+                    case 'resetEpisode':
+                        should_keep_evaluating = True
+
+                        if self.training_type == TrainingType.TRAINING:
+                            self.episode_num += 1
+                            self.debug_logs_dir = os.path.join(self.tensorboard_log, 'training', f'episode_{self.episode_num}')
+                        else:
+                            should_keep_evaluating = ((self.inference_test_num[1] + 1) < self.eval_inference_freq.frequency) if (self.eval_inference_freq.unit == TrainFrequencyUnit.EPISODE) else (
+                                    self.eval_packet_sent < self.eval_inference_freq.frequency)
+
+                            if should_keep_evaluating:
+                                self.inference_test_num = (self.inference_test_num[0], self.inference_test_num[1] + 1)
+                                self.debug_logs_dir = os.path.join(self.tensorboard_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
+                            else:
+                                # This is to prevent writing any logs that are not ever going to be used, i.e. after an evaluation is complete, gymnasium enforces a reset that is never used
+                                self.msg_discard = True
+
+                        if (self.training_type == TrainingType.TRAINING) or should_keep_evaluating:
+                            self.clean_and_create_debug_directories()
+                            self.packet_received_num = 0
+                            self.packet_sent_num = 0
+                            self.image_num = 0
+                    case 'inferenceEnd':
+                        self.debug_logs_dir = os.path.join(self.tensorboard_log, 'training', f'episode_{self.episode_num}')
+                        self.packet_received_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_received')))
+                        self.packet_sent_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_sent')))
+                        self.image_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'images')))
+                    case _:
+                        pass
+
+            if self.protocol == Protocol.UDP:
+                self.sock.sendto(bytes(json_str, encoding='utf-8'), self.addr)
+            else:
+                self.conn.sendall(bytes(json_str, encoding='utf-8'))
+
+            self.msg = None
+            self.msg_event.clear()
+
+    def send_action(self, action):
+        self.set_msg({
+            'msgType': 'action',
             'payload': {
                 'jsonControls': {
-                    'swayThrust': '0',
-                    'heaveThrust': '0',
-                    'surgeThrust': action[0].__str__(),
-                    'pitchThrust': '0',
-                    'yawThrust': action[1].__str__(),
-                    'rollThrust': '0',
-                    'mode': '0',
+                    'swayThrust': 0.0,
+                    'heaveThrust': 0.0,
+                    'surgeThrust': float(action[0]),
+                    'pitchThrust': 0.0,
+                    'yawThrust': float(action[1]),
+                    'rollThrust': 0.0,
+                    'mode': 0,
                 }
             }
-        }
-
-        self.step_num = step_n
+        })
 
     def send_server_config(self):
         """
         Generate server config for client
         """
-        self.msg = self.server_config
+        self.set_msg(self.server_config)
 
     def send_object_pos(self, object_pos, pos_x, pos_y, pos_z, q):
         # note that the pos_y argument has been allocated to the z-axis array index
         # and the pos_z argument has been allocated to the y-axis array index
         # due to the difference in axis naming between scipy (incoming) and unity (outgoing)
-        self.msg = {
+        self.set_msg({
             'msgType': 'setPosition',
             'payload': {
                 'objectPositions': [
@@ -435,4 +474,50 @@ class UnitySimHandler:
                     }
                 ]
             }
-        }
+        })
+
+    def send_world_state(self, world_state):
+        self.set_msg({
+            'msgType': 'setWorldState',
+            'payload': {
+                'objectOverrides': world_state
+            }
+        })
+
+    def send_rollout_start(self):
+        self.set_msg({
+            'msgType': 'rolloutStart',
+            'payload': {}
+        })
+
+    def send_rollout_end(self):
+        self.set_msg({
+            'msgType': 'rolloutEnd',
+            'payload': {}
+        })
+
+    def send_inference_start(self, eval_inference_freq):
+        self.training_type = TrainingType.INFERENCE
+        self.eval_inference_freq = eval_inference_freq
+        self.set_msg({
+            'msgType': 'inferenceStart',
+            'payload': {
+                'inferenceData': {
+                    'evalInferenceFreq': self.eval_inference_freq.unit.value,
+                    'nEvalCount': self.eval_inference_freq.frequency
+                }
+            }
+        })
+
+    def send_inference_end(self):
+        self.training_type = TrainingType.TRAINING
+        self.set_msg({
+            'msgType': 'inferenceEnd',
+            'payload': {}
+        })
+
+    def clean_and_create_debug_directories(self):
+        clean_and_remake(self.debug_logs_dir)
+        clean_and_remake(os.path.join(self.debug_logs_dir, 'packets_received'))
+        clean_and_remake(os.path.join(self.debug_logs_dir, 'packets_sent'))
+        clean_and_remake(os.path.join(self.debug_logs_dir, 'images'))

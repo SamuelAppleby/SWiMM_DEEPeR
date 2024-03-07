@@ -1,13 +1,9 @@
 import os
 import shutil
-import sys
 
 import numpy as np
 import yaml
 from matplotlib import pyplot as plt
-
-par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, par_dir)
 
 import cmvae_models.cmvae
 import cmvae_utils
@@ -27,8 +23,6 @@ else:
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 import tensorflow as tf
-##TODO remove
-tf.config.run_functions_eagerly(True)
 
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
     env_config = yaml.load(f, Loader=yaml.UnsafeLoader)

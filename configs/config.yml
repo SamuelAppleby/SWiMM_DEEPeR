@@ -12,7 +12,8 @@ img_res: !!python/tuple [64,64,3]
 # Do we want to output the packet information and save images
 debug_logs: True
 
-# Set seed with arbitrary int so that can report with results
+# Set seed with arbitrary int so that can report with results this also sets the seed on the simulation
+# Appended to server_config.json
 seed: 3
 
 ### THE FOLLOWING ARE TRAINING PARAMETERS  ###
@@ -22,22 +23,14 @@ algo: 'sac'
 # If you want to train on top of an existing model, provide filepath, else pass empty string
 model_path: ''
 
-# Whether to save the Monitor logs generate by the Stable Baselines Monitor wrapper NOTE: False still writes but to tmp
-monitor: True
+# Absolute distance from optimal tracking position.
+# Appended to server_config.json
+opt_d: 6.0
 
-# Used to express the optimal tracking position. This value is subtracted from the z-coordinate of the target's position
-# i.e. how far set back from the target do you want the AUV to position itself
-opt_d: 6
-
-# At what radial distance should the episode terminate (FROM THE OPTIMAL TRACKING POSITION, NOT THE TARGET POSITION)
-max_d: 4
-
-# Override log interval
-log_interval: 1
+# Maximum deviation allowed from opt_d before an episode is reset.
+# Appended to server_config.json
+max_d: 4.0
 
 ### THE FOLLOWING ARE INFERENCE PARAMETERS  ###
 # Path to where to create reward log csv as an output of inference run
 reward_log_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\Logs\sac\1\inference.csv'
-
-# Episode length threshold. 0 for unlimited length.
-ep_length_threshold: 3000

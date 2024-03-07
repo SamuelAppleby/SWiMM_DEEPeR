@@ -1,27 +1,15 @@
-# generic imports
 import logging
-import warnings
-import sys
-import os
+import time
+
 import numpy as np
 import cv2
 
-# specialised imports
+import cmvae_utils.dataset_utils
+
 import gymnasium
 from gymnasium import spaces
-from gymnasium.utils import seeding
 
-# code to go up a directory so higher level modules can be imported
-par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, par_dir)
-
-# local imports
 from gym_underwater.sim_comms import UnitySimHandler
-import cmvae_utils
-
-# remove warnings
-warnings.filterwarnings('ignore', category=UserWarning, module='gym')
-logger = logging.getLogger(__name__)
 
 
 class UnderwaterEnv(gymnasium.Env):
@@ -29,12 +17,12 @@ class UnderwaterEnv(gymnasium.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, cmvae, obs, opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed):
+    def __init__(self, cmvae, obs, opt_d, max_d, img_res, tensorboard_log, protocol, host, seed):
+        super().__init__()
         print('Starting underwater environment ..')
 
         # set logging level
         logging.basicConfig(level=logging.INFO)
-        logger.debug("DEBUG ON")
 
         # initialise VAE
         self.cmvae = cmvae
@@ -43,11 +31,13 @@ class UnderwaterEnv(gymnasium.Env):
         # make obs arg instance variable
         self.obs = obs
 
-        self.episode_num = -1
-        self.step_num = 0
+        # create instance of class that deals with Unity communications
+        self.handler = UnitySimHandler(opt_d, max_d, img_res, tensorboard_log, protocol, host, seed)
 
-        # create instance of class that deals with Unity comms
-        self.handler = UnitySimHandler(opt_d, max_d, img_res, debug, protocol, host, ep_len_threshold, seed)
+        self.handler.connect(*self.handler.address)
+        self.handler.read_write_thread.start()
+
+        self.handler.send_server_config()
 
         # action space declaration
         print('Declaring action space')
@@ -58,7 +48,7 @@ class UnderwaterEnv(gymnasium.Env):
         )
 
         # observation space declaration
-        print("Declaring observation space")
+        print('Declaring observation space')
         if self.obs == 'image':
             self.observation_space = spaces.Box(low=0, high=255, shape=self.handler.img_res, dtype=np.uint8)
         elif self.obs == 'vector':
@@ -66,21 +56,7 @@ class UnderwaterEnv(gymnasium.Env):
         elif self.obs == 'cmvae':
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, self.z_size), dtype=np.float32)
         else:
-            raise ValueError('Invalid observation type: {}'.format(obs))
-
-        # wait until connection established 
-        self.handler.wait_until_loaded()
-        self.handler.send_server_config()
-        self.handler.wait_until_client_ready()
-
-    def close(self):
-        self.handler.quit()
-
-    # calls a Gym utility function which generates a random number generator from the seed and returns the generator and seed
-    # although stable baselines utility function seeds tf, np and random, I think this just ensures nothing is missed if env uses anything else
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+            raise ValueError(f'Invalid observation type: {obs}')
 
     def observe_and_process_observation(self, action=None, pred=False):
         # retrieve results of action implementation
@@ -101,7 +77,7 @@ class UnderwaterEnv(gymnasium.Env):
                 _, _, z, pred = self.cmvae.encode_with_pred(observation)
                 # denormalize state predictions
                 pred = cmvae_utils.dataset_utils.de_normalize_gate(pred)
-                print('Distance: {}, Prediction: {}, Thrust: {}, Steer: {}'.format(self.handler.raw_d, pred[0], action[0], action[1]))
+                print(f'Prediction: {pred[0]}, Thrust: {action[0]}, Steer: {action[1]}')
             else:
                 _, _, z = self.cmvae.encode(observation)
 
@@ -111,21 +87,32 @@ class UnderwaterEnv(gymnasium.Env):
         return observation, reward, terminated, truncated, info
 
     def step(self, action):
-        self.step_num += 1
-
-        # send action decision to handler to send off to sim
-        self.handler.send_action(action, self.step_num)
+        self.handler.send_action(action)
         return self.observe_and_process_observation()
 
     def reset(self, **kwargs):
-        self.step_num = 0
-        self.episode_num += 1
-
-        # reset simulation to start state
-        self.handler.reset(self.episode_num)
-        # fetch initial observation
+        self.handler.reset()
         observation, _, _, _, info = self.observe_and_process_observation()
         return observation, info
 
     def render(self):
         return self.handler.image_array
+
+    def on_set_world_state(self, state):
+        self.handler.send_world_state(state)
+
+    def on_rollout_start(self):
+        self.handler.send_rollout_start()
+
+    def on_rollout_end(self):
+        self.handler.send_rollout_end()
+
+    def on_inference_start(self, eval_inference_freq):
+        self.handler.send_inference_start(eval_inference_freq)
+
+    def on_inference_end(self):
+        self.handler.send_inference_end()
+
+    def wait_until_client_ready(self):
+        while self.handler.read_write_thread.is_alive() and not self.handler.sim_ready:
+            time.sleep(1 / 120)

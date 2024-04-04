@@ -35,15 +35,16 @@
                 "drawOptimumHeading": true,
                 "enableUI": true,
                 "enableSecondaryCameras": true,
-                "actionInference": "maintain",
+                "actionInference": "freeze",
                 "randomiseRestart": true,
+                "debugLogs": false,
                 "faunaConfig": {
                     "spawnTimer": 5.0,
                     "spawnContainerRatio": 0.8,
                     "spawnRadius": 10.0,
                     "aiGroups": [
                         {
-                            "prefabName": "target",
+                            "prefabName": "Target",
                             "maxAmount": 1,
                             "maxSpawn": 1,
                             "enableSpawner": true,
@@ -66,7 +67,7 @@
                             "scaleVariance": 0.0
                         },
                         {
-                            "prefabName": "whale",
+                            "prefabName": "HumpbackWhale",
                             "maxAmount": 1,
                             "maxSpawn": 1,
                             "enableSpawner": false,
@@ -103,10 +104,7 @@
                             "angularDrag": 2.5
                         }
                     ]
-                },
-                "optD": 6,
-                "maxD": 4,
-                "seed": null
+                }
             }
         }
     }

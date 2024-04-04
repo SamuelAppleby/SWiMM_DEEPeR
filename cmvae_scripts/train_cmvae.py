@@ -1,35 +1,23 @@
 import os
 import shutil
-import yaml
 from tqdm import tqdm
 
 import cmvae_models.cmvae
 import cmvae_utils.dataset_utils
-
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
-    cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-
-if cmvae_config['train_dir'] == '':
-    print('No data directory specified, quitting!')
-    quit()
-
-if cmvae_config['use_cpu']:
-    os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
-else:
-    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
-    os.environ['TF_DETERMINISTIC_OPS'] = '1'
-    os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+from gym_underwater.utils.utils import load_cmvae_config, load_environment_config
 
 import tensorflow as tf
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
-    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-    tf.keras.utils.set_random_seed(env_config['seed'])
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-print('Devices: {}'.format(tf.config.list_physical_devices()))
+env_config = load_environment_config(par_dir, seed_tensorflow=True, seed_sb=False)
 
-train_dir = cmvae_config['train_dir']
-output_dir = os.path.join(train_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
+# Don't want to load any weights
+cmvae, cmvae_config = load_cmvae_config(par_dir, load_weights=False, seed=env_config['seed'])
+
+assert cmvae_config['train_dir'] == '', 'No data directory specified, quitting!'
+
+output_dir = os.path.join(cmvae_config['train_dir'], 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
 
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
@@ -41,7 +29,7 @@ batch_size = cmvae_config['batch_size']
 epochs = cmvae_config['epochs']
 n_z = cmvae_config['n_z']
 latent_space_constraints = cmvae_config['latent_space_constraints']
-img_res = cmvae_config['img_res']
+img_res = tuple(cmvae_config['img_res'])
 learning_rate = float(cmvae_config['learning_rate'])
 load_during_training = cmvae_config['load_during_training']
 mode = 0
@@ -187,7 +175,7 @@ test_loss_rec_gate = tf.keras.metrics.Mean(name='test_loss_rec_gate')
 test_loss_kl = tf.keras.metrics.Mean(name='test_loss_kl')
 metrics_writer = tf.summary.create_file_writer(output_dir)
 
-img_train, img_test, dist_train, dist_test = cmvae_utils.dataset_utils.create_dataset_csv(train_dir, model.img_res, max_size, env_config['seed'])
+img_train, img_test, dist_train, dist_test = cmvae_utils.dataset_utils.create_dataset_csv(cmvae_config['train_dir'], model.img_res, max_size, env_config['seed'])
 
 ds_train = None
 ds_test = None

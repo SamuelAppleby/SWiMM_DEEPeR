@@ -1,3 +1,7 @@
+import fnmatch
+import os
+
+import numpy as np
 import tensorflow as tf
 from keras.backend import random_normal
 from keras.layers import Lambda
@@ -46,6 +50,7 @@ class Cmvae(tf.keras.Model):
 
     def encode(self, x):
         x = self.q_img(x)
+        self.samsam += 1
         means = self.mean_params(x)
         stddev = tf.math.exp(0.5 * self.stddev_params(x))
         eps = random_normal(tf.shape(stddev))
@@ -100,8 +105,8 @@ class CmvaeDirect(tf.keras.Model):
         return img_recon, gate_recon, means, stddev, z
 
     def encode(self, x):
-        x = self.q_img(x)
-        means = self.mean_params(x)
+        x = self.q_img(x, training=True)
+        means = self.mean_params(x, training=False)
         stddev = tf.math.exp(0.5 * self.stddev_params(x))
         eps = tf.keras.backend.random_normal(tf.shape(stddev))
         z = means + eps * stddev

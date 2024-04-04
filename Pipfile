@@ -3,6 +3,12 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+# Can remove if you don't require GPU support for SB3 (for tensorflow, it is bundled regardless)
+[[source]]
+url = "https://download.pytorch.org/whl/cu118"
+verify_ssl = true
+name = "pytorch"
+
 [packages]
 gymnasium = "==0.29.1"
 stable-baselines3 = "==2.2.1"
@@ -12,7 +18,9 @@ jsonschema = "==4.20.0"
 pyyaml = "==6.0.1"
 natsort = "==8.4.0"
 opencv-python = "==4.8.1.78"
-torch = "==2.1.1"
+torch = "==2.2.2"
+torchaudio = "==2.2.2"
+torchvision = "==0.17.2"
 scikit-learn = "==1.3.2"
 tqdm = "==4.66.1"
 rich = "==13.7.0"

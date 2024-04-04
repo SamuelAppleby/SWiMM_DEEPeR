@@ -1,0 +1,6 @@
+UnderwaterEnv:
+  - gym_underwater.env_wrappers.swim_monitor.SwimMonitor:
+        allow_early_resets: True
+  - gym_underwater.env_wrappers.swim_time_limit.SwimTimeLimit:
+      max_episode_steps_train: 80
+      max_episode_steps_inference: 100

@@ -7,10 +7,13 @@ use_cpu: False
 n_z: 10
 
 # If using image obs, declare desired output size of scaling function
-img_res: !!python/tuple [64,64,3]
+img_res: [64,64,3]
 
 # Should we use latent space constraints (i.e. CmvaeDirect)
 latent_space_constraints: True
+
+# Do we want to run deterministic operations (e.g. for reproducibility)
+deterministic: True
 
 ## TRAINING ##
 # Directory to the training set (contains state_data.csv and images directory)

@@ -2,9 +2,11 @@ import base64
 import json
 import os
 import shutil
+import sys
 import time
 import socket
 import threading
+
 import cv2
 import numpy as np
 import math
@@ -76,30 +78,35 @@ def clean_and_remake(directory):
 
 
 MAX_STEP_REWARD = 1.0
+PERIOD = 120
+
+
+class ClientDisconnectedException(Exception):
+    pass
 
 
 class UnitySimHandler:
     def __init__(self, opt_d, max_d, img_res, tensorboard_log, protocol, host, seed):
+        self.interval = 1 / PERIOD
+        self.timeout = self.interval * PERIOD * 60 * 10  # Timeout will occur if 10 minutes have occurred without message
         self.sim_ready = False
-        self.server_connected = False
         self.img_res = img_res
-        self.last_obs = np.zeros(self.img_res)
+        self.last_obs = None
         self.rover_info = None
         self.target_info = None
         self.opt_d = opt_d
         self.max_d = max_d
-        self.seed = seed
         self.msg_event = threading.Event()
-        self.image_array = np.zeros(self.img_res)
+        self.image_array = None
         self.img_event = threading.Event()
         self.cancel_event = threading.Event()
         self.training_type = TrainingType.TRAINING
         self.msg = None
 
         self.fns = {
-            "connectionRequest": self.connection_request,
-            'clientReady': self.sim_ready_request,
-            "onTelemetry": self.on_telemetry
+            'connectionRequest': self.on_connection_request,
+            'clientReady': self.on_client_ready,
+            'onTelemetry': self.on_telemetry
         }
 
         self.episode_num = -1
@@ -110,9 +117,19 @@ class UnitySimHandler:
         self.packet_sent_num = 0
         self.image_num = 0
 
-        self.tensorboard_log = os.path.join(tensorboard_log, 'network') if tensorboard_log is not None else None
-        if self.tensorboard_log is not None:
-            self.debug_logs_dir = os.path.join(self.tensorboard_log, 'training', f'episode_{self.episode_num}')
+        conf_arr = process_and_validate_configs({
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'schemas',
+                                                                                                                               'server_config_schema.json')
+        })
+
+        self.server_config = conf_arr.pop()
+        self.server_config['payload']['serverConfig']['envConfig']['optD'] = self.opt_d
+        self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.max_d
+        self.server_config['payload']['serverConfig']['envConfig']['seed'] = seed
+
+        self.network_log = os.path.join(tensorboard_log, 'network') if self.server_config['payload']['serverConfig']['envConfig']['debugLogs'] else None
+        if self.network_log is not None:
+            self.debug_logs_dir = os.path.join(self.network_log, 'training', f'episode_{self.episode_num}')
             clean_and_remake(os.path.dirname(os.path.dirname(self.debug_logs_dir)))
             self.clean_and_create_debug_directories()
 
@@ -120,21 +137,8 @@ class UnitySimHandler:
         self.addr = None
         self.msg_discard = False
         self.conn = None
-        self.network_config = None
-        self.server_config = None
         self.action_buffer_size = None
-        self.observation_buffer_size = None
         self.threads = []
-
-        conf_arr = process_and_validate_configs({
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs',
-                                                                                                                               'server_config_schema.json')
-        })
-
-        self.server_config = conf_arr.pop()
-        self.server_config['payload']['serverConfig']['envConfig']['optD'] = self.opt_d
-        self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.max_d
-        self.server_config['payload']['serverConfig']['envConfig']['seed'] = self.seed
 
         self.protocol = protocol
         full_host = host.split(':')
@@ -147,38 +151,36 @@ class UnitySimHandler:
         """
         Open a tcp/udp socket
         """
-
         # create socket and associate the socket with local address
-        if self.protocol == Protocol.UDP:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        else:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM if self.protocol == Protocol.UDP else socket.SOCK_STREAM)
 
         self.sock.bind((host, port))
         print(f'Listening on {host}:{port}')
 
         if self.protocol == Protocol.TCP:
-            try:
-                # wait for connection request
-                self.sock.listen(5)
-                self.conn, self.addr = self.sock.accept()
-                print(f'Connecting by {self.addr[0]}:{self.addr[1]} ({datetime.now().ctime()})')
-                self.server_connected = True
-            except ConnectionRefusedError as refuse_error:
-                raise Exception('Could not connect to server.') from refuse_error
+            while self.conn is None:
+                try:
+                    self.sock.listen()
+                    self.conn, self.addr = self.sock.accept()
+                    self.conn.settimeout(self.timeout)
+                except ConnectionRefusedError as refuse_error:
+                    print('[NETWORK ERROR] Connection refused:', refuse_error)
+        else:
+            self.sock.settimeout(self.timeout)
 
+        print(f'Connecting by {self.addr[0]}:{self.addr[1]} ({datetime.now().ctime()})')
         self.read_write_thread = threading.Thread(target=self.continue_read_write, daemon=True)
 
     def set_obsv(self, image):
         while self.img_event.is_set():
-            time.sleep(1 / 120)
+            time.sleep(self.interval)
         self.image_array = image
         self.img_event.set()
 
     def set_msg(self, msg):
         # For some rapidly occurring messages, we may have to briefly wait until the event is free
         while self.msg_event.is_set():
-            time.sleep(1 / 120)
+            time.sleep(self.interval)
 
         self.msg = msg
         self.msg_event.set()
@@ -197,8 +199,8 @@ class UnitySimHandler:
         pass
 
     def reset(self):
-        self.image_array[:] = 0
-        self.last_obs = self.image_array
+        self.image_array = None
+        self.last_obs = None
         self.rover_info = None
         self.target_info = None
         self.set_msg({
@@ -207,15 +209,15 @@ class UnitySimHandler:
         })
 
     def observe(self, obs):
-        while not any(event.is_set() for event in [self.img_event, self.cancel_event]):
-            time.sleep(1 / 120)
+        while not self.img_event.is_set() and self.read_write_thread.is_alive():
+            time.sleep(self.interval)
 
-        if self.cancel_event.is_set():
+        if not self.read_write_thread.is_alive():
             self.read_write_thread.join()
-            # Our TCP socket might be bad, as training connect possibly recover, let's just raise the exception here
-            raise Exception(f'The network socket: {self.address[0]}:{self.address[1]} is bad, quitting')
+            sys.exit(0)
 
-        assert self.image_array is not self.last_obs
+        if self.last_obs is not None:
+            assert not np.array_equal(self.image_array, self.last_obs)
 
         self.last_obs = self.image_array
         observation = self.image_array
@@ -246,7 +248,7 @@ class UnitySimHandler:
             'episode_termination_type': over
         })
 
-        # During training,we guarantee that reward is between
+        # During training, guarantee that reward is between -1 and 1 if not over
         if (self.training_type == TrainingType.TRAINING) and over is None:
             assert (-1 <= reward <= 1)
 
@@ -279,21 +281,21 @@ class UnitySimHandler:
         for t in self.threads:
             t.start()
 
-        while all(t.is_alive() for t in self.threads):
-            time.sleep(1 / 120)
-
-        self.cancel_event.set()
-
         for t in self.threads:
             t.join()
 
-        self.msg_event.clear()
-        self.img_event.clear()
+        self.disconnect()
 
-        if self.sock is not None:
-            print('Closing socket')
+    def disconnect(self):
+        self.addr = None
+
+        if self.conn is not None:
+            self.conn.close()
+            self.conn = None
+        elif self.sock is not None:
             self.sock.close()
-            print('Socket disconnected')
+
+        self.sock = None
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Incoming Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
     def recv_msg(self):
@@ -301,51 +303,49 @@ class UnitySimHandler:
         Continue to process messages from each connected client
         """
         while not self.cancel_event.is_set():
-            if self.protocol == Protocol.UDP:
-                data, self.addr = self.sock.recvfrom(self.observation_buffer_size)
-            else:
-                data = self.conn.recv(self.observation_buffer_size)
+            try:
+                if self.protocol == Protocol.UDP:
+                    data, self.addr = self.sock.recvfrom(self.observation_buffer_size)
+                else:
+                    data = self.conn.recv(self.observation_buffer_size)
+                if not data:
+                    # This is the normal flow, i.e. when the client closes the connection
+                    raise ClientDisconnectedException(f'Client closed the connection')
 
-            if not data:
-                print('Invalid json')
-                self.set_msg({
-                    'msgType': 'internalQuit',
-                    'payload': {
-                    }
-                })
-                return
+                json_str = data.decode('UTF-8')
+                # print(f'Received: {json_str}')
+                json_dict = json.loads(json_str)
 
-            json_str = data.decode('UTF-8')
+                if (self.network_log is not None) and not self.msg_discard:
+                    with open(os.path.join(self.debug_logs_dir, 'packets_received', f'step_{self.packet_received_num}.json'), 'w', encoding='utf-8') as f:
+                        json.dump(json_dict, f, indent=2)
+                        f.close()
+                        self.packet_received_num += 1
 
-            # print(f'Received: {json_str}')
+                self.on_recv_message(json_dict)
 
-            json_dict = json.loads(json_str)
+                if self.msg_discard:
+                    self.msg_discard = False
 
-            if (self.tensorboard_log is not None) and not self.msg_discard:
-                with open(os.path.join(self.debug_logs_dir, 'packets_received', f'step_{self.packet_received_num}.json'), 'w', encoding='utf-8') as f:
-                    json.dump(json_dict, f, indent=2)
-                    f.close()
-                    self.packet_received_num += 1
+            except Exception as e:
+                print('[NETWORK ERROR] Read error:', e)
+                break
 
-            self.on_recv_message(json_dict)
-
-            if self.msg_discard:
-                self.msg_discard = False
+        self.cancel_event.set()
 
     def on_recv_message(self, message):
-        if 'msgType' not in message:
-            return
+        assert 'msgType' in message, 'msgType not found in message'
+
         msg_type = message['msgType']
         payload = message['payload']
-        if msg_type in self.fns:
-            self.fns[msg_type](payload)
-        else:
-            print(f'unknown message type {msg_type}')
 
-    def connection_request(self, payload):
-        return
+        assert msg_type in self.fns, f'Unknown message type {msg_type}'
+        self.fns[msg_type](payload)
 
-    def sim_ready_request(self, payload):
+    def on_connection_request(self, payload) -> bool:
+        pass
+
+    def on_client_ready(self, payload):
         self.sim_ready = True
 
     def on_telemetry(self, payload):
@@ -354,7 +354,7 @@ class UnitySimHandler:
 
         image = bytearray(base64.b64decode(self.rover_info['obs']))
 
-        if (self.tensorboard_log is not None) and not self.msg_discard:
+        if (self.network_log is not None) and not self.msg_discard:
             write_image_to_file_incrementally(image, os.path.join(self.debug_logs_dir, 'images', f'step_{self.image_num}.jpg'))
             self.image_num += 1
 
@@ -371,71 +371,80 @@ class UnitySimHandler:
         Continue to process messages from each connected client
         """
         while not self.cancel_event.is_set():
-            while not self.msg_event.is_set():
-                time.sleep(1 / 120)
+            try:
+                while not self.msg_event.is_set() and not self.cancel_event.is_set():
+                    time.sleep(self.interval)
 
-            assert self.msg is not None
+                if self.cancel_event.is_set():
+                    return
 
-            json_str = json.dumps(self.msg)
-            # print(f'Sending: {json_str}')
+                assert self.msg is not None
 
-            if self.tensorboard_log is not None:
-                match self.msg['msgType']:
-                    case 'inferenceStart':
-                        self.inference_test_num = (self.inference_test_num[0] + 1, -1)
-                        self.packet_sent_num = 0
-                        self.eval_packet_sent = 0
-                        self.debug_logs_dir = os.path.join(self.tensorboard_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
-                        self.clean_and_create_debug_directories()
-                    case 'action':
-                        if self.training_type == TrainingType.INFERENCE:
-                            self.eval_packet_sent += 1
-                    case _:
-                        pass
+                json_str = json.dumps(self.msg)
+                # print(f'Sending: {json_str}')
 
-                with open(os.path.join(self.debug_logs_dir, 'packets_sent', f'step_{self.packet_sent_num}.json'), 'w', encoding='utf-8') as f:
-                    json.dump(self.msg, f, indent=2)
-                    f.close()
-                    self.packet_sent_num += 1
-
-                match self.msg['msgType']:
-                    case 'resetEpisode':
-                        should_keep_evaluating = True
-
-                        if self.training_type == TrainingType.TRAINING:
-                            self.episode_num += 1
-                            self.debug_logs_dir = os.path.join(self.tensorboard_log, 'training', f'episode_{self.episode_num}')
-                        else:
-                            should_keep_evaluating = ((self.inference_test_num[1] + 1) < self.eval_inference_freq.frequency) if (self.eval_inference_freq.unit == TrainFrequencyUnit.EPISODE) else (
-                                    self.eval_packet_sent < self.eval_inference_freq.frequency)
-
-                            if should_keep_evaluating:
-                                self.inference_test_num = (self.inference_test_num[0], self.inference_test_num[1] + 1)
-                                self.debug_logs_dir = os.path.join(self.tensorboard_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
-                            else:
-                                # This is to prevent writing any logs that are not ever going to be used, i.e. after an evaluation is complete, gymnasium enforces a reset that is never used
-                                self.msg_discard = True
-
-                        if (self.training_type == TrainingType.TRAINING) or should_keep_evaluating:
-                            self.clean_and_create_debug_directories()
-                            self.packet_received_num = 0
+                if self.network_log is not None:
+                    match self.msg['msgType']:
+                        case 'inferenceStart':
+                            self.inference_test_num = (self.inference_test_num[0] + 1, -1)
                             self.packet_sent_num = 0
-                            self.image_num = 0
-                    case 'inferenceEnd':
-                        self.debug_logs_dir = os.path.join(self.tensorboard_log, 'training', f'episode_{self.episode_num}')
-                        self.packet_received_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_received')))
-                        self.packet_sent_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_sent')))
-                        self.image_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'images')))
-                    case _:
-                        pass
+                            self.eval_packet_sent = 0
+                            self.debug_logs_dir = os.path.join(self.network_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
+                            self.clean_and_create_debug_directories()
+                        case 'action':
+                            if self.training_type == TrainingType.INFERENCE:
+                                self.eval_packet_sent += 1
+                        case _:
+                            pass
 
-            if self.protocol == Protocol.UDP:
-                self.sock.sendto(bytes(json_str, encoding='utf-8'), self.addr)
-            else:
-                self.conn.sendall(bytes(json_str, encoding='utf-8'))
+                    with open(os.path.join(self.debug_logs_dir, 'packets_sent', f'step_{self.packet_sent_num}.json'), 'w', encoding='utf-8') as f:
+                        json.dump(self.msg, f, indent=2)
+                        f.close()
+                        self.packet_sent_num += 1
 
-            self.msg = None
-            self.msg_event.clear()
+                    match self.msg['msgType']:
+                        case 'resetEpisode':
+                            should_keep_evaluating = True
+
+                            if self.training_type == TrainingType.TRAINING:
+                                self.episode_num += 1
+                                self.debug_logs_dir = os.path.join(self.network_log, 'training', f'episode_{self.episode_num}')
+                            else:
+                                should_keep_evaluating = ((self.inference_test_num[1] + 1) < self.eval_inference_freq.frequency) if (self.eval_inference_freq.unit == TrainFrequencyUnit.EPISODE) else (
+                                        self.eval_packet_sent < self.eval_inference_freq.frequency)
+
+                                if should_keep_evaluating:
+                                    self.inference_test_num = (self.inference_test_num[0], self.inference_test_num[1] + 1)
+                                    self.debug_logs_dir = os.path.join(self.network_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
+                                else:
+                                    # This is to prevent writing any logs that are not ever going to be used, i.e. after an evaluation is complete, gymnasium enforces a reset that is never used
+                                    self.msg_discard = True
+
+                            if (self.training_type == TrainingType.TRAINING) or should_keep_evaluating:
+                                self.clean_and_create_debug_directories()
+                                self.packet_received_num = 0
+                                self.packet_sent_num = 0
+                                self.image_num = 0
+                        case 'inferenceEnd':
+                            self.debug_logs_dir = os.path.join(self.network_log, 'training', f'episode_{self.episode_num}')
+                            self.packet_received_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_received')))
+                            self.packet_sent_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_sent')))
+                            self.image_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'images')))
+                        case _:
+                            pass
+
+                if self.protocol == Protocol.UDP:
+                    self.sock.sendto(bytes(json_str, encoding='utf-8'), self.addr)
+                else:
+                    self.conn.sendall(bytes(json_str, encoding='utf-8'))
+
+                self.msg = None
+                self.msg_event.clear()
+            except Exception as e:
+                print('[NETWORK ERROR] Write error:', e)
+                break
+
+        self.cancel_event.set()
 
     def send_action(self, action):
         self.set_msg({
@@ -521,3 +530,13 @@ class UnitySimHandler:
         clean_and_remake(os.path.join(self.debug_logs_dir, 'packets_received'))
         clean_and_remake(os.path.join(self.debug_logs_dir, 'packets_sent'))
         clean_and_remake(os.path.join(self.debug_logs_dir, 'images'))
+
+    def send_end_simulation(self):
+        self.set_msg({
+            'msgType': 'endSimulation',
+            'payload': {}
+        })
+
+    def close(self):
+        self.send_end_simulation()
+        self.read_write_thread.join()

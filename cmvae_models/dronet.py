@@ -8,47 +8,47 @@ class Dronet(tf.keras.Model):
         self.create_model(num_outputs)
 
     @tf.function
-    def call(self, img):
+    def call(self, img, training=False):
         # Input
-        x1 = self.conv0(img)
-        x1 = self.max0(x1)
+        x1 = self.conv0(img, training=training)
+        x1 = self.max0(x1, training=training)
 
         # First residual block
-        x2 = self.bn0(x1)
+        x2 = self.bn0(x1, training=training)
         x2 = tf.keras.layers.Activation('relu')(x2)
-        x2 = self.conv1(x2)
+        x2 = self.conv1(x2, training=training)
 
-        x2 = self.bn1(x2)
+        x2 = self.bn1(x2,training=training)
         x2 = tf.keras.layers.Activation('relu')(x2)
-        x2 = self.conv2(x2)
+        x2 = self.conv2(x2, training=training)
 
-        x1 = self.conv3(x1)
+        x1 = self.conv3(x1, training=training)
         x3 = tf.keras.layers.add([x1, x2])
 
         # Second residual block
-        x4 = self.bn2(x3)
+        x4 = self.bn2(x3, training=training)
         # x4 = x3
         x4 = tf.keras.layers.Activation('relu')(x4)
-        x4 = self.conv4(x4)
+        x4 = self.conv4(x4, training=training)
 
-        x4 = self.bn3(x4)
+        x4 = self.bn3(x4, training=training)
         x4 = tf.keras.layers.Activation('relu')(x4)
-        x4 = self.conv5(x4)
+        x4 = self.conv5(x4, training=training)
 
-        x3 = self.conv6(x3)
+        x3 = self.conv6(x3, training=training)
         x5 = tf.keras.layers.add([x3, x4])
 
         # Third residual block
-        x6 = self.bn4(x5)
+        x6 = self.bn4(x5, training=training)
         # x6 = x5
         x6 = tf.keras.layers.Activation('relu')(x6)
-        x6 = self.conv7(x6)
+        x6 = self.conv7(x6, training=training)
 
-        x6 = self.bn5(x6)
+        x6 = self.bn5(x6, training=training)
         x6 = tf.keras.layers.Activation('relu')(x6)
-        x6 = self.conv8(x6)
+        x6 = self.conv8(x6, training=training)
 
-        x5 = self.conv9(x5)
+        x5 = self.conv9(x5, training=training)
         x7 = tf.keras.layers.add([x5, x6])
 
         x = tf.keras.layers.Flatten()(x7)
@@ -56,9 +56,9 @@ class Dronet(tf.keras.Model):
         if self.include_top:
             x = tf.keras.layers.Activation('relu')(x)
             # x = tf.keras.layers.Dropout(0.5)(x)
-            x = self.dense0(x)
-            x = self.dense1(x)
-            gate_pose = self.dense2(x)
+            x = self.dense0(x, training=training)
+            x = self.dense1(x, training=training)
+            gate_pose = self.dense2(x, training=training)
             # phi_rel = self.dense_phi_rel(x)
             # gate_pose = tf.concat([gate_pose, phi_rel], 1)
             return gate_pose

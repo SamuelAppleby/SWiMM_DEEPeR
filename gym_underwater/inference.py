@@ -1,98 +1,43 @@
-import csv
+"""
+Parent script for initiating an inference run
+"""
 import os
-import yaml
-import numpy as np
 
-import cmvae_models.cmvae
+from stable_baselines3.common.utils import configure_logger
 
-from stable_baselines3.common import logger
-from stable_baselines3.common.utils import set_random_seed, safe_mean
-from stable_baselines3 import SAC
-
-from gym_underwater.utils.utils import make_env
+from gym_underwater.callbacks import SwimEvalCallback
+from gym_underwater.utils.utils import make_env, load_model, load_callbacks, load_environment_config, load_cmvae_config
 from gym_underwater.args import args
 
-print("Loading environment configuration ...")
-with open(os.path.join(os.pardir, 'configs', 'config.yml'), 'r') as f:
-    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# early check on path to trained model if -i arg passed
-if env_config['model_path'] != '':
-    assert os.path.exists(env_config['model_path']) and os.path.isfile(env_config['model_path']) and env_config['model_path'].endswith('.zip'), \
-        'The argument model_path must be a valid path to a .zip file'
+env_config = load_environment_config(par_dir, seed_tensorflow=True, seed_sb=True)
 
-# if using pretrained cmvae, create instance of cmvae object and load trained weights from path provided
-print("Obs: {}".format(env_config['obs']))
-cmvae = None
-if env_config['obs'] == 'cmvae':
-    print('Loading CMVAE ...')
-    cmvae = cmvae_models.cmvae.CmvaeDirect(n_z=10, gate_dim=3, res=64, trainable_model=False)  # these args should really be dynamically read in
-    cmvae.load_weights(env_config['cmvae_path'])
-else:
-    print('For inference, must provide a valid cmvae path!')
-    quit()
+assert os.path.isfile(env_config['model_path_inference']) and env_config['model_path_inference'].endswith('.zip'), 'The argument model_path_inference must be a valid path to a .zip file'
 
-# if seed provided, use it, otherwise use zero
-# Note: this stable baselines utility function seeds tensorflow, np.random, and random
-set_random_seed(env_config['seed'])
+assert env_config['obs'] == 'cmvae', 'For inference, must provide a valid cmvae path'
 
-# Set up a reward log if you want one
-log_dir = os.path.dirname(env_config['model_path'])
-os.environ['OPENAI_LOG_FORMAT'] = 'csv'
-os.environ['OPENAI_LOGDIR'] = log_dir
-logger.configure()
+cmvae, cmvae_config = load_cmvae_config(par_dir, True, env_config['seed'])
 
-# Wrap environment with DummyVecEnv to prevent code intended for vectorized envs throwing error
+# Define the logger first to avoid reduplicating code caused by the file search in learn()
+logger = configure_logger(verbose=1, tensorboard_log=str(os.path.join(par_dir, 'logs', env_config['algo'])), tb_log_name=env_config['algo'], reset_num_timesteps=True)
+
+# Also performs environment wrapping
 env = make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'] if cmvae is None else cmvae_config['img_res'],
-               hyperparams['tensorboard_log'] if env_config['debug_logs'] else None, args.protocol, args.host, env_config['seed'])
+               logger.dir if env_config['debug_logs'] else None, par_dir, args.protocol, args.host, env_config['seed'], inference_only=True)
 
-# load trained model
-print("Loading pretrained agent ...")
-model = SAC.load(path=env_config['model_path'], env=env)
+model = load_model(env, env_config['algo'], env_config['model_path_inference'])
+model.set_logger(logger)
 
-# Collect first observation
-# NB this is calling reset in DummyVecEnv before reset in DonkeyEnv
-# DummyVecEnv, like VecEnv, returns list (length 1) of obs, hence why below obs[0] is passed to predict not obs
-obs = env.reset()
+callbacks = load_callbacks(par_dir, env, logger.dir, inference_only=True)
+eval_callback = list(filter(lambda x: isinstance(x, SwimEvalCallback), callbacks))
+assert len(eval_callback) == 1, 'When running inference you must provide a SwimEvalCallback for evaluation'
 
-with open(env_config['reward_log_path'], 'w', newline='') as csv_file:
-    best_writer = csv.writer(csv_file)
-    best_writer.writerow(['Episode', 'Steps', 'Reward', 'Time', 'Termination'])
-    csv_file.close()
+model.env.envs[0].unwrapped.wait_until_client_ready()
 
-episode_times = []
+# We have to manually initialise the callbacks as we want to ensure a consistent flow across
+# training and evaluation, but callbacks are only initialised during setup_learn
+callback = model._init_callback(callbacks, False)
+eval_callback[0].evaluate(inference_only=True)
 
-# perform inference for 100 episodes (standard practice)
-while len(env.envs[0].episode_lengths) < 5:
-
-    # query model for action decision given obs
-    action, _ = model.predict(obs, deterministic=True)
-
-    # step the environment
-    obs, reward, terminated, info = env.step(action)
-
-    if terminated:
-        # log episodic reward
-        print("Episode Reward: {:.2f}".format(info[-1]['episode']['r']))
-        print("Episode Length: ", info[-1]['episode']['l'])
-        episode_times.append(env.envs[0].episode_times[-1] - env.envs[0].episode_times[-2] if (len(env.envs[0].episode_times) > 1) else env.envs[0].episode_times[-1])
-        print("Episode Time: ", episode_times[-1])
-
-        # TODO We must be able to grab the termination type from the infos
-        with open(env_config['reward_log_path'], 'a', newline='') as csv_file:
-            csv.writer(csv_file).writerow([len(env.envs[0].episode_lengths), info[-1]['episode']['l'], info[-1]['episode']['r'], episode_times[-1], env.envs[0].handler.episode_termination_type])
-            csv_file.close()
-
-print("Finished!")
-
-# reset before close
-env.reset()
-
-print("Number of episodes: ", len(env.envs[0].episode_lengths))
-print("Total reward: ", np.sum(env.envs[0].episode_returns))
-print("Average reward: ", safe_mean(env.envs[0].episode_returns))
-print("Reward std: ", np.std(env.envs[0].episode_returns))
-print("Total time: ", np.sum(episode_times))
-print("Average Episode Time: ", safe_mean(episode_times))
-
-env.envs[0].close()
+model.env.close()

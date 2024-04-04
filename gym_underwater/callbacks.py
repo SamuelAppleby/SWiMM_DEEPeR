@@ -1,21 +1,21 @@
-from stable_baselines3.common import base_class, type_aliases
+from stable_baselines3.common import base_class
 from stable_baselines3.common.logger import TensorBoardOutputFormat
 import os
-from typing import Union, Optional, List, Dict, Any, Tuple, Callable
+from typing import Union, Optional, Tuple
 import numpy as np
 from tqdm import tqdm
 
 import gymnasium
 
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, StopTrainingOnRewardThreshold
-from stable_baselines3.common.type_aliases import TrainFreq, TrainFrequencyUnit
-from stable_baselines3.common.utils import should_collect_more_steps
-from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, sync_envs_normalization
+from stable_baselines3.common.type_aliases import TrainFrequencyUnit
+from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
 from .env_wrappers.swim_monitor import SwimMonitor
 from .env_wrappers.swim_time_limit import SwimTimeLimit
 from .sim_comms import MAX_STEP_REWARD
 from .enums import EpisodeTerminationType
+from .utils.utils import evaluate_policy, convert_train_freq
 
 
 class SwimCallback(BaseCallback):
@@ -85,131 +85,6 @@ class SwimCallback(BaseCallback):
         self.is_monitor_wrapped = self.training_env.env_is_wrapped(SwimMonitor)[0]
 
 
-# Code adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py#L337. This is to fix the issue where we
-# have stagnant observations due to the interruption of the rollout collection.
-def should_collect_more_steps_vec(
-        train_freq: TrainFreq,
-        num_collected_steps: np.ndarray[int],
-        num_collected_episodes: np.ndarray[int],
-        count_targets: np.ndarray[int]
-) -> bool:
-    """
-    Helper used in ``collect_rollouts()`` of off-policy algorithms
-    to determine the termination condition.
-
-    :param train_freq: How much experience should be collected before updating the policy.
-    :param num_collected_steps: The number of already collected steps.
-    :param num_collected_episodes: The number of already collected episodes.
-    :param count_targets: The number of targets to collect.
-    :return: Whether to continue or not collecting experience
-        by doing rollouts of the current policy.
-    """
-    if train_freq.unit == TrainFrequencyUnit.STEP:
-        return bool((num_collected_steps < count_targets).any())
-
-    elif train_freq.unit == TrainFrequencyUnit.EPISODE:
-        return bool((num_collected_episodes < count_targets).any())
-
-    else:
-        raise ValueError(
-            "The unit of the `train_freq` must be either TrainFrequencyUnit.STEP "
-            f"or TrainFrequencyUnit.EPISODE not '{train_freq.unit}'!"
-        )
-
-
-def evaluate_policy(
-        model: "type_aliases.PolicyPredictor",
-        env: Union[gymnasium.Env, VecEnv],
-        eval_inference_freq: Union[int, Tuple[int, str]] = (1, 'episode'),
-        deterministic: bool = True,
-        render: bool = False,
-        callback: Optional[Callable[[Dict[str, Any], Dict[str, Any]], None]] = None,
-        warn: bool = True,
-) -> Union[Tuple[float, float], Tuple[List[float], List[int]]]:
-    """
-    Runs policy for ``n_eval_episodes`` episodes and returns average reward.
-    If a vector env is passed in, this divides the episodes to evaluate onto the
-    different elements of the vector env. This static division of work is done to
-    remove bias. See https://github.com/DLR-RM/stable-baselines3/issues/402 for more
-    details and discussion.
-
-    .. note::
-        If environment has not been wrapped with ``Monitor`` wrapper, reward and
-        episode lengths are counted as it appears with ``env.step`` calls. If
-        the environment contains wrappers that modify rewards or episode lengths
-        (e.g. reward scaling, early episode reset), these will affect the evaluation
-        results as well. You can avoid this by wrapping environment with ``Monitor``
-        wrapper before anything else.
-
-    :param model: The RL agent you want to evaluate. This can be any object
-        that implements a `predict` method, such as an RL algorithm (``BaseAlgorithm``)
-        or policy (``BasePolicy``).
-    :param env: The gym environment or ``VecEnv`` environment.
-    :param eval_inference_freq: Number of episode/steps to evaluate the agent
-    :param deterministic: Whether to use deterministic or stochastic actions
-    :param render: Whether to render the environment or not
-    :param callback: callback function to do additional checks,
-        called after each step. Gets locals() and globals() passed as parameters.
-    :param warn: If True (default), warns user about lack of a Monitor wrapper in the
-        evaluation environment.
-    :return: Returns ([float], [int]), first list containing per-episode rewards and
-        second containing per-episode lengths(in number of steps).
-    """
-    if not isinstance(env, VecEnv):
-        env = DummyVecEnv([lambda: env])  # type: ignore[list-item, return-value]
-
-    n_envs = env.num_envs
-    episode_rewards = []
-    episode_lengths = []
-
-    step_counts = np.zeros(n_envs, dtype="int")
-    episode_counts = np.zeros(n_envs, dtype="int")
-
-    count_targets = np.array([(eval_inference_freq.frequency + i) // n_envs for i in range(n_envs)], dtype="int")
-
-    current_rewards = np.zeros(n_envs)
-    current_lengths = np.zeros(n_envs, dtype="int")
-    observations = env.reset()
-    states = None
-    episode_starts = np.ones((env.num_envs,), dtype=bool)
-    while should_collect_more_steps_vec(eval_inference_freq, step_counts, episode_counts, count_targets):
-        actions, states = model.predict(
-            observations,  # type: ignore[arg-type]
-            state=states,
-            episode_start=episode_starts,
-            deterministic=deterministic,
-        )
-        new_observations, rewards, dones, infos = env.step(actions)
-        current_rewards += rewards
-        current_lengths += 1
-        step_counts += 1
-        for i in range(n_envs):
-            if should_collect_more_steps(eval_inference_freq, step_counts[i] - 1, episode_counts[i]):
-                # unpack values so that the callback can access the local variables
-                reward = rewards[i]
-                done = dones[i]
-                info = infos[i]
-                episode_starts[i] = done
-
-                if callback is not None:
-                    callback(locals(), globals())
-
-                if dones[i] or ((eval_inference_freq.unit == TrainFrequencyUnit.STEP) and (step_counts[i] == eval_inference_freq.frequency)):
-                    print('[INFERENCE] Episode finished. \nReward: {:.2f} \nSteps: {}'.format(current_rewards[i], current_lengths[i]))
-                    episode_rewards.append(current_rewards[i])
-                    episode_lengths.append(current_lengths[i])
-                    episode_counts[i] += 1
-                    current_rewards[i] = 0
-                    current_lengths[i] = 0
-
-        observations = new_observations
-
-        if render:
-            env.render()
-
-    return episode_rewards, episode_lengths
-
-
 class SwimEvalCallback(EvalCallback):
     """
     Extension of EvalCallback for Swim Deeper agents.
@@ -232,8 +107,7 @@ class SwimEvalCallback(EvalCallback):
     ):
         super().__init__(eval_env, callback_on_new_best, callback_after_eval, 0, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn)
         self.is_time_limit_wrapped = False
-        self.eval_inference_freq = eval_inference_freq
-        self._convert_freq()
+        self.eval_inference_freq = convert_train_freq(eval_inference_freq)
         self.n_rollout_calls = 0
         self.continue_training = True
 
@@ -243,38 +117,12 @@ class SwimEvalCallback(EvalCallback):
         """
         return self.continue_training
 
-    def _convert_freq(self) -> None:
+    def evaluate(self, inference_only: bool = False) -> None:
         """
-        Convert `eval_inference_freq` parameter (int or tuple)
-        to a TrainFreq object.
+        Method called by either an inference only run or a training run, performing evaluation metrics and reporting to logger.
         """
-        if not isinstance(self.eval_inference_freq, TrainFreq):
-            freq = self.eval_inference_freq
-
-            # The value of the train frequency will be checked later
-            if not isinstance(freq, tuple):
-                freq = (freq, 'step')
-
-            try:
-                freq = (freq[0], TrainFrequencyUnit(freq[1]))
-            except ValueError as e:
-                raise ValueError(
-                    f'The unit of the `eval_inference_freq` must be either `step` or `episode` not `{self.eval_inference_freq}`!'
-                ) from e
-
-            if not isinstance(freq[0], int):
-                raise ValueError(f'The frequency of `eval_inference_freq` must be an integer and not {self.eval_inference_freq}')
-
-            self.eval_inference_freq = TrainFreq(*freq)
-
-    def _on_rollout_start(self) -> None:
-        # We can guarantee that at this point either:
-        # 1) We have just started training
-        # 2) We have just complete an optimization cycle
-        # We only want to evaluate in the case of 2)
-        self.n_rollout_calls += 1
-        if (self.n_rollout_calls > 1) and (((self.n_rollout_calls - 1) % self.eval_freq) == 0):
-            # We could have either just reset or stepped, so cache the relevant data
+        # We could have either just reset or stepped, so cache the relevant data
+        if not inference_only:
             restore_state = self.training_env.reset_infos[0] if self.training_env.buf_dones[0] else self.training_env.buf_infos[0]
             self.training_env.envs[0].unwrapped.on_inference_start(self.eval_inference_freq)
 
@@ -288,62 +136,63 @@ class SwimEvalCallback(EvalCallback):
                         'see https://stable-baselines3.readthedocs.io/en/master/guide/callbacks.html#evalcallback '
                         'and warning above.'
                     ) from e
+        else:
+            self.eval_env.envs[0].unwrapped.on_inference_start(self.eval_inference_freq)
 
-            # Reset success rate buffer
-            self._is_success_buffer = []
+        # Reset success rate buffer
+        self._is_success_buffer = []
 
-            episode_rewards, episode_lengths = evaluate_policy(
-                self.model,
-                self.eval_env,
-                eval_inference_freq=self.eval_inference_freq,
-                render=self.render,
-                deterministic=self.deterministic,
-                warn=self.warn,
-                callback=self._log_success_callback,
+        episode_rewards, episode_lengths = evaluate_policy(
+            self.model,
+            self.eval_env,
+            eval_inference_freq=self.eval_inference_freq,
+            render=self.render,
+            deterministic=self.deterministic,
+            callback=self._log_success_callback,
+            warn=self.warn
+        )
+
+        if self.log_path is not None:
+            assert isinstance(episode_rewards, list)
+            assert isinstance(episode_lengths, list)
+            self.evaluations_timesteps = np.append(self.evaluations_timesteps, self.num_timesteps)
+            self.evaluations_results = np.append(self.evaluations_results, episode_rewards)
+            self.evaluations_length = np.append(self.evaluations_length, episode_lengths)
+
+            kwargs = {}
+            # Save success log if present
+            if len(self._is_success_buffer) > 0:
+                self.evaluations_successes.append(self._is_success_buffer)
+                kwargs = dict(successes=self.evaluations_successes)
+
+            np.savez(
+                self.log_path,
+                timesteps=self.evaluations_timesteps,
+                results=self.evaluations_results,
+                ep_lengths=self.evaluations_length,
+                **kwargs,
             )
 
-            if self.log_path is not None:
-                assert isinstance(episode_rewards, list)
-                assert isinstance(episode_lengths, list)
-                self.evaluations_timesteps = np.append(self.evaluations_timesteps, self.num_timesteps)
-                self.evaluations_results = np.append(self.evaluations_results, episode_rewards)
-                self.evaluations_length = np.append(self.evaluations_length, episode_lengths)
+        mean_ep_reward, std_ep_reward = np.mean(episode_rewards), np.std(episode_rewards)
+        mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)  # A little meaningless for continuous learning, but keep anyway
 
-                kwargs = {}
-                # Save success log if present
-                if len(self._is_success_buffer) > 0:
-                    self.evaluations_successes.append(self._is_success_buffer)
-                    kwargs = dict(successes=self.evaluations_successes)
+        if self.verbose >= 1:
+            print(f'Eval num_timesteps={self.num_timesteps}, 'f'mean_episode_reward={mean_ep_reward:.2f} +/- {std_ep_reward:.2f}, mean episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}')
+        # Add to current Logger
+        self.logger.record('eval/mean_ep_reward', float(mean_ep_reward))
+        self.logger.record('eval/mean_ep_length', mean_ep_length)
 
-                np.savez(
-                    self.log_path,
-                    timesteps=self.evaluations_timesteps,
-                    results=self.evaluations_results,
-                    ep_lengths=self.evaluations_length,
-                    **kwargs,
-                )
-
-            mean_ep_reward, std_ep_reward = np.mean(episode_rewards), np.std(episode_rewards)
-            mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)  # A little meaningless for continuous learning, but keep anyway
-
+        if len(self._is_success_buffer) > 0:
+            success_rate = np.mean(self._is_success_buffer)
             if self.verbose >= 1:
-                print(
-                    f'Eval num_timesteps={self.num_timesteps}, ' f'mean_episode_reward={mean_ep_reward:.2f} +/- {std_ep_reward:.2f}, mean episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}')
-                print(f'')
-            # Add to current Logger
-            self.logger.record('eval/mean_ep_reward', float(mean_ep_reward))
-            self.logger.record('eval/mean_ep_length', mean_ep_length)
+                print(f'Success rate: {100 * success_rate:.2f}%')
+            self.logger.record('eval/success_rate', success_rate)
 
-            if len(self._is_success_buffer) > 0:
-                success_rate = np.mean(self._is_success_buffer)
-                if self.verbose >= 1:
-                    print(f'Success rate: {100 * success_rate:.2f}%')
-                self.logger.record('eval/success_rate', success_rate)
+        # Dump log so the evaluation results are printed with the correct timestep
+        self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
+        self.logger.dump(self.num_timesteps)
 
-            # Dump log so the evaluation results are printed with the correct timestep
-            self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
-            self.logger.dump(self.num_timesteps)
-
+        if not inference_only:
             if mean_ep_reward > self.best_mean_reward:
                 if self.verbose >= 1:
                     print('New best mean reward!')
@@ -364,6 +213,17 @@ class SwimEvalCallback(EvalCallback):
             })
 
             self.training_env.envs[0].unwrapped.on_inference_end()
+        else:
+            self.eval_env.envs[0].unwrapped.on_inference_end()
+
+    def _on_rollout_start(self) -> None:
+        # We can guarantee that at this point either:
+        # 1) We have just started training
+        # 2) We have just complete an optimization cycle
+        # We only want to evaluate in the case of 2)
+        self.n_rollout_calls += 1
+        if (self.n_rollout_calls > 1) and (((self.n_rollout_calls - 1) % self.eval_freq) == 0):
+            self.evaluate(inference_only=False)
 
     def init_callback(self, model: "base_class.BaseAlgorithm") -> None:
         super().init_callback(model)
@@ -379,7 +239,7 @@ class SwimEvalCallback(EvalCallback):
 
 class SwimProgressBarCallback(BaseCallback):
     """
-    For whatever reason, base ProgressBarCallback won't work, so use the same custom implementation from SB3
+    base ProgressBarCallback doesn't behave as intended, so use the same custom implementation from SB3
     """
 
     pbar: tqdm

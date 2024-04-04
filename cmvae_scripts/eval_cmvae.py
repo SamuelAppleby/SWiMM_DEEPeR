@@ -2,37 +2,25 @@ import os
 import shutil
 
 import numpy as np
-import yaml
+import tensorflow as tf
 from matplotlib import pyplot as plt
 
-import cmvae_models.cmvae
-import cmvae_utils
+import cmvae_utils.dataset_utils
+import cmvae_utils.stats_utils
+import cmvae_utils.geom_utils
+from gym_underwater.utils.utils import load_environment_config, load_cmvae_config
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'cmvae_config.yml'), 'r') as f:
-    cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-if cmvae_config['test_dir'] == '':
-    print('No data directory specified, quitting!')
-    quit()
+env_config = load_environment_config(par_dir, seed_tensorflow=True, seed_sb=False)
 
-if cmvae_config['use_cpu']:
-    os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
-else:
-    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
-    os.environ['TF_DETERMINISTIC_OPS'] = '1'
-    os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+# Don't want to load any weights
+cmvae, cmvae_config = load_cmvae_config(par_dir, load_weights=True, seed=env_config['seed'])
 
-import tensorflow as tf
-
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'config.yml'), 'r') as f:
-    env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-    tf.keras.utils.set_random_seed(env_config['seed'])
-
-print('Devices: {}'.format(tf.config.list_physical_devices()))
+assert cmvae_config['test_dir'] == '', 'No data directory specified, quitting!'
 
 # define training meta parameters
 test_dir = cmvae_config['test_dir']
-weights_path = cmvae_config['weights_path']
 output_dir = os.path.join(test_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
 interpolation_dir = cmvae_config['interpolation_dir']
 output_dir_interp = os.path.join(interpolation_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
@@ -65,18 +53,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 # 2 = INFO and WARNING messages are not printed
 # 3 = INFO, WARNING, and ERROR messages are not printed
 
-# allow growth is possible using an env var in tf2.0
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
-# create model
-if latent_space_constraints:
-    model = cmvae_models.cmvae.CmvaeDirect(n_z=n_z, seed=env_config['seed'])
-else:
-    model = cmvae_models.cmvae.Cmvae(n_z=n_z, gate_dim=3, seed=env_config['seed'])
-
-print('Loading weights from {}'.format(os.path.join(output_dir, weights_path)))
-model.load_weights(weights_path)
-
 # Load test dataset
 images_np, raw_table = cmvae_utils.dataset_utils.create_test_dataset_csv(test_dir, img_res)
 print('Done with dataset')
@@ -84,7 +60,7 @@ print('Done with dataset')
 images_np = images_np[:1000, :]
 raw_table = raw_table[:1000, :]
 
-img_recon, gate_recon, means, stddev, z = model(images_np, training=False, mode=0)
+img_recon, gate_recon, means, stddev, z = cmvae(images_np, training=False, mode=0)
 img_recon = img_recon.numpy()
 gate_recon = gate_recon.numpy()
 z = z.numpy()
@@ -113,7 +89,7 @@ fig.savefig(os.path.join(output_dir, 'reconstruction_results.png'))
 
 images_np_interp, raw_table_interp = cmvae_utils.dataset_utils.create_test_dataset_csv(interpolation_dir, img_res)
 
-img_recon_interps, gate_recon_interps, means_interps, stddev_interps, z_interps = model(images_np_interp, mode=0)
+img_recon_interps, gate_recon_interps, means_interps, stddev_interps, z_interps = cmvae(images_np_interp, mode=0)
 img_recon_interps = img_recon_interps.numpy()
 gate_recon_interps = gate_recon_interps.numpy()
 z_interps = z_interps.numpy()
@@ -133,7 +109,7 @@ z_interp = [z_r_interp, z_theta_interp, z_psi_interp]
 idx = 0
 for z_int in z_interp:
     # get the image predictions
-    img_recon_interp, gate_recon_interp = model.decode(z_int, mode=0)
+    img_recon_interp, gate_recon_interp = cmvae.decode(z_int, mode=0)
     img_recon_interp = img_recon_interp.numpy()
     gate_recon_interp = gate_recon_interp.numpy()
 
@@ -202,7 +178,7 @@ for i in range(1, z_num_mural * n_z + 1):
     fig3.add_subplot(rows, columns, i)
     z = np.zeros((1, n_z)).astype(np.float32)
     z[0, int((i - 1) / columns)] = z_values[i % columns - 1]
-    img_recon_interp, gate_recon_interp = model.decode(z, mode=0)
+    img_recon_interp, gate_recon_interp = cmvae.decode(z, mode=0)
     img_recon_interp = img_recon_interp.numpy()
     img_recon_interp = ((img_recon_interp[0, :] + 1.0) / 2.0 * 255.0).astype(np.uint8)
     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
@@ -227,4 +203,4 @@ fig3.savefig(os.path.join(output_dir, 'z_mural.png'))
 #     plt.imshow(img_display)
 # fig4.savefig(os.path.join(output_dir, 'yaw_up_close.png'))
 
-del model
+del cmvae

@@ -1,0 +1,18 @@
+UnderwaterEnv:
+  - gym_underwater.callbacks.SwimEvalCallback:
+        callback_after_eval:
+          stable_baselines3.common.callbacks.StopTrainingOnNoModelImprovement:
+            max_no_improvement_evals: 5
+            min_evals: 100
+            verbose: 1
+        callback_on_new_best:
+          stable_baselines3.common.callbacks.StopTrainingOnRewardThreshold:
+            reward_threshold: 0.9999
+            verbose: 1
+        eval_inference_freq: 100
+        eval_freq: 2
+        # For Off-policy algorithms, this is forced to false regardless
+        deterministic: False
+        verbose: 1
+  - gym_underwater.callbacks.SwimProgressBarCallback
+  - gym_underwater.callbacks.SwimCallback

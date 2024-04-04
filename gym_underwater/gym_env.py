@@ -61,7 +61,6 @@ class UnderwaterEnv(gymnasium.Env):
     def observe_and_process_observation(self, action=None, pred=False):
         # retrieve results of action implementation
         observation, reward, terminated, truncated, info = self.handler.observe(self.obs)
-
         # if vae has been passed, raw image observation encoded to latent vector
         if self.cmvae is not None:
             # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
@@ -91,6 +90,7 @@ class UnderwaterEnv(gymnasium.Env):
         return self.observe_and_process_observation()
 
     def reset(self, **kwargs):
+        super().reset(seed=kwargs.get('seed'))      # Seed will be present in the first call (see setup_learn), otherwise None
         self.handler.reset()
         observation, _, _, _, info = self.observe_and_process_observation()
         return observation, info
@@ -115,4 +115,7 @@ class UnderwaterEnv(gymnasium.Env):
 
     def wait_until_client_ready(self):
         while self.handler.read_write_thread.is_alive() and not self.handler.sim_ready:
-            time.sleep(1 / 120)
+            time.sleep(self.handler.interval)
+
+    def close(self):
+        self.handler.close()

@@ -22,4 +22,5 @@ for file in os.listdir(dir):
 for img_1, img_2 in zip(*imgs):
     result = np.dot(img_1, img_2) / (norm(img_1) * norm(img_2))
     print(result)
+    assert result == 1
 

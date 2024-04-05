@@ -7,7 +7,10 @@ import gymnasium
 import numpy as np
 import tensorflow as tf
 import yaml
+from PIL import Image
+from cv2 import resize
 from gymnasium import Env
+from numpy.linalg import norm
 
 from stable_baselines3 import DDPG, PPO, SAC, TD3
 from stable_baselines3.common.base_class import BaseAlgorithm
@@ -525,3 +528,31 @@ def duplicate_directory(src_dir, dst_dir):
         shutil.copytree(src_dir, dst_dir)
     except FileExistsError:
         raise FileExistsError(f'Destination directory "{dst_dir}" already exists.')
+
+
+def image_similarity(image_1, image_2):
+    image_1 = image_1.flatten()
+    image_2 = image_2.flatten()
+
+    test1 = np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
+
+    image_1 = image_1 / 255
+    image_2 = image_2 / 255
+
+    test2 = np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
+
+    return np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
+
+
+def read_files_from_dir(files, resize_img=False) -> np.ndarray:
+    arr = np.empty((0, 64, 64, 3))
+
+    for file in files:
+        if file.endswith('.jpg'):
+            img = np.array(Image.open(file))
+            if resize_img:
+                arr = np.append(arr, [resize(img, (64, 64)).astype(np.uint8)], axis=0)
+            else:
+                arr = np.append(arr, [img], axis=0)
+
+    return arr

@@ -1,3 +1,4 @@
+import csv
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -5,32 +6,35 @@ from matplotlib.ticker import PercentFormatter
 
 
 def calculate_gate_stats(predictions, poses, output_dir):
-    f_path = os.path.join(output_dir, 'prediction_stats.txt')
-    f = open(f_path, 'w')
-
     # display averages
     mean_pred = np.mean(predictions, axis=0)
     mean_pose = np.mean(poses, axis=0)
-    print('Means (prediction, GT) : R({} , {}) Theta({} , {}) Psi({} , {})'.format(mean_pred[0], mean_pose[0], mean_pred[1], mean_pose[1], mean_pred[2], mean_pose[2]), file=f)
+    print(f'Means (prediction, GT) : R({mean_pred[0]} , {mean_pose[0]}) Theta({mean_pred[1]} , {mean_pose[1]}) Psi({mean_pred[2]} , {mean_pose[2]})')
+
     # display mean absolute error
     abs_diff = np.abs(predictions - poses)
     mae = np.mean(abs_diff, axis=0)
     # mae[1:] = mae[1:] * 180/np.pi
-    print('MAE : R({}) Theta({}) Psi({})'.format(mae[0], mae[1], mae[2]), file=f)
+    print(f'MAE : R({mae[0]}) Theta({mae[1]}) Psi({mae[2]})')
     # display standard deviation of error
     std = np.std(abs_diff, axis=0) / np.sqrt(abs_diff.shape[0])
     # std[1:] = std[1:] * 180 / np.pi
-    print('Standard error: R({}) Theta({}) Psi({})'.format(std[0], std[1], std[2]), file=f)
+    print(f'Standard error: R({std[0]}) Theta({std[1]}) Psi({std[2]})')
     # display max errors
     max_diff = np.max(abs_diff, axis=0)
-    print('Max error : R({}) Theta({}) Psi({})'.format(max_diff[0], max_diff[1], max_diff[2]), file=f)
+    print(f'Max error : R({max_diff[0]}) Theta({max_diff[1]}) Psi({max_diff[2]})')
 
-    f.close()
+    with open(os.path.join(output_dir, 'prediction_stats.csv'), 'w', newline='', encoding='UTF8') as ftest:
+        writer = csv.writer(ftest)
+        if ftest.tell() == 0:
+            writer.writerow(['Feature', 'Means (Prediction)', 'Means (Ground Truth)', 'MAE', 'Standard Error', 'Max Error'])
+
+        writer.writerow(['R', mean_pred[0], mean_pose[0], mae[0], std[0], max_diff[0]])
+        writer.writerow(['Theta', mean_pred[1], mean_pose[1], mae[1], std[1], max_diff[1]])
+        writer.writerow(['Psi', mean_pred[2], mean_pose[2], mae[2], std[2], max_diff[2]])
 
     fig, axs = plt.subplots(1, 3, tight_layout=True)
     weights = np.ones(len(abs_diff[:, 0])) / len(abs_diff[:, 0])
-
-    theta_max = 79.95185 / 2.0
 
     axs[0].hist(abs_diff[:, 0], bins=30, range=(0, max_diff[0]), weights=weights, density=False)  # 2.0
     axs[1].hist(abs_diff[:, 1], bins=30, range=(0, max_diff[1]), weights=weights, density=False)

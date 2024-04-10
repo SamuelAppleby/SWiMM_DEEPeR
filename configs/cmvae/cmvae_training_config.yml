@@ -1,0 +1,23 @@
+# Directory to the training set (contains state_data.csv and images directory)
+train_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\image_similarity\64x64'
+
+# Batch size
+batch_size: 32
+
+# Learning Rate
+learning_rate: 1e-4
+
+# Larger datasets may not have their tensors fit in RAM/VRAM, so instead generate the tensors per call per batch (reduces performance by ~60%)
+load_during_training: True
+
+# Maximum size of samples allowed to be taken from the training set
+max_size: ~
+
+# Maximum number of epochs to run
+epochs: 5
+
+# How many epochs to monitor sufficient validation loss has been met for early stopping, with respect to loss_threshold. Set to ~ for no early stopping.
+window_size: ~
+
+# The minimum fractional gain required over window_size episodes to avoid early stopping
+loss_threshold: 0.01

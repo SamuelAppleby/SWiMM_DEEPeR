@@ -2,28 +2,30 @@ import os
 import shutil
 
 import numpy as np
-import tensorflow as tf
 from matplotlib import pyplot as plt
 
 import cmvae_utils.dataset_utils
 import cmvae_utils.stats_utils
 import cmvae_utils.geom_utils
-from gym_underwater.utils.utils import load_environment_config, load_cmvae_config
+from gym_underwater.utils.utils import load_environment_config, load_cmvae_global_config, save_configs, load_cmvae_inference_config, output_devices
 
-par_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-env_config = load_environment_config(par_dir, seed_tensorflow=True, seed_sb=False)
+env_config = load_environment_config(project_dir, seed_tensorflow=True, seed_sb=False)
 
-# Don't want to load any weights
-cmvae, cmvae_config = load_cmvae_config(par_dir, load_weights=True, seed=env_config['seed'])
+cmvae_inference_config = load_cmvae_inference_config(project_dir)
 
-assert cmvae_config['test_dir'] == '', 'No data directory specified, quitting!'
+assert (cmvae_inference_config['test_dir'] != ''), 'No data directory specified, quitting'
+assert (cmvae_inference_config['weights_path'] != ''), 'Require pre-trained weights'
+assert (cmvae_inference_config['interpolation_dir'] != ''), 'Require interpolation directory'
 
-# define training meta parameters
-test_dir = cmvae_config['test_dir']
-output_dir = os.path.join(test_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
-interpolation_dir = cmvae_config['interpolation_dir']
-output_dir_interp = os.path.join(interpolation_dir, 'results_seed_{}_device_{}'.format(env_config['seed'], 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu'))
+test_dir = cmvae_inference_config['test_dir']
+interpolation_dir = cmvae_inference_config['interpolation_dir']
+
+cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, weights_path=cmvae_inference_config['weights_path'], seed=env_config['seed'])
+
+output_dir = os.path.join(test_dir, 'results_cmvae_evaluation')
+output_dir_interp = os.path.join(interpolation_dir, 'results_cmvae_evaluation_interpolation')
 
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
@@ -39,9 +41,8 @@ os.makedirs(output_dir_interp)
 num_imgs_display = 8
 columns = 4
 rows = 4
-n_z = cmvae_config['n_z']
-latent_space_constraints = cmvae_config['latent_space_constraints']
-img_res = cmvae_config['img_res']
+n_z = cmvae_global_config['n_z']
+img_res = cmvae.img_res
 
 num_interp_z = 9
 z_range_mural = [-0.02, 0.02]
@@ -87,87 +88,87 @@ for i in range(1, num_imgs_display + 1):
     plt.imshow(img_display)
 fig.savefig(os.path.join(output_dir, 'reconstruction_results.png'))
 
-images_np_interp, raw_table_interp = cmvae_utils.dataset_utils.create_test_dataset_csv(interpolation_dir, img_res)
-
-img_recon_interps, gate_recon_interps, means_interps, stddev_interps, z_interps = cmvae(images_np_interp, mode=0)
-img_recon_interps = img_recon_interps.numpy()
-gate_recon_interps = gate_recon_interps.numpy()
-z_interps = z_interps.numpy()
-
-# de-normalization of gates and images
-images_np_interp = ((images_np_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
-img_recon_interps = ((img_recon_interps + 1.0) / 2.0 * 255.0).astype(np.uint8)
-gate_recon_interps = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interps)
-
-# show interpolation btw two images in latent space
-z_r_interp = cmvae_utils.geom_utils.interp_vector(z_interps[0, :], z_interps[1, :], num_interp_z)
-z_theta_interp = cmvae_utils.geom_utils.interp_vector(z_interps[2, :], z_interps[3, :], num_interp_z)
-z_psi_interp = cmvae_utils.geom_utils.interp_vector(z_interps[4, :], z_interps[5, :], num_interp_z)
-
-z_interp = [z_r_interp, z_theta_interp, z_psi_interp]
-
-idx = 0
-for z_int in z_interp:
-    # get the image predictions
-    img_recon_interp, gate_recon_interp = cmvae.decode(z_int, mode=0)
-    img_recon_interp = img_recon_interp.numpy()
-    gate_recon_interp = gate_recon_interp.numpy()
-
-    # de-normalization of gates and images
-    img_recon_interp = ((img_recon_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
-    gate_recon_interp = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interp)
-
-    # join predictions with array and print
-    indices = np.array([np.arange(num_interp_z)]).transpose()
-    results = np.concatenate((indices, gate_recon_interp), axis=1)
-    print('Img index | Predictions: = \n{}'.format(results))
-
-    fig, axs = plt.subplots(1, 3, tight_layout=True)
-    axs[0].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 0], 'b-', label='r')
-    axs[1].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 1], 'b-', label=r'$\theta$')
-    axs[2].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 2], 'b-', label=r'$\psi$')
-
-    for i in range(3):
-        # axs[idx].grid()
-        y_ticks_array = gate_recon_interp[:, i][np.array([0, gate_recon_interp[:, i].shape[0] - 1])]
-        y_ticks_array = np.around(y_ticks_array, decimals=1)
-        if i > 0:
-            y_ticks_array = y_ticks_array
-        axs[i].set_yticks(y_ticks_array)
-        axs[i].set_xticks(np.array([0, 9]))
-        axs[i].set_xticklabels((r'$I_a$', r'$I_b$'))
-
-    axs[0].set_title(r'$r$')
-    axs[1].set_title(r'$\theta$')
-    axs[2].set_title(r'$\psi$')
-
-    axs[0].set_ylabel('[meter]')
-    axs[1].set_ylabel(r'[deg]')
-    axs[2].set_ylabel(r'[deg]')
-
-    label = 'r' if idx == 0 else 'theta' if idx == 1 else 'psi'
-
-    fig.savefig(os.path.join(output_dir_interp, 'state_stats_interpolation_results_{}.png'.format(label)))
-
-    # plot the interpolated images
-    fig2 = plt.figure(figsize=(96, 96))
-    columns = num_interp_z + 2
-    rows = 1
-    fig2.add_subplot(rows, columns, 1)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interp[(2 * idx), :])
-    plt.axis('off')
-    plt.imshow(img_display)
-    for i in range(1, num_interp_z + 1):
-        fig2.add_subplot(rows, columns, i + 1)
-        img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp[i - 1, :])
-        plt.axis('off')
-        plt.imshow(img_display)
-    fig2.add_subplot(rows, columns, num_interp_z + 2)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interp[(2 * idx) + 1, :])
-    plt.axis('off')
-    plt.imshow(img_display)
-    fig2.savefig(os.path.join(output_dir_interp, 'reconstruction_interpolation_results_{}.png'.format(label)))
-    idx += 1
+# images_np_interp, raw_table_interp = cmvae_utils.dataset_utils.create_test_dataset_csv(interpolation_dir, img_res)
+#
+# img_recon_interps, gate_recon_interps, means_interps, stddev_interps, z_interps = cmvae(images_np_interp, mode=0)
+# img_recon_interps = img_recon_interps.numpy()
+# gate_recon_interps = gate_recon_interps.numpy()
+# z_interps = z_interps.numpy()
+#
+# # de-normalization of gates and images
+# images_np_interp = ((images_np_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
+# img_recon_interps = ((img_recon_interps + 1.0) / 2.0 * 255.0).astype(np.uint8)
+# gate_recon_interps = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interps)
+#
+# # show interpolation btw two images in latent space
+# z_r_interp = cmvae_utils.geom_utils.interp_vector(z_interps[0, :], z_interps[1, :], num_interp_z)
+# z_theta_interp = cmvae_utils.geom_utils.interp_vector(z_interps[2, :], z_interps[3, :], num_interp_z)
+# z_psi_interp = cmvae_utils.geom_utils.interp_vector(z_interps[4, :], z_interps[5, :], num_interp_z)
+#
+# z_interp = [z_r_interp, z_theta_interp, z_psi_interp]
+#
+# idx = 0
+# for z_int in z_interp:
+#     # get the image predictions
+#     img_recon_interp, gate_recon_interp = cmvae.decode(z_int, mode=0)
+#     img_recon_interp = img_recon_interp.numpy()
+#     gate_recon_interp = gate_recon_interp.numpy()
+#
+#     # de-normalization of gates and images
+#     img_recon_interp = ((img_recon_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
+#     gate_recon_interp = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interp)
+#
+#     # join predictions with array and print
+#     indices = np.array([np.arange(num_interp_z)]).transpose()
+#     results = np.concatenate((indices, gate_recon_interp), axis=1)
+#     print('Img index | Predictions: = \n{}'.format(results))
+#
+#     fig, axs = plt.subplots(1, 3, tight_layout=True)
+#     axs[0].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 0], 'b-', label='r')
+#     axs[1].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 1], 'b-', label=r'$\theta$')
+#     axs[2].plot(np.arange(gate_recon_interp.shape[0]), gate_recon_interp[:, 2], 'b-', label=r'$\psi$')
+#
+#     for i in range(3):
+#         # axs[idx].grid()
+#         y_ticks_array = gate_recon_interp[:, i][np.array([0, gate_recon_interp[:, i].shape[0] - 1])]
+#         y_ticks_array = np.around(y_ticks_array, decimals=1)
+#         if i > 0:
+#             y_ticks_array = y_ticks_array
+#         axs[i].set_yticks(y_ticks_array)
+#         axs[i].set_xticks(np.array([0, 9]))
+#         axs[i].set_xticklabels((r'$I_a$', r'$I_b$'))
+#
+#     axs[0].set_title(r'$r$')
+#     axs[1].set_title(r'$\theta$')
+#     axs[2].set_title(r'$\psi$')
+#
+#     axs[0].set_ylabel('[meter]')
+#     axs[1].set_ylabel(r'[deg]')
+#     axs[2].set_ylabel(r'[deg]')
+#
+#     label = 'r' if idx == 0 else 'theta' if idx == 1 else 'psi'
+#
+#     fig.savefig(os.path.join(output_dir_interp, 'state_stats_interpolation_results_{}.png'.format(label)))
+#
+#     # plot the interpolated images
+#     fig2 = plt.figure(figsize=(96, 96))
+#     columns = num_interp_z + 2
+#     rows = 1
+#     fig2.add_subplot(rows, columns, 1)
+#     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interp[(2 * idx), :])
+#     plt.axis('off')
+#     plt.imshow(img_display)
+#     for i in range(1, num_interp_z + 1):
+#         fig2.add_subplot(rows, columns, i + 1)
+#         img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp[i - 1, :])
+#         plt.axis('off')
+#         plt.imshow(img_display)
+#     fig2.add_subplot(rows, columns, num_interp_z + 2)
+#     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interp[(2 * idx) + 1, :])
+#     plt.axis('off')
+#     plt.imshow(img_display)
+#     fig2.savefig(os.path.join(output_dir_interp, 'reconstruction_interpolation_results_{}.png'.format(label)))
+#     idx += 1
 
 # new plot traveling through latent space
 fig3 = plt.figure(figsize=(96, 96))
@@ -203,4 +204,9 @@ fig3.savefig(os.path.join(output_dir, 'z_mural.png'))
 #     plt.imshow(img_display)
 # fig4.savefig(os.path.join(output_dir, 'yaw_up_close.png'))
 
-del cmvae
+save_configs({
+    os.path.join(output_dir, 'cmvae_global_config.yml'): cmvae_global_config,
+    os.path.join(output_dir, 'cmvae_inference_config.yml'): cmvae_inference_config
+})
+
+output_devices(output_dir, tensorflow_device=True)

@@ -6,6 +6,7 @@ from typing import Dict, Type, Any, Optional, Callable, List, Union, Tuple
 import gymnasium
 import numpy as np
 import tensorflow as tf
+import torch
 import yaml
 from PIL import Image
 from cv2 import resize
@@ -31,7 +32,7 @@ def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, project_dir, pr
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
-    uenv = UnderwaterEnv(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, protocol, host, seed)
+    uenv = UnderwaterEnv(obs=obs, opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, host=host, seed=seed, cmvae=cmvae)
     with open(os.path.join(project_dir, 'configs', 'env_wrapper.yml'), 'r') as f:
         env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
         env_wrapper = get_wrapper_class(env_wrapper_config, tensorboard_log=tensorboard_log, inference_only=inference_only)
@@ -309,165 +310,44 @@ def convert_train_freq(train_freq) -> TrainFreq:
     return TrainFreq(*train_freq)
 
 
-# Code adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py#L337. This is to fix the issue where we
-# have stagnant observations due to the interruption of the rollout collection.
-def should_collect_more_steps_vec(
-        train_freq: TrainFreq,
-        num_collected_steps: np.ndarray[int],
-        num_collected_episodes: np.ndarray[int],
-        count_targets: np.ndarray[int]
-) -> bool:
-    """
-    Helper used in ``collect_rollouts()`` of off-policy algorithms
-    to determine the termination condition.
-
-    :param train_freq: How much experience should be collected before updating the policy.
-    :param num_collected_steps: The number of already collected steps.
-    :param num_collected_episodes: The number of already collected episodes.
-    :param count_targets: The number of targets to collect.
-    :return: Whether to continue or not collecting experience
-        by doing rollouts of the current policy.
-    """
-    if train_freq.unit == TrainFrequencyUnit.STEP:
-        return bool((num_collected_steps < count_targets).any())
-
-    elif train_freq.unit == TrainFrequencyUnit.EPISODE:
-        return bool((num_collected_episodes < count_targets).any())
-
-    else:
-        raise ValueError(
-            "The unit of the `train_freq` must be either TrainFrequencyUnit.STEP "
-            f"or TrainFrequencyUnit.EPISODE not '{train_freq.unit}'!"
-        )
-
-
-def evaluate_policy(
-        model: "type_aliases.PolicyPredictor",
-        env: Union[gymnasium.Env, VecEnv],
-        eval_inference_freq: TrainFreq = TrainFreq(1, TrainFrequencyUnit.EPISODE),
-        deterministic: bool = False,
-        render: bool = False,
-        callback: Optional[Callable[[Dict[str, Any], Dict[str, Any]], None]] = None,
-        warn: bool = True,
-) -> Union[Tuple[float, float], Tuple[List[float], List[int]]]:
-    """
-    Runs policy for ``n_eval_episodes`` episodes and returns average reward.
-    If a vector env is passed in, this divides the episodes to evaluate onto the
-    different elements of the vector env. This static division of work is done to
-    remove bias. See https://github.com/DLR-RM/stable-baselines3/issues/402 for more
-    details and discussion.
-
-    .. note::
-        If environment has not been wrapped with ``Monitor`` wrapper, reward and
-        episode lengths are counted as it appears with ``env.step`` calls. If
-        the environment contains wrappers that modify rewards or episode lengths
-        (e.g. reward scaling, early episode reset), these will affect the evaluation
-        results as well. You can avoid this by wrapping environment with ``Monitor``
-        wrapper before anything else.
-
-    :param model: The RL agent you want to evaluate. This can be any object
-        that implements a `predict` method, such as an RL algorithm (``BaseAlgorithm``)
-        or policy (``BasePolicy``).
-    :param env: The gym environment or ``VecEnv`` environment.
-    :param eval_inference_freq: Number of episode/steps to evaluate the agent
-    :param deterministic: Whether to use deterministic or stochastic actions
-    :param render: Whether to render the environment or not
-    :param callback: callback function to do additional checks,
-        called after each step. Gets locals() and globals() passed as parameters.
-    :param warn: If True (default), warns user about lack of a Monitor wrapper in the
-        evaluation environment.
-    :return: Returns ([float], [int]), first list containing per-episode rewards and
-        second containing per-episode lengths(in number of steps).
-    """
-    if not isinstance(env, VecEnv):
-        print('[evaluate_policy] Wrapping the env in a DummyVecEnv')
-        env = DummyVecEnv([lambda: env])  # type: ignore[list-item, return-value]
-
-    n_envs = env.num_envs
-    episode_rewards = []
-    episode_lengths = []
-
-    step_counts = np.zeros(n_envs, dtype='int')
-    episode_counts = np.zeros(n_envs, dtype='int')
-
-    count_targets = np.array([(eval_inference_freq.frequency + i) // n_envs for i in range(n_envs)], dtype="int")
-
-    current_rewards = np.zeros(n_envs)
-    current_lengths = np.zeros(n_envs, dtype='int')
-
-    observations = env.reset()
-    states = None
-    episode_starts = np.ones((env.num_envs,), dtype=bool)
-    while should_collect_more_steps_vec(eval_inference_freq, step_counts, episode_counts, count_targets):
-        actions, states = model.predict(
-            observations,  # type: ignore[arg-type]
-            state=states,
-            episode_start=episode_starts,
-            deterministic=deterministic
-        )
-
-        new_observations, rewards, dones, infos = env.step(actions)
-
-        current_rewards += rewards
-        current_lengths += 1
-
-        step_counts += 1
-        for i in range(n_envs):
-            if should_collect_more_steps(eval_inference_freq, step_counts[i] - 1, episode_counts[i]):
-                reward = rewards[i]
-                done = dones[i]
-                info = infos[i]
-                episode_starts[i] = done
-
-                if callback is not None:
-                    callback(locals(), globals())
-
-                # Even if wrapped with a SwimMonitor, we cannot use the monitor values as we supress logging for evaluation episodes
-                if dones[i] or ((eval_inference_freq.unit == TrainFrequencyUnit.STEP) and (step_counts[i] == eval_inference_freq.frequency)):
-                    episode_rewards.append(current_rewards[i])
-                    episode_lengths.append(current_lengths[i])
-                    current_rewards[i] = 0
-                    current_lengths[i] = 0
-
-                    print('[INFERENCE] Episode finished. \nReward: {:.2f} \nSteps: {}'.format(episode_rewards[-1], episode_lengths[-1]))
-                    episode_counts[i] += 1
-
-        observations = new_observations
-
-        if render:
-            env.render()
-
-    return episode_rewards, episode_lengths
-
-
-def load_cmvae_config(project_dir, load_weights=False, seed=None) -> Tuple[tf.keras.Model, Dict[str, Any]]:
-    print('Loading CMVAE ...')
-    with open(os.path.join(project_dir, 'configs', 'cmvae_config.yml'), 'r') as f:
-        cmvae_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-        if cmvae_config['latent_space_constraints']:
-            cmvae = CmvaeDirect(n_z=cmvae_config['n_z'], seed=seed)
+def load_cmvae_global_config(project_dir, weights_path=None, seed=None) -> Tuple[tf.keras.Model, Dict[str, Any]]:
+    with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
+        cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+        if cmvae_global_config['latent_space_constraints']:
+            cmvae = CmvaeDirect(n_z=cmvae_global_config['n_z'], img_res=cmvae_global_config['img_res'], seed=seed)
         else:
-            cmvae = Cmvae(n_z=cmvae_config['n_z'], gate_dim=3, seed=seed)
+            cmvae = Cmvae(n_z=cmvae_global_config['n_z'], gate_dim=3, seed=seed)
 
         # TODO Investigate saving the model using save() and then we can avoid below (there must have been a reason)
-        if load_weights:
-            cmvae.load_weights(cmvae_config['weights_path']).expect_partial()
+        if weights_path is not None:
+            cmvae.load_weights(weights_path).expect_partial()
+            cmvae.img_res = tuple(cmvae.img_res)
 
-        if cmvae_config['use_cpu']:
+        if cmvae_global_config['use_cpu_only']:
             os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
 
-        if cmvae_config['deterministic']:
+        if cmvae_global_config['deterministic']:
             os.environ['TF_DETERMINISTIC_OPS'] = '1'
             if len(tf.config.list_physical_devices('GPU')) > 0:
                 os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
                 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-        return cmvae, cmvae_config
+        return cmvae, cmvae_global_config
+
+
+def load_cmvae_training_config(project_dir) -> Dict[str, Any]:
+    with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_training_config.yml'), 'r') as f:
+        return yaml.load(f, Loader=yaml.UnsafeLoader)
+
+
+def load_cmvae_inference_config(project_dir) -> Dict[str, Any]:
+    with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_inference_config.yml'), 'r') as f:
+        return yaml.load(f, Loader=yaml.UnsafeLoader)
 
 
 def load_hyperparams(project_dir, algorithm_name, environment_name, seed=None) -> Dict[str, Any]:
     print('Loading hyperparameters ...')
-    with open(os.path.join(project_dir, 'configs', 'hyperparams', '{}.yml'.format(algorithm_name)), 'r') as f:
+    with open(os.path.join(project_dir, 'configs', 'hyperparams', f'{algorithm_name}.yml'), 'r') as f:
         hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)[environment_name]
         if isinstance(hyperparams['train_freq'], List):
             hyperparams['train_freq'] = tuple(hyperparams['train_freq'])
@@ -523,9 +403,20 @@ def load_callbacks(project_dir, env, tensorboard_log, inference_only=False) -> L
         return get_callback_list(callback_wrapper_config, env, tensorboard_log=tensorboard_log, inference_only=inference_only)
 
 
-def duplicate_directory(src_dir, dst_dir):
+def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude=None):
+    if files_to_exclude is None:
+        files_to_exclude = []
+    if dirs_to_exclude is None:
+        dirs_to_exclude = []
+
+    def _exclude_func(directory, contents):
+        excluded = set(files_to_exclude)
+        excluded_dirs = set(dirs_to_exclude)
+
+        return set(content for content in contents if content in excluded or os.path.join(directory, content) in excluded_dirs)
+
     try:
-        shutil.copytree(src_dir, dst_dir)
+        shutil.copytree(src_dir, dst_dir, ignore=_exclude_func)
     except FileExistsError:
         raise FileExistsError(f'Destination directory "{dst_dir}" already exists.')
 
@@ -556,3 +447,21 @@ def read_files_from_dir(files, resize_img=False) -> np.ndarray:
                 arr = np.append(arr, [img], axis=0)
 
     return arr
+
+
+def save_configs(configs) -> None:
+    for key, value in configs.items():
+        with open(key, 'w') as file:
+            yaml.dump(value, file)
+
+
+def output_devices(output_dir, tensorflow_device=False, torch_device=False):
+    with open(os.path.join(output_dir, 'devices.txt'), 'w') as file:
+        if tensorflow_device:
+            file.write('TENSORFLOW\n')
+            for device_name in tf.config.list_physical_devices():
+                file.write(device_name.name + "\n")
+        if torch_device:
+            file.write('PYTORCH\n')
+            for i in range(torch.cuda.device_count()):
+                file.write(torch.cuda.get_device_name(i) + "\n")

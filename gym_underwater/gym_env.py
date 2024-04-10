@@ -2,13 +2,13 @@ import logging
 import time
 
 import numpy as np
-import cv2
 
 import cmvae_utils.dataset_utils
 
 import gymnasium
 from gymnasium import spaces
 
+from gym_underwater.enums import Protocol
 from gym_underwater.sim_comms import UnitySimHandler
 
 
@@ -17,7 +17,7 @@ class UnderwaterEnv(gymnasium.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, cmvae, obs, opt_d, max_d, img_res, tensorboard_log, protocol, host, seed):
+    def __init__(self, obs, opt_d=6, max_d=4, img_res=(64, 64, 3), tensorboard_log=None, protocol=Protocol.TCP, host='127.0.0.1', seed=None, cmvae=None):
         super().__init__()
         print('Starting underwater environment ..')
 
@@ -32,7 +32,7 @@ class UnderwaterEnv(gymnasium.Env):
         self.obs = obs
 
         # create instance of class that deals with Unity communications
-        self.handler = UnitySimHandler(opt_d, max_d, img_res, tensorboard_log, protocol, host, seed)
+        self.handler = UnitySimHandler(opt_d, max_d, cmvae.img_res if cmvae is not None else img_res, tensorboard_log, protocol, host, seed)
 
         self.handler.connect(*self.handler.address)
         self.handler.read_write_thread.start()
@@ -65,8 +65,7 @@ class UnderwaterEnv(gymnasium.Env):
         if self.cmvae is not None:
             # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
             observation = observation[:, :, ::-1]
-            # resize to resolution used to train vae
-            observation = cv2.resize(observation, (self.handler.img_res[0], self.handler.img_res[1]))
+
             # normalize pixel values
             observation = observation / 255.0 * 2.0 - 1.0
             # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
@@ -90,7 +89,7 @@ class UnderwaterEnv(gymnasium.Env):
         return self.observe_and_process_observation()
 
     def reset(self, **kwargs):
-        super().reset(seed=kwargs.get('seed'))      # Seed will be present in the first call (see setup_learn), otherwise None
+        super().reset(seed=kwargs.get('seed'))  # Seed will be present in the first call (see setup_learn), otherwise None
         self.handler.reset()
         observation, _, _, _, info = self.observe_and_process_observation()
         return observation, info

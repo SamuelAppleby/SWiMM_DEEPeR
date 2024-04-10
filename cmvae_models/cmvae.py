@@ -78,7 +78,7 @@ class Cmvae(tf.keras.Model):
 
 # model definition class
 class CmvaeDirect(tf.keras.Model):
-    def __init__(self, n_z, seed=None):
+    def __init__(self, n_z, seed=None, img_res=None):
         super(CmvaeDirect, self).__init__()
         # create the base models:
         self.q_img = dronet.Dronet(num_outputs=n_z * 2, include_top=True)
@@ -93,6 +93,7 @@ class CmvaeDirect(tf.keras.Model):
         self.Theta_params = tf.keras.layers.Lambda(lambda x: x[:, 1])
         self.Psi_params = tf.keras.layers.Lambda(lambda x: x[:, 2])
         self.seed = seed
+        self.img_res = img_res
 
     @tf.function
     def call(self, x, mode):

@@ -11,7 +11,7 @@ UnderwaterEnv:
             verbose: 1
         eval_inference_freq: 300
         eval_freq: 2
-        # For Off-policy algorithms, 'deterministic' is forced to false
+        # For Off-policy algorithms, 'deterministic' is forced to false regardless
         deterministic: False
         verbose: 1
   - gym_underwater.callbacks.SwimProgressBarCallback

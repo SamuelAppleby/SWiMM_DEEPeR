@@ -5,10 +5,9 @@ benchmarking/results
 .idea/
 .vscode/
 .vsconfig
-Logs/
-image_generation/
 data/
-benchmarking_results/
+logs/
 *.RData
 *.Rhistory
 Pipfile.lock
+tensorboard_dir.txt

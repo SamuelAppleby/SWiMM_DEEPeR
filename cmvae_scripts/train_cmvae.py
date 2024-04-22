@@ -4,7 +4,8 @@ import shutil
 from tqdm import tqdm
 
 import cmvae_utils.dataset_utils
-from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, save_configs, load_cmvae_training_config, output_devices, TENSORBOARD_FILE_NAME
+from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, save_configs, load_cmvae_training_config, output_devices, TENSORBOARD_FILE_NAME, \
+    count_directories_in_directory
 
 import tensorflow as tf
 
@@ -20,10 +21,10 @@ cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, seed=env_conf
 
 output_dir = os.path.join(cmvae_training_config['train_dir'], 'results_cmvae_training')
 
-if os.path.exists(output_dir):
-    shutil.rmtree(output_dir)
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
-os.makedirs(output_dir)
+output_dir = os.path.join(output_dir, str(count_directories_in_directory(output_dir)))
 
 # DEFINE TRAINING META PARAMETERS
 batch_size = cmvae_training_config['batch_size']
@@ -219,7 +220,7 @@ for epoch in tqdm(range(epochs)):
                     dist_test_cpy = dist_test_cpy[batch_size:]
     # save model
     if (((epoch + 1) % 5) == 0) or (epoch + 1 == epochs):
-        cmvae.save_weights(os.path.join(output_dir, 'cmvae_model_{}.ckpt'.format(epoch)))
+        cmvae.save_weights(os.path.join(output_dir, 'epoch_{}'.format(epoch), 'model.ckpt'))
 
     if mode == 0:
         with metrics_writer.as_default():
@@ -245,7 +246,7 @@ for epoch in tqdm(range(epochs)):
 
             if test_total_loss < lowest_loss:
                 print('Best model found, total test loss: {}. Saving weights to {}'.format(test_total_loss, output_dir))
-                cmvae.save_weights(os.path.join(output_dir, 'best_model.ckpt'))
+                cmvae.save_weights(os.path.join(output_dir, 'best_model', 'model.ckpt'))
                 if window_size is not None:
                     if ((current_window_loss - test_total_loss) / current_window_loss) > loss_threshold:
                         bad_epochs = 0

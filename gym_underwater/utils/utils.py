@@ -18,8 +18,7 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.type_aliases import TrainFreq, TrainFrequencyUnit
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.utils import should_collect_more_steps, set_random_seed
-from stable_baselines3.common.vec_env import VecEnv
+from stable_baselines3.common.utils import set_random_seed
 
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
 from gym_underwater.enums import Protocol
@@ -466,3 +465,25 @@ def output_devices(output_dir, tensorflow_device=False, torch_device=False):
             file.write('PYTORCH\n')
             for i in range(torch.cuda.device_count()):
                 file.write(torch.cuda.get_device_name(i) + "\n")
+
+
+def count_files_in_directory(directory):
+    file_count = 0
+
+    for item in os.listdir(directory):
+        if os.path.isfile(os.path.join(directory, item)):
+            file_count += 1
+
+    return file_count
+
+
+def count_directories_in_directory(directory):
+    directory_count = 0
+
+    # Iterate through all items in the directory
+    for item in os.listdir(directory):
+        # Check if it's a directory
+        if os.path.isdir(os.path.join(directory, item)):
+            directory_count += 1
+
+    return directory_count

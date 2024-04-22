@@ -1,5 +1,5 @@
 # Directory to the training set (contains state_data.csv and images directory)
-train_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\image_similarity\64x64'
+train_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training_set\64x64'
 
 # Batch size
 batch_size: 32

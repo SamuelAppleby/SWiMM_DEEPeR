@@ -3,7 +3,6 @@ setlocal enabledelayedexpansion
 set "FILE_PATH=..\tensorboard_dir.txt"
 set "SEARCH_STRING=Tensorboard event file:"
 set "PYTHONPATH=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR;%PYTHONPATH%"
-call ..\..\.venv\Scripts\activate
 
 call :processFile
 goto :eof
@@ -19,14 +18,11 @@ if not defined SearchFound (
     goto :processFile
 ) else (
     echo Logging file found: !s!
-    del "%FILE_PATH%"
     goto :found
 )
 
 :found
-@REM for %%I in ("%s%") do set "dir=%%~dpI"
-@REM if "%dir:~-1%"=="\" set "dir=%dir:~0,-1%"
-call ..\.venv\Scripts\activate
+call ..\..\.venv\Scripts\activate
 echo Starting TensorBoard...
 start /B tensorboard --host localhost --port 6006 --logdir "%s%" --reload_interval=10
 timeout /nobreak /t 5 > nul

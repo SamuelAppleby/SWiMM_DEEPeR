@@ -4,7 +4,7 @@ import shutil
 from tqdm import tqdm
 
 import cmvae_utils.dataset_utils
-from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, save_configs, load_cmvae_training_config, output_devices
+from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, save_configs, load_cmvae_training_config, output_devices, TENSORBOARD_FILE_NAME
 
 import tensorflow as tf
 
@@ -236,7 +236,7 @@ for epoch in tqdm(range(epochs)):
             tf.summary.scalar('test/total_loss', test_total_loss, step=epoch)
 
             if epoch == 0:
-                with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'launchers', 'train_output.txt'), 'w') as log_file:
+                with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'launchers', TENSORBOARD_FILE_NAME), 'w') as log_file:
                     log_file.write('Tensorboard event file: {}\n'.format(output_dir))
 
             print('Epoch {} | TRAIN: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {}'

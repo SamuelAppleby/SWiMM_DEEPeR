@@ -1,2 +1,0 @@
-cd ../benchmarking/scripts
-python3 image_similarity.py --dir_high_scaled ~/Downloads/images_high_scaled --dir_low_scaled ~/Downloads/images_low_scaled --dir_raw ~/Downloads/images_raw --dir_output ~/Documents/Repositories/CodeBases/SWiMM_DEEPer/benchmarking/results --cross_resolution --num_samples 1000

@@ -26,6 +26,7 @@ from gym_underwater.enums import Protocol
 from gym_underwater.gym_env import UnderwaterEnv
 
 ENVIRONMENT_TO_LOAD = 'UnderwaterEnv'
+TENSORBOARD_FILE_NAME = 'tensorboard_dir.txt'
 
 
 def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, project_dir, protocol=Protocol.TCP, host='127.0.0.1:60260', seed=None, inference_only=False) -> Env:

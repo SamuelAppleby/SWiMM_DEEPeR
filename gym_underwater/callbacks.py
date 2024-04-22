@@ -16,7 +16,7 @@ from .env_wrappers.swim_monitor import SwimMonitor
 from .env_wrappers.swim_time_limit import SwimTimeLimit
 from .sim_comms import MAX_STEP_REWARD
 from .enums import EpisodeTerminationType
-from .utils.utils import convert_train_freq
+from .utils.utils import convert_train_freq, TENSORBOARD_FILE_NAME
 
 
 # Code adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py#L337. This is to fix the issue where we
@@ -68,7 +68,7 @@ class SwimCallback(BaseCallback):
         """
         for _format in self.logger.output_formats:
             if isinstance(_format, TensorBoardOutputFormat):
-                with open('tensorboard_dir.txt', 'w') as log_file:
+                with open(TENSORBOARD_FILE_NAME, 'w') as log_file:
                     print('Tensorboard event file: {}'.format(_format.writer.file_writer.event_writer._file_name))
                     log_file.write('Tensorboard event file: {}\n'.format(_format.writer.file_writer.event_writer._file_name))
 

@@ -2,7 +2,7 @@
 test_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\image_similarity\64x64'
 
 # Path to the trained models checkpoint (requires .index and data file)
-weights_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\image_similarity\64x64\results_cmvae_training\best_model.ckpt'
+weights_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\cmvae_training_set\64x64\results_cmvae_training\0\best_model\model.ckpt'
 
 # Directory to the interpolated set (contains state_data.csv and images directory)
 interpolation_dir: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\data\interpolation\64x64'

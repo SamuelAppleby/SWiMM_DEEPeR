@@ -92,6 +92,7 @@ class UnitySimHandler:
         self.sim_ready = False
         self.img_res = img_res
         self.last_obs = None
+        self.last_obs_before_inference = None
         self.rover_info = None
         self.target_info = None
         self.opt_d = opt_d
@@ -102,9 +103,9 @@ class UnitySimHandler:
         self.cancel_event = threading.Event()
         self.training_type = TrainingType.TRAINING
         self.msg = None
+        self.debug_logs = False
 
         self.fns = {
-            'connectionRequest': self.on_connection_request,
             'clientReady': self.on_client_ready,
             'onTelemetry': self.on_telemetry
         }
@@ -127,7 +128,7 @@ class UnitySimHandler:
         self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.max_d
         self.server_config['payload']['serverConfig']['envConfig']['seed'] = seed
 
-        self.network_log = os.path.join(tensorboard_log, 'network') if self.server_config['payload']['serverConfig']['envConfig']['debugLogs'] else None
+        self.network_log = os.path.join(tensorboard_log, 'network') if self.debug_logs else None
         if self.network_log is not None:
             self.debug_logs_dir = os.path.join(self.network_log, 'training', f'episode_{self.episode_num}')
             clean_and_remake(os.path.dirname(os.path.dirname(self.debug_logs_dir)))
@@ -342,9 +343,6 @@ class UnitySimHandler:
         assert msg_type in self.fns, f'Unknown message type {msg_type}'
         self.fns[msg_type](payload)
 
-    def on_connection_request(self, payload) -> bool:
-        pass
-
     def on_client_ready(self, payload):
         self.sim_ready = True
 
@@ -485,14 +483,6 @@ class UnitySimHandler:
             }
         })
 
-    def send_world_state(self, world_state):
-        self.set_msg({
-            'msgType': 'setWorldState',
-            'payload': {
-                'objectOverrides': world_state
-            }
-        })
-
     def send_rollout_start(self):
         self.set_msg({
             'msgType': 'rolloutStart',
@@ -508,6 +498,7 @@ class UnitySimHandler:
     def send_inference_start(self, eval_inference_freq):
         self.training_type = TrainingType.INFERENCE
         self.eval_inference_freq = eval_inference_freq
+        self.last_obs_before_inference = self.last_obs
         self.set_msg({
             'msgType': 'inferenceStart',
             'payload': {
@@ -518,8 +509,17 @@ class UnitySimHandler:
             }
         })
 
+    def send_world_state(self, world_state):
+        self.set_msg({
+            'msgType': 'setWorldState',
+            'payload': {
+                'objectOverrides': world_state
+            }
+        })
+
     def send_inference_end(self):
         self.training_type = TrainingType.TRAINING
+        self.last_obs = self.last_obs_before_inference
         self.set_msg({
             'msgType': 'inferenceEnd',
             'payload': {}

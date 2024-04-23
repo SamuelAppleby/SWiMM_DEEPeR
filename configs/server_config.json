@@ -37,7 +37,6 @@
                 "enableSecondaryCameras": true,
                 "actionInference": "freeze",
                 "randomiseRestart": true,
-                "debugLogs": false,
                 "faunaConfig": {
                     "spawnTimer": 5.0,
                     "spawnContainerRatio": 0.8,

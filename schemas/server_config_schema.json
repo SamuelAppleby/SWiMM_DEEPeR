@@ -113,9 +113,6 @@
                 "randomiseRestart": {
                   "type": "string"
                 },
-                "debugLogs": {
-                  "type": "boolean"
-                },
                 "faunaConfig": {
                   "type": "object",
                   "properties": {
@@ -321,7 +318,6 @@
                 "enableSecondaryCameras",
                 "actionInference",
                 "randomiseRestart",
-                "debugLogs",
                 "faunaConfig"
               ]
             },

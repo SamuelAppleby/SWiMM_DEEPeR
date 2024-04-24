@@ -24,7 +24,7 @@ if not os.path.exists(args.dir_output):
 with open(os.path.join(args.dir_output, 'resizing.csv'), 'w', newline='', encoding='UTF8') as f:
     writer = csv.writer(f)
     if f.tell() == 0:
-        writer.writerow(['Original Directory', 'Scaled Directory', 'Mean', 'Standard Deviation'])
+        writer.writerow(['Original Directory', 'Scaled Directory', 'Mean', 'Standard Deviation', 'Loss'])
 
     for dir_orig, dir_scaled in zip(dirs_orig, dirs_scaled):
         unity_scaled = read_files_from_dir([os.path.join(dir_scaled, filename) for filename in os.listdir(dir_scaled)], resize_img=False)
@@ -35,4 +35,5 @@ with open(os.path.join(args.dir_output, 'resizing.csv'), 'w', newline='', encodi
         for image_1, image_2 in zip(unity_scaled, python_scaled):
             sims.append(image_similarity(image_1, image_2))
 
-        writer.writerow([dir_orig, dir_scaled, np.average(sims), np.std(sims)])
+        sims_mean = np.mean(sims)
+        writer.writerow([dir_orig, dir_scaled, sims_mean, np.std(sims), (1 - sims_mean)])

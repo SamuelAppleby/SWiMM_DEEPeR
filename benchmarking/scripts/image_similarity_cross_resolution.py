@@ -36,11 +36,12 @@ if not os.path.exists(args.dir_output):
 with open(os.path.join(args.dir_output, 'cross_resolution.csv'), 'w', newline='', encoding='UTF8') as f:
     writer = csv.writer(f)
     if f.tell() == 0:
-        writer.writerow(['Directory 1', 'Directory 2', 'Mean Similarity', 'Standard Deviation'])
+        writer.writerow(['Directory 1', 'Directory 2', 'Mean Similarity', 'Standard Deviation', 'Loss'])
 
     for combination in combinations:
         sims = []
         for image_1, image_2 in zip(dirs_names_images[combination[0]], dirs_names_images[combination[1]]):
             sims.append(image_similarity(image_1, image_2))
 
-        writer.writerow([combination[0], combination[1], np.mean(sims), np.std(sims)])
+        sims_mean = np.mean(sims)
+        writer.writerow([combination[0], combination[1], sims_mean, np.std(sims), 1 - sims_mean])

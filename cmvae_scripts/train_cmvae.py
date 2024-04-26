@@ -266,6 +266,7 @@ for epoch in tqdm(range(epochs)):
         reset_metrics()  # reset all the accumulators of metrics
 
 save_configs({
+    os.path.join(output_dir, 'env_config.yml'): env_config,
     os.path.join(output_dir, 'cmvae_global_config.yml'): cmvae_global_config,
     os.path.join(output_dir, 'cmvae_training_config.yml'): cmvae_training_config
 })

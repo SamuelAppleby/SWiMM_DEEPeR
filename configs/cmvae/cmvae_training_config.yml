@@ -14,7 +14,7 @@ load_during_training: True
 max_size: ~
 
 # Maximum number of epochs to run
-epochs: 5
+epochs: 1
 
 # How many epochs to monitor sufficient validation loss has been met for early stopping, with respect to loss_threshold. Set to ~ for no early stopping.
 window_size: ~

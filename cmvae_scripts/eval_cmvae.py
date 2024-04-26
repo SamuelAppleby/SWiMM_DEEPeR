@@ -205,6 +205,7 @@ fig3.savefig(os.path.join(output_dir, 'z_mural.png'))
 # fig4.savefig(os.path.join(output_dir, 'yaw_up_close.png'))
 
 save_configs({
+    os.path.join(output_dir, 'env_config.yml'): env_config,
     os.path.join(output_dir, 'cmvae_global_config.yml'): cmvae_global_config,
     os.path.join(output_dir, 'cmvae_inference_config.yml'): cmvae_inference_config
 })

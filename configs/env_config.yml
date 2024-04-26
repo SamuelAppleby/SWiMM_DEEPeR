@@ -11,7 +11,7 @@ debug_logs: True
 
 # Set seed with arbitrary int so that can report with results this also sets the seed on the simulation
 # Appended to server_config.json
-seed: 27
+seed: 11
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'ddpg'
 algo: 'sac'

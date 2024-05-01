@@ -172,6 +172,9 @@ test_loss_rec_gate = tf.keras.metrics.Mean(name='test_loss_rec_gate')
 test_loss_kl = tf.keras.metrics.Mean(name='test_loss_kl')
 metrics_writer = tf.summary.create_file_writer(output_dir)
 
+with metrics_writer.as_default():
+    tf.summary.scalar('time', 0, step=0)
+
 img_train, img_test, dist_train, dist_test = cmvae_utils.dataset_utils.create_dataset_csv(cmvae_training_config['train_dir'], img_res, max_size, env_config['seed'])
 
 ds_train = None
@@ -264,6 +267,9 @@ for epoch in tqdm(range(epochs)):
                 break
 
         reset_metrics()  # reset all the accumulators of metrics
+
+with metrics_writer.as_default():
+    tf.summary.scalar('time', 0, step=1)
 
 config_dir = os.path.join(output_dir, 'configs')
 

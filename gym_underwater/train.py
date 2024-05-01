@@ -39,7 +39,7 @@ del hyperparams['total_timesteps']
 del hyperparams['log_interval']
 
 # Define the logger first to avoid reduplicating code caused by the file search in learn()
-logger = configure_logger(verbose=1, tensorboard_log=str(os.path.join(project_dir, 'logs', env_config['algo'])), tb_log_name=env_config['algo'], reset_num_timesteps=kwargs['reset_num_timesteps'])
+logger = configure_logger(verbose=1, tensorboard_log=str(os.path.join(project_dir, 'models', env_config['algo'])), tb_log_name=env_config['algo'], reset_num_timesteps=kwargs['reset_num_timesteps'])
 hyperparams.update({
     'tensorboard_log': logger.dir
 })
@@ -62,10 +62,8 @@ print('Starting training run...')
 model.learn(**kwargs)
 model.save(os.path.join(str(model.tensorboard_log), 'final_model'))
 
-dirs_to_exclude = None
-files_to_exclude = ['cmvae_training_config.yml', 'cmvae_global_config.yml']
-duplicate_directory(os.path.join(project_dir, 'configs'), os.path.join(hyperparams['tensorboard_log'], 'configs'), dirs_to_exclude=dirs_to_exclude, files_to_exclude=files_to_exclude)
+duplicate_directory(os.path.join(project_dir, 'configs'), os.path.join(hyperparams['tensorboard_log'], 'configs'), dirs_to_exclude=None, files_to_exclude=['cmvae_training_config.yml', 'cmvae_global_config.yml'])
 
-output_devices(hyperparams['tensorboard_log'], tensorflow_device=True, torch_device=True)
+output_devices(os.path.join(hyperparams['tensorboard_log'], 'configs'), tensorflow_device=True, torch_device=True)
 
 model.env.close()

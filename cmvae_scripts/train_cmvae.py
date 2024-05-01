@@ -19,7 +19,7 @@ assert (cmvae_training_config['train_dir'] != '') and os.path.isdir(cmvae_traini
 
 cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, seed=env_config['seed'])
 
-output_dir = os.path.join(cmvae_training_config['train_dir'], 'results_cmvae_training')
+output_dir = os.path.join(project_dir, 'models', 'cmvae')
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
@@ -260,15 +260,20 @@ for epoch in tqdm(range(epochs)):
 
             if (window_size is not None) and (bad_epochs == window_size):
                 print(f'No better loss after: {bad_epochs} epochs')
-                cmvae.save_weights(os.path.join(output_dir, f'cmvae_model_{epoch}.ckpt'))
+                cmvae.save_weights(os.path.join(output_dir, 'epoch_{}'.format(epoch), 'model.ckpt'))
                 break
 
         reset_metrics()  # reset all the accumulators of metrics
 
+config_dir = os.path.join(output_dir, 'configs')
+
+if not os.path.exists(config_dir):
+    os.makedirs(config_dir)
+
 save_configs({
-    os.path.join(output_dir, 'env_config.yml'): env_config,
-    os.path.join(output_dir, 'cmvae_global_config.yml'): cmvae_global_config,
-    os.path.join(output_dir, 'cmvae_training_config.yml'): cmvae_training_config
+    os.path.join(config_dir, 'env_config.yml'): env_config,
+    os.path.join(config_dir, 'cmvae_global_config.yml'): cmvae_global_config,
+    os.path.join(config_dir, 'cmvae_training_config.yml'): cmvae_training_config
 })
 
-output_devices(output_dir, tensorflow_device=True)
+output_devices(config_dir, tensorflow_device=True)

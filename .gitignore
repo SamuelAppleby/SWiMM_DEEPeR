@@ -11,3 +11,4 @@ logs/
 *.Rhistory
 Pipfile.lock
 tensorboard_dir.txt
+models/

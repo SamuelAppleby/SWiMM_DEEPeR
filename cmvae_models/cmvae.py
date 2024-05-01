@@ -1,7 +1,3 @@
-import fnmatch
-import os
-
-import numpy as np
 import tensorflow as tf
 from keras.backend import random_normal
 from keras.layers import Lambda

@@ -1,5 +1,4 @@
 import os
-import shutil
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -7,7 +6,7 @@ from matplotlib import pyplot as plt
 import cmvae_utils.dataset_utils
 import cmvae_utils.stats_utils
 import cmvae_utils.geom_utils
-from gym_underwater.utils.utils import load_environment_config, load_cmvae_global_config, save_configs, load_cmvae_inference_config, output_devices
+from gym_underwater.utils.utils import load_environment_config, load_cmvae_global_config, save_configs, load_cmvae_inference_config, output_devices, count_directories_in_directory
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -26,10 +25,13 @@ cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, weights_path=
 
 output_dir = os.path.join(os.path.dirname(cmvae_inference_config['weights_path']), 'inference_results')
 
-if os.path.exists(output_dir):
-    shutil.rmtree(output_dir)
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
-os.makedirs(output_dir)
+output_dir = os.path.join(output_dir, str(count_directories_in_directory(output_dir)))
+
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
 # DEFINE TESTING META PARAMETERS
 num_imgs_display = 8
@@ -64,6 +66,8 @@ z = z.numpy()
 images_np = ((images_np + 1.0) / 2.0 * 255.0).astype(np.uint8)
 img_recon = ((img_recon + 1.0) / 2.0 * 255.0).astype(np.uint8)
 gate_recon = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon)
+
+cmvae_utils.stats_utils.calculate_img_stats(img_recon, images_np, output_dir)
 
 # get stats for gate reconstruction
 cmvae_utils.stats_utils.calculate_gate_stats(gate_recon, raw_table, output_dir)
@@ -207,7 +211,7 @@ if not os.path.exists(config_dir):
 save_configs({
     os.path.join(config_dir, 'env_config.yml'): env_config,
     os.path.join(config_dir, 'cmvae_global_config.yml'): cmvae_global_config,
-    os.path.join(config_dir, 'cmvae_training_config.yml'): cmvae_inference_config
+    os.path.join(config_dir, 'cmvae_inference_config.yml'): cmvae_inference_config
 })
 
 output_devices(config_dir, tensorflow_device=True)

@@ -26,6 +26,9 @@ if not os.path.exists(output_dir):
 
 output_dir = os.path.join(output_dir, str(count_directories_in_directory(output_dir)))
 
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
 # DEFINE TRAINING META PARAMETERS
 batch_size = cmvae_training_config['batch_size']
 epochs = cmvae_training_config['epochs']
@@ -251,7 +254,7 @@ for epoch in tqdm(range(epochs)):
                 print('Best model found, total test loss: {}. Saving weights to {}'.format(test_total_loss, output_dir))
                 cmvae.save_weights(os.path.join(output_dir, 'best_model', 'model.ckpt'))
                 if window_size is not None:
-                    if ((current_window_loss - test_total_loss) / current_window_loss) > loss_threshold:
+                    if ((current_window_loss - test_total_loss) / current_window_loss) >= loss_threshold:
                         bad_epochs = 0
                         current_window_loss = test_total_loss
                         print('Checkpoint reset, require next loss of: {}%'.format((current_window_loss * (1 - loss_threshold))))

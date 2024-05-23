@@ -1,0 +1,97 @@
+library(utils)
+library(data.table)
+library(ggplot2)
+library(yaml)
+library(scales)
+
+normalize_by_max <- function(df, group_cols, target_col) {
+  max_values <- tapply(df[[target_col]], interaction(df[group_cols]), max)
+  normalized_values <- df[[target_col]] / max_values[interaction(df[group_cols])]
+  return(normalized_values)
+}
+
+directory_path <- list(
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\0\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\1\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\2\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\3\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\4\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\5\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\6\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\7\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\8\\best_model\\inference_results",
+  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\9\\best_model\\inference_results"
+  )
+
+combined_data <- data.frame()
+
+for (seed_dir in directory_path) {
+  seed <- file.path(dirname(dirname(seed_dir)), "configs", "env_config.yml")
+  yaml_data <- as.data.frame(t(yaml.load_file(seed)))
+  folders <- list.dirs(seed_dir, full.names = TRUE, recursive = FALSE)
+  
+  for (folder in folders) {
+    data <- read.csv(file.path(folder, "prediction_stats.csv"))
+    data <- subset(data, select = c(Feature, MAE))
+    
+    data_img <- read.csv(file.path(folder, "prediction_img.csv"))
+    
+    data[nrow(data) + 1,] = c("Image", data_img$MAE)
+    data$MAE <- as.numeric(data$MAE)
+    data <- cbind(data, yaml_data$seed)
+    
+    data$seed <- factor(data$seed)
+    names(data)[names(data) == "seed"] <- "ModelSeed"
+    
+    yaml_data1 <- as.data.frame(t(yaml.load_file(file.path(folder, "configs", "env_config.yml"))))
+    data <- cbind(data, yaml_data1$seed)
+    data$seed <- factor(data$seed)
+    names(data)[names(data) == "seed"] <- "Seed"
+    
+    yaml_data2 <- as.data.frame(t(yaml.load_file(file.path(dirname(dirname(seed_dir)), "configs", "cmvae_training_config.yml"))))
+    data$EarlyStopping <- ifelse(!is.na(as.numeric(as.character(yaml_data2$window_size))), "Yes", "No")
+    
+    combined_data <- rbind(combined_data,data)
+  }
+}
+
+point_shape <- c(1:length(unique(factor(combined_data$Seed))))
+point_shape <- point_shape[factor(combined_data$Seed)]
+
+p <- ggplot(combined_data, aes(x = "", y = MAE, fill=EarlyStopping)) +
+  geom_boxplot(position = position_dodge(1)) +
+  geom_jitter(position = position_dodge(1)) +
+  facet_wrap(~ Feature, scales = "free_y") +
+  scale_y_continuous(labels = scientific) +
+  theme(legend.position = "bottom",
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),   
+        axis.ticks.x = element_blank()) + 
+  labs(fill = "Early Stopping") 
+
+print(p)
+
+early_stop_arr <- c("No", "Yes")
+
+for (element in early_stop_arr) {
+  section_data <- combined_data[combined_data$EarlyStopping == element, ]
+  
+  p <- ggplot(section_data, aes(x = ModelSeed, y = MAE, fill=ModelSeed)) +
+    geom_boxplot(position = position_dodge(1)) +
+    geom_jitter(aes(shape=Seed)) +
+    facet_wrap(~ Feature, scales = "free_y") +
+    theme(legend.position = "bottom",
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),   
+          axis.ticks.x = element_blank())  + 
+    labs(fill = "Training Seed", shape="Inference Seed") 
+  
+  print(p)
+}
+
+combined_data$MAE <- normalize_by_max(combined_data, c("Feature"), "MAE")
+
+combined_data <- aggregate(list(MAE=combined_data$MAE),
+                    by = list(ModelSeed = combined_data$ModelSeed,
+                              EarlyStopping = combined_data$EarlyStopping),
+                    FUN = mean)

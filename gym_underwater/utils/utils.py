@@ -421,16 +421,9 @@ def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude
         raise FileExistsError(f'Destination directory "{dst_dir}" already exists.')
 
 
-def image_similarity(image_1, image_2):
-    image_1 = image_1.flatten()
-    image_2 = image_2.flatten()
-
-    test1 = np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
-
-    image_1 = image_1 / 255
-    image_2 = image_2 / 255
-
-    test2 = np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
+def image_similarity(image_1, image_2) -> float:
+    image_1 = image_1.flatten() / 255
+    image_2 = image_2.flatten() / 255
 
     return np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
 

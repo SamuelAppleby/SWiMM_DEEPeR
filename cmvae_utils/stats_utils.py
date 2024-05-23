@@ -5,6 +5,28 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 
 
+def calculate_img_stats(predictions, imgs, output_dir):
+    print('IMAGES')
+
+    abs_diff = np.abs(predictions.astype(np.int32) - imgs.astype(np.int32))
+
+    mae = np.mean(abs_diff)
+    print(f'MAE : {mae}')
+
+    std = np.std(abs_diff) / np.sqrt(abs_diff.shape[0])
+    print(f'Standard error: {std}')
+
+    max_diff = np.max(abs_diff)
+    print(f'Max error : {max_diff}')
+
+    with open(os.path.join(output_dir, 'prediction_img.csv'), 'w', newline='', encoding='UTF8') as ftest:
+        writer = csv.writer(ftest)
+        if ftest.tell() == 0:
+            writer.writerow(['MAE', 'Standard Error', 'Max Error'])
+
+        writer.writerow([mae, std, max_diff])
+
+
 def calculate_gate_stats(predictions, poses, output_dir):
     # display averages
     mean_pred = np.mean(predictions, axis=0)

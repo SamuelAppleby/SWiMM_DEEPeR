@@ -7,8 +7,8 @@ class NonLinearTransformer(tf.keras.Model):
         self.create_model()
 
     @tf.function
-    def call(self, x):
-        return self.network(x)
+    def call(self, x, training=False):
+        return self.network(x, training=training)
 
     def create_model(self):
         print('[NonLinearTransformer] Starting create_model')
@@ -30,9 +30,9 @@ class TestNet(tf.keras.Model):
         self.create_model()
 
     @tf.function
-    def call(self, x):
+    def call(self, x, training=False):
         x = tf.keras.layers.Flatten()(x)
-        return self.network(x)
+        return self.network(x, training=training)
 
     def create_model(self):
         print('[NonLinearTransformer] Starting create_model')

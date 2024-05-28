@@ -1,3 +1,4 @@
+import csv
 import os
 
 import numpy as np
@@ -63,11 +64,15 @@ gate_recon = gate_recon.numpy()
 z = z.numpy()
 
 # de-normalization of gates and images
-images_np = ((images_np + 1.0) / 2.0 * 255.0).astype(np.uint8)
-img_recon = ((img_recon + 1.0) / 2.0 * 255.0).astype(np.uint8)
+images_np = cmvae_utils.dataset_utils.denormalize_image(images_np)
+img_recon = cmvae_utils.dataset_utils.denormalize_image(img_recon)
 gate_recon = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon)
 
-cmvae_utils.stats_utils.calculate_img_stats(img_recon, images_np, output_dir)
+with open(os.path.join(output_dir, 'prediction_img.csv'), 'w', newline='', encoding='UTF8') as f:
+    writer = csv.writer(f)
+    writer.writerow(['MAE', 'Standard Error', 'Max Error'])
+
+cmvae_utils.stats_utils.calculate_img_stats(img_recon.astype(np.int32), images_np.astype(np.int32), os.path.join(output_dir, 'prediction_img.csv'))
 
 # get stats for gate reconstruction
 cmvae_utils.stats_utils.calculate_gate_stats(gate_recon, raw_table, output_dir)
@@ -86,16 +91,16 @@ for i in range(1, num_imgs_display + 1):
     plt.imshow(img_display)
 fig.savefig(os.path.join(output_dir, 'reconstruction_results.png'))
 
-images_np_interp, raw_table_interp = cmvae_utils.dataset_utils.create_test_dataset_csv(interpolation_dir, img_res)
+images_np_interps, raw_table_interps = cmvae_utils.dataset_utils.create_test_dataset_csv(interpolation_dir, img_res)
 
-img_recon_interps, gate_recon_interps, means_interps, stddev_interps, z_interps = cmvae(images_np_interp, mode=0)
+img_recon_interps, gate_recon_interps, means_interps, stddev_interps, z_interps = cmvae(images_np_interps, mode=0)
 img_recon_interps = img_recon_interps.numpy()
 gate_recon_interps = gate_recon_interps.numpy()
 z_interps = z_interps.numpy()
 
 # de-normalization of gates and images
-images_np_interp = ((images_np_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
-img_recon_interps = ((img_recon_interps + 1.0) / 2.0 * 255.0).astype(np.uint8)
+images_np_interps = cmvae_utils.dataset_utils.denormalize_image(images_np_interps)
+img_recon_interps = cmvae_utils.dataset_utils.denormalize_image(img_recon_interps)
 gate_recon_interps = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interps)
 
 # show interpolation btw two images in latent space
@@ -113,7 +118,7 @@ for z_int in z_interp:
     gate_recon_interp = gate_recon_interp.numpy()
 
     # de-normalization of gates and images
-    img_recon_interp = ((img_recon_interp + 1.0) / 2.0 * 255.0).astype(np.uint8)
+    img_recon_interp = cmvae_utils.dataset_utils.denormalize_image(img_recon_interp)
     gate_recon_interp = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon_interp)
 
     # join predictions with array and print
@@ -153,7 +158,7 @@ for z_int in z_interp:
     columns = num_interp_z + 2
     rows = 1
     fig2.add_subplot(rows, columns, 1)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interp[(2 * idx), :])
+    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interps[(2 * idx), :])
     plt.axis('off')
     plt.imshow(img_display)
     for i in range(1, num_interp_z + 1):
@@ -162,7 +167,7 @@ for z_int in z_interp:
         plt.axis('off')
         plt.imshow(img_display)
     fig2.add_subplot(rows, columns, num_interp_z + 2)
-    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interp[(2 * idx) + 1, :])
+    img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interps[(2 * idx) + 1, :])
     plt.axis('off')
     plt.imshow(img_display)
     fig2.savefig(os.path.join(output_dir, 'reconstruction_interpolation_results_{}.png'.format(label)))
@@ -180,7 +185,9 @@ for i in range(1, z_num_mural * n_z + 1):
     img_recon_interp, gate_recon_interp = cmvae.decode(z, mode=0)
     img_recon_interp = img_recon_interp.numpy()
     gate_recon_interp = gate_recon_interp.numpy()
-    img_recon_interp = ((img_recon_interp[0, :] + 1.0) / 2.0 * 255.0).astype(np.uint8)
+
+    img_recon_interp = cmvae_utils.dataset_utils.denormalize_image(img_recon_interp[0, :])
+
     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
     plt.axis('off')
     plt.imshow(img_display)

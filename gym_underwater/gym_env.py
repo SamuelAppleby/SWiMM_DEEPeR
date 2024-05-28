@@ -1,6 +1,8 @@
 import logging
+import os
 import time
 
+import cv2
 import numpy as np
 
 import cmvae_utils.dataset_utils
@@ -32,7 +34,7 @@ class UnderwaterEnv(gymnasium.Env):
         self.obs = obs
 
         # create instance of class that deals with Unity communications
-        self.handler = UnitySimHandler(opt_d, max_d, cmvae.img_res if cmvae is not None else img_res, tensorboard_log, protocol, host, seed)
+        self.handler = UnitySimHandler(opt_d, max_d, img_res, tensorboard_log, protocol, host, seed)
 
         self.handler.connect(*self.handler.address)
         self.handler.read_write_thread.start()
@@ -58,29 +60,17 @@ class UnderwaterEnv(gymnasium.Env):
         else:
             raise ValueError(f'Invalid observation type: {obs}')
 
-    def observe_and_process_observation(self, action=None, pred=False):
+    def observe_and_process_observation(self):
         # retrieve results of action implementation
         observation, reward, terminated, truncated, info = self.handler.observe(self.obs)
         # if vae has been passed, raw image observation encoded to latent vector
         if self.cmvae is not None:
-            # vae will have been trained on BGR ordered image arrays, so need to reverse first and last channel of RGB array
-            observation = observation[:, :, ::-1]
-
-            # normalize pixel values
-            observation = observation / 255.0 * 2.0 - 1.0
-            # add a dimension on the front so that has the shape (?, vae_res, vae_res, 3) that network expects
-            observation = observation.reshape(-1, *observation.shape)
-            # pass through encoder network
-            if pred:
-                _, _, z, pred = self.cmvae.encode_with_pred(observation)
-                # denormalize state predictions
-                pred = cmvae_utils.dataset_utils.de_normalize_gate(pred)
-                print(f'Prediction: {pred[0]}, Thrust: {action[0]}, Steer: {action[1]}')
-            else:
-                _, _, z = self.cmvae.encode(observation)
+            # add a dimension on the front so that has the shape (N, vae_res, vae_res, 3) that network expects
+            # TODO Check still require this
+            observation = np.expand_dims(observation, axis=0)
 
             # set latent vector as observation
-            observation = z
+            observation, _, _ = self.cmvae.encode(observation)
 
         return observation, reward, terminated, truncated, info
 

@@ -1,3 +1,4 @@
+import cv2
 from stable_baselines3.common import base_class
 from stable_baselines3.common.logger import TensorBoardOutputFormat
 import os
@@ -12,6 +13,7 @@ from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, StopT
 from stable_baselines3.common.type_aliases import TrainFrequencyUnit, TrainFreq
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
+import cmvae_utils.dataset_utils
 from .env_wrappers.swim_monitor import SwimMonitor
 from .env_wrappers.swim_time_limit import SwimTimeLimit
 from .sim_comms import MAX_STEP_REWARD
@@ -146,6 +148,7 @@ class SwimEvalCallback(EvalCallback):
         self.eval_inference_freq = convert_train_freq(eval_inference_freq)
         self.n_rollout_calls = 0
         self.continue_training = True
+        self.img_num = 0
 
     def _on_step(self) -> bool:
         """
@@ -240,7 +243,8 @@ class SwimEvalCallback(EvalCallback):
                         episode_rewards.append(current_rewards[i])
                         episode_lengths.append(current_lengths[i])
 
-                        validate_episode_termination(info)
+                        if dones[i]:
+                            validate_episode_termination(info)
 
                         self.logger.record('eval/episode_termination', info['episode_termination_type'])
                         self.logger.record('eval/ep_reward', episode_rewards[-1])

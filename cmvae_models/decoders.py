@@ -7,8 +7,8 @@ class ImgDecoder(tf.keras.Model):
         self.create_model()
 
     @tf.function
-    def call(self, z):
-        return self.network(z)
+    def call(self, z, training=False):
+        return self.network(z, training=training)
 
     def create_model(self):
         print('[ImgDecoder] Starting create_model')
@@ -43,8 +43,8 @@ class GateDecoder(tf.keras.Model):
         self.create_model(gate_dim)
 
     @tf.function
-    def call(self, z):
-        return self.network(z)
+    def call(self, z, training=False):
+        return self.network(z, training=training)
 
     def create_model(self, gate_dim):
         print('[GateDecoder] Starting create_model')

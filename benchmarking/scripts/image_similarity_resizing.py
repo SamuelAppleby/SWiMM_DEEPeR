@@ -4,7 +4,8 @@ import os
 
 import numpy as np
 
-from gym_underwater.utils.utils import read_files_from_dir, image_similarity
+from cmvae_utils.dataset_utils import load_img_from_file_or_array_and_resize_cv2
+from cmvae_utils.stats_utils import calculate_img_stats
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dirs_orig', help='Original directories (comma separated e.g. <dir1,dir2,dir3>', default=None, type=str)
@@ -15,6 +16,8 @@ args = parser.parse_args()
 dirs_orig = args.dirs_orig.split(',')
 dirs_scaled = args.dirs_scaled.split(',')
 
+res_scaled = (64, 64, 3)
+
 assert isinstance(dirs_orig, list) and isinstance(dirs_scaled, list), 'Invalid Directories'
 assert args.dir_output is not None, 'Invalid output directory'
 
@@ -23,17 +26,19 @@ if not os.path.exists(args.dir_output):
 
 with open(os.path.join(args.dir_output, 'resizing.csv'), 'w', newline='', encoding='UTF8') as f:
     writer = csv.writer(f)
-    if f.tell() == 0:
-        writer.writerow(['Original Directory', 'Scaled Directory', 'Mean', 'Standard Deviation', 'Loss'])
+    writer.writerow(['Original Directory', 'Scaled Directory', 'MAE', 'Standard Error', 'Max Error'])
 
     for dir_orig, dir_scaled in zip(dirs_orig, dirs_scaled):
-        unity_scaled = read_files_from_dir([os.path.join(dir_scaled, filename) for filename in os.listdir(dir_scaled)], resize_img=False)
-        python_scaled = read_files_from_dir([os.path.join(dir_orig, filename) for filename in os.listdir(dir_orig)], resize_img=True)
+        writer.writerow([dir_orig, dir_scaled])
 
-        sims = []
+for dir_orig, dir_scaled in zip(dirs_orig, dirs_scaled):
+    unity_scaled = np.zeros(np.concatenate(([len(os.listdir(dir_scaled))], res_scaled))).astype(np.int8)
+    python_scaled = np.zeros(np.concatenate(([len(os.listdir(dir_orig))], res_scaled))).astype(np.int8)
 
-        for image_1, image_2 in zip(unity_scaled, python_scaled):
-            sims.append(image_similarity(image_1, image_2))
+    for idx, filename in enumerate(os.listdir(dir_scaled)):
+        unity_scaled[idx, :] = load_img_from_file_or_array_and_resize_cv2(file=os.path.join(dir_scaled, filename), res=res_scaled, normalise=False)
 
-        sims_mean = np.mean(sims)
-        writer.writerow([dir_orig, dir_scaled, sims_mean, np.std(sims), (1 - sims_mean)])
+    for idx, filename in enumerate(os.listdir(dir_orig)):
+        python_scaled[idx, :] = load_img_from_file_or_array_and_resize_cv2(file=os.path.join(dir_orig, filename), res=res_scaled, normalise=False)
+
+    calculate_img_stats(unity_scaled, python_scaled, os.path.join(args.dir_output, 'resizing.csv'))

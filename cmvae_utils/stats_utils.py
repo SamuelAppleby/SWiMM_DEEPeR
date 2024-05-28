@@ -5,26 +5,37 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 
 
-def calculate_img_stats(predictions, imgs, output_dir):
-    print('IMAGES')
+def calculate_difference_metrics(x, y, axis=None):
+    abs_diff = np.abs(x - y)
+    mae = np.mean(abs_diff, axis=axis)
+    std = np.std(abs_diff, axis=axis) / np.sqrt(abs_diff.shape[0])
+    max_diff = np.max(abs_diff, axis=axis)
 
-    abs_diff = np.abs(predictions.astype(np.int32) - imgs.astype(np.int32))
+    return abs_diff, mae, std, max_diff
 
-    mae = np.mean(abs_diff)
-    print(f'MAE : {mae}')
 
-    std = np.std(abs_diff) / np.sqrt(abs_diff.shape[0])
-    print(f'Standard error: {std}')
+def calculate_img_stats(predictions, images, output_file):
+    assert os.path.exists(output_file)
 
-    max_diff = np.max(abs_diff)
-    print(f'Max error : {max_diff}')
+    with open(output_file, mode='r', newline='') as read_file:
+        reader = list(csv.reader(read_file))
+        expected = len(reader[0])
 
-    with open(os.path.join(output_dir, 'prediction_img.csv'), 'w', newline='', encoding='UTF8') as ftest:
-        writer = csv.writer(ftest)
-        if ftest.tell() == 0:
-            writer.writerow(['MAE', 'Standard Error', 'Max Error'])
+    for i, row in enumerate(reader):
+        if (len(row) < expected) or (i == (len(reader) - 1)):
+            abs_diff, mae, std, max_diff = calculate_difference_metrics(predictions, images, axis=None)
 
-        writer.writerow([mae, std, max_diff])
+            if len(row) < expected:
+                row.extend([mae, std, max_diff])
+            else:
+                reader.append([mae, std, max_diff])
+
+            break
+
+    with open(output_file, mode='w', newline='') as write_file:
+        writer = csv.writer(write_file)
+        for row in reader:
+            writer.writerow(row)
 
 
 def calculate_gate_stats(predictions, poses, output_dir):
@@ -33,18 +44,7 @@ def calculate_gate_stats(predictions, poses, output_dir):
     mean_pose = np.mean(poses, axis=0)
     print(f'Means (prediction, GT) : R({mean_pred[0]} , {mean_pose[0]}) Theta({mean_pred[1]} , {mean_pose[1]}) Psi({mean_pred[2]} , {mean_pose[2]})')
 
-    # display mean absolute error
-    abs_diff = np.abs(predictions - poses)
-    mae = np.mean(abs_diff, axis=0)
-    # mae[1:] = mae[1:] * 180/np.pi
-    print(f'MAE : R({mae[0]}) Theta({mae[1]}) Psi({mae[2]})')
-    # display standard deviation of error
-    std = np.std(abs_diff, axis=0) / np.sqrt(abs_diff.shape[0])
-    # std[1:] = std[1:] * 180 / np.pi
-    print(f'Standard error: R({std[0]}) Theta({std[1]}) Psi({std[2]})')
-    # display max errors
-    max_diff = np.max(abs_diff, axis=0)
-    print(f'Max error : R({max_diff[0]}) Theta({max_diff[1]}) Psi({max_diff[2]})')
+    abs_diff, mae, std, max_diff = calculate_difference_metrics(predictions, poses, axis=0)
 
     with open(os.path.join(output_dir, 'prediction_stats.csv'), 'w', newline='', encoding='UTF8') as ftest:
         writer = csv.writer(ftest)

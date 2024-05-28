@@ -6,6 +6,11 @@ import cv2
 from natsort import natsorted
 from sklearn.model_selection import train_test_split
 
+R_RANGE = [2, 10]
+CAM_FOV = 79.95185  # HORIZONTAL
+ALPHA = CAM_FOV / 2.0  # (cam_fov/180.0*np.pi/2.0)
+THETA_RANGE = [-ALPHA, ALPHA]  # [-90, 90]
+PSI_RANGE = [-180, 180]
 
 def convert_bgr2rgb(img_bgr):
     return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
@@ -62,44 +67,32 @@ def de_normalize_v(v):
 
 
 def normalize_gate(pose):
-    # normalization of velocities from whatever to [-1, 1] range
-    r_range = [2, 10]
-    cam_fov = 79.95185  # HORIZONTAL
-    alpha = cam_fov / 2.0  # (cam_fov/180.0*np.pi/2.0)
-    theta_range = [-alpha, alpha]  # [-90, 90]
-    psi_range = [-180, 180]
     if len(pose.shape) == 1:
         # means that it's a 1D vector of velocities
-        pose[0] = 2.0 * (pose[0] - r_range[0]) / (r_range[1] - r_range[0]) - 1.0
-        pose[1] = 2.0 * (pose[1] - theta_range[0]) / (theta_range[1] - theta_range[0]) - 1.0
-        pose[2] = 2.0 * (pose[2] - psi_range[0]) / (psi_range[1] - psi_range[0]) - 1.0
+        pose[0] = 2.0 * (pose[0] - R_RANGE[0]) / (R_RANGE[1] - R_RANGE[0]) - 1.0
+        pose[1] = 2.0 * (pose[1] - THETA_RANGE[0]) / (THETA_RANGE[1] - THETA_RANGE[0]) - 1.0
+        pose[2] = 2.0 * (pose[2] - PSI_RANGE[0]) / (PSI_RANGE[1] - PSI_RANGE[0]) - 1.0
     elif len(pose.shape) == 2:
         # means that it's a 2D vector of velocities
-        pose[:, 0] = 2.0 * (pose[:, 0] - r_range[0]) / (r_range[1] - r_range[0]) - 1.0
-        pose[:, 1] = 2.0 * (pose[:, 1] - theta_range[0]) / (theta_range[1] - theta_range[0]) - 1.0
-        pose[:, 2] = 2.0 * (pose[:, 2] - psi_range[0]) / (psi_range[1] - psi_range[0]) - 1.0
+        pose[:, 0] = 2.0 * (pose[:, 0] - R_RANGE[0]) / (R_RANGE[1] - R_RANGE[0]) - 1.0
+        pose[:, 1] = 2.0 * (pose[:, 1] - THETA_RANGE[0]) / (THETA_RANGE[1] - THETA_RANGE[0]) - 1.0
+        pose[:, 2] = 2.0 * (pose[:, 2] - PSI_RANGE[0]) / (PSI_RANGE[1] - PSI_RANGE[0]) - 1.0
     else:
         raise Exception('Error in data format of V shape: {}'.format(pose.shape))
     return pose
 
 
 def de_normalize_gate(pose):
-    # normalization of velocities from [-1, 1] range to whatever
-    r_range = [2, 10]
-    cam_fov = 79.95185  # HORIZONTAL
-    alpha = cam_fov / 2.0  # (cam_fov/180.0*np.pi/2.0)
-    theta_range = [-alpha, alpha]  # [-90, 90]
-    psi_range = [-180, 180]
     if len(pose.shape) == 1:
         # means that it's a 1D vector of velocities
-        pose[0] = (pose[0] + 1.0) / 2.0 * (r_range[1] - r_range[0]) + r_range[0]
-        pose[1] = (pose[1] + 1.0) / 2.0 * (theta_range[1] - theta_range[0]) + theta_range[0]
-        pose[2] = (pose[2] + 1.0) / 2.0 * (psi_range[1] - psi_range[0]) + psi_range[0]
+        pose[0] = (pose[0] + 1.0) / 2.0 * (R_RANGE[1] - R_RANGE[0]) + R_RANGE[0]
+        pose[1] = (pose[1] + 1.0) / 2.0 * (THETA_RANGE[1] - THETA_RANGE[0]) + THETA_RANGE[0]
+        pose[2] = (pose[2] + 1.0) / 2.0 * (PSI_RANGE[1] - PSI_RANGE[0]) + PSI_RANGE[0]
     elif len(pose.shape) == 2:
         # means that it's a 2D vector of velocities
-        pose[:, 0] = (pose[:, 0] + 1.0) / 2.0 * (r_range[1] - r_range[0]) + r_range[0]
-        pose[:, 1] = (pose[:, 1] + 1.0) / 2.0 * (theta_range[1] - theta_range[0]) + theta_range[0]
-        pose[:, 2] = (pose[:, 2] + 1.0) / 2.0 * (psi_range[1] - psi_range[0]) + psi_range[0]
+        pose[:, 0] = (pose[:, 0] + 1.0) / 2.0 * (R_RANGE[1] - R_RANGE[0]) + R_RANGE[0]
+        pose[:, 1] = (pose[:, 1] + 1.0) / 2.0 * (THETA_RANGE[1] - THETA_RANGE[0]) + THETA_RANGE[0]
+        pose[:, 2] = (pose[:, 2] + 1.0) / 2.0 * (PSI_RANGE[1] - PSI_RANGE[0]) + PSI_RANGE[0]
     else:
         raise Exception('Error in data format of V shape: {}'.format(pose.shape))
     return pose
@@ -119,11 +112,8 @@ def read_images(data_dir, res, max_size=None):
     print('Done. Going to read images.')
     idx = 0
     for img_name in files_list:
-        # read data in BGR format by default!!!
-        # notice that model is going to be trained in BGR
-        im = cv2.imread(img_name, cv2.IMREAD_COLOR)
-        im = cv2.resize(im, (res[0], res[1]))
-        im = im / 255.0 * 2.0 - 1.0
+        im = load_img_from_file_or_array_and_resize_cv2(file=img_name, res=res, normalise=True)
+
         images_np[idx, :] = im
         if idx % 10000 == 0:
             print('image idx = {}'.format(idx))
@@ -151,14 +141,8 @@ def create_dataset_csv(data_dir, res, max_size=None, seed=None):
     print('Done. Going to read images.')
     idx = 0
     for file in files_list:
-        # read data in BGR format by default!!!
-        # notice that model is going to be trained in BGR
-        im = cv2.imread(file, cv2.IMREAD_COLOR)
+        im = load_img_from_file_or_array_and_resize_cv2(file=file, res=res, normalise=True)
 
-        if im.shape != res:
-            im = cv2.resize(im, (res[0], res[1]))
-
-        im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         if idx % 10000 == 0:
             print('image idx = {}'.format(idx))
@@ -221,14 +205,8 @@ def create_test_dataset_csv(data_dir, res, read_table=True):
     print('After images_np init')
     idx = 0
     for file in files_list:
-        # read data in BGR format by default!!!
-        # notice that model was trained in BGR
-        im = cv2.imread(file, cv2.IMREAD_COLOR)
+        im = load_img_from_file_or_array_and_resize_cv2(file=file, res=res, normalise=True)
 
-        if im.shape != res:
-            im = cv2.resize(im, (res[0], res[1]))
-
-        im = im / 255.0 * 2.0 - 1.0
         images_np[idx, :] = im
         idx = idx + 1
 
@@ -271,11 +249,9 @@ def create_dataset_txt(data_dir, batch_size, res, data_mode='train', base_path=N
     for img_name in img_table:
         if base_path is not None:
             img_name = img_name.replace('/home/rb/data', base_path)
-        # read data in BGR format by default!!!
-        # notice that model is going to be trained in BGR
-        im = cv2.imread(img_name, cv2.IMREAD_COLOR)
-        im = cv2.resize(im, (res[0], res[1]))
-        im = im / 255.0 * 2.0 - 1.0
+
+        im = load_img_from_file_or_array_and_resize_cv2(file=img_name, res=res, normalise=True)
+
         images_np[idx, :] = im
         if idx % 1000 == 0:
             print('image idx = {} out of {} images'.format(idx, size_data))
@@ -322,3 +298,30 @@ def create_dataset_multiple_sources(data_dir_list, batch_size, res, data_mode='t
         return ds_train, ds_test
     elif data_mode == 'test':
         return img_test, v_test
+
+
+def load_img_from_file_or_array_and_resize_cv2(file=None, img_array=None, res=None, normalise=False):
+    img = None
+
+    # read data in BGR format by default!!! notice that model was trained in BGR
+    if file is not None:
+        img = cv2.imread(file, cv2.IMREAD_COLOR).astype(np.uint8)
+
+    if img_array is not None:
+        img = cv2.imdecode(np.array(img_array, np.uint8), cv2.IMREAD_COLOR)
+
+    if (res is not None) and (img is not None) and (img.shape != res):
+        img = cv2.resize(img, (res[0], res[1]))
+
+    if normalise:
+        img = normalize_image(img)
+
+    return img
+
+
+def normalize_image(img):
+    return ((img / 255.0) * 2.0) - 1.0
+
+
+def denormalize_image(img):
+    return ((img + 1.0) / 2.0 * 255.0).astype(np.uint8)

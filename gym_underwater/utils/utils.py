@@ -3,12 +3,12 @@ import os
 import shutil
 from typing import Dict, Type, Any, Optional, Callable, List, Union, Tuple
 
+import cv2
 import gymnasium
 import numpy as np
 import tensorflow as tf
 import torch
 import yaml
-from PIL import Image
 from cv2 import resize
 from gymnasium import Env
 from numpy.linalg import norm
@@ -318,7 +318,6 @@ def load_cmvae_global_config(project_dir, weights_path=None, seed=None) -> Tuple
         else:
             cmvae = Cmvae(n_z=cmvae_global_config['n_z'], gate_dim=3, seed=seed)
 
-        # TODO Investigate saving the model using save() and then we can avoid below (there must have been a reason)
         if weights_path is not None:
             cmvae.load_weights(weights_path).expect_partial()
             cmvae.img_res = tuple(cmvae.img_res)
@@ -419,27 +418,6 @@ def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude
         shutil.copytree(src_dir, dst_dir, ignore=_exclude_func)
     except FileExistsError:
         raise FileExistsError(f'Destination directory "{dst_dir}" already exists.')
-
-
-def image_similarity(image_1, image_2) -> float:
-    image_1 = image_1.flatten() / 255
-    image_2 = image_2.flatten() / 255
-
-    return np.dot(image_1, image_2) / (norm(image_1) * norm(image_2))
-
-
-def read_files_from_dir(files, resize_img=False) -> np.ndarray:
-    arr = np.empty((0, 64, 64, 3))
-
-    for file in files:
-        if file.endswith('.jpg'):
-            img = np.array(Image.open(file))
-            if resize_img:
-                arr = np.append(arr, [resize(img, (64, 64)).astype(np.uint8)], axis=0)
-            else:
-                arr = np.append(arr, [img], axis=0)
-
-    return arr
 
 
 def save_configs(configs) -> None:

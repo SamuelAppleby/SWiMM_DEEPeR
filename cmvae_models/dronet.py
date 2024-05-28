@@ -15,11 +15,11 @@ class Dronet(tf.keras.Model):
 
         # First residual block
         x2 = self.bn0(x1, training=training)
-        x2 = tf.keras.layers.Activation('relu')(x2)
+        x2 = tf.keras.layers.Activation('relu')(x2, training=training)
         x2 = self.conv1(x2, training=training)
 
         x2 = self.bn1(x2,training=training)
-        x2 = tf.keras.layers.Activation('relu')(x2)
+        x2 = tf.keras.layers.Activation('relu')(x2, training=training)
         x2 = self.conv2(x2, training=training)
 
         x1 = self.conv3(x1, training=training)
@@ -28,11 +28,11 @@ class Dronet(tf.keras.Model):
         # Second residual block
         x4 = self.bn2(x3, training=training)
         # x4 = x3
-        x4 = tf.keras.layers.Activation('relu')(x4)
+        x4 = tf.keras.layers.Activation('relu')(x4, training=training)
         x4 = self.conv4(x4, training=training)
 
         x4 = self.bn3(x4, training=training)
-        x4 = tf.keras.layers.Activation('relu')(x4)
+        x4 = tf.keras.layers.Activation('relu')(x4, training=training)
         x4 = self.conv5(x4, training=training)
 
         x3 = self.conv6(x3, training=training)
@@ -41,11 +41,11 @@ class Dronet(tf.keras.Model):
         # Third residual block
         x6 = self.bn4(x5, training=training)
         # x6 = x5
-        x6 = tf.keras.layers.Activation('relu')(x6)
+        x6 = tf.keras.layers.Activation('relu')(x6, training=training)
         x6 = self.conv7(x6, training=training)
 
         x6 = self.bn5(x6, training=training)
-        x6 = tf.keras.layers.Activation('relu')(x6)
+        x6 = tf.keras.layers.Activation('relu')(x6, training=training)
         x6 = self.conv8(x6, training=training)
 
         x5 = self.conv9(x5, training=training)
@@ -54,7 +54,7 @@ class Dronet(tf.keras.Model):
         x = tf.keras.layers.Flatten()(x7)
 
         if self.include_top:
-            x = tf.keras.layers.Activation('relu')(x)
+            x = tf.keras.layers.Activation('relu')(x, training=training)
             # x = tf.keras.layers.Dropout(0.5)(x)
             x = self.dense0(x, training=training)
             x = self.dense1(x, training=training)

@@ -7,28 +7,18 @@ import time
 import socket
 import threading
 
-import cv2
 import numpy as np
 import math
-from io import BytesIO
-from PIL import Image
 from jsonschema.validators import validate
 from datetime import datetime
 
 from stable_baselines3.common.type_aliases import TrainFrequencyUnit
 
+import cmvae_utils.dataset_utils
 from gym_underwater.enums import Protocol, EpisodeTerminationType, TrainingType
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
-def write_image_to_file_incrementally(image, directory):
-    """
-    Dumping the image to a continuously progressing file, just for debugging purposes. Keep most recent 1,000 images only.
-    """
-    with open(directory, 'wb') as f:
-        f.write(image)
-
-
 def calc_metrics(rov_pos, rov_fwd, target_pos):
     # heading vector from rover to target
     heading = target_pos - rov_pos
@@ -90,7 +80,6 @@ class UnitySimHandler:
         self.interval = 1 / PERIOD
         self.timeout = self.interval * PERIOD * 60 * 10  # Timeout will occur if 10 minutes have occurred without message
         self.sim_ready = False
-        self.img_res = img_res
         self.last_obs = None
         self.last_obs_before_inference = None
         self.rover_info = None
@@ -147,6 +136,7 @@ class UnitySimHandler:
 
         self.observation_buffer_size = 8192
         self.read_write_thread = None
+        self.img_res = img_res
 
     def connect(self, host='127.0.0.1', port=60260):
         """
@@ -353,13 +343,12 @@ class UnitySimHandler:
         image = bytearray(base64.b64decode(self.rover_info['obs']))
 
         if (self.network_log is not None) and not self.msg_discard:
-            write_image_to_file_incrementally(image, os.path.join(self.debug_logs_dir, 'images', f'step_{self.image_num}.jpg'))
+            with open(os.path.join(self.debug_logs_dir, 'images', f'step_{self.image_num}.jpg'), 'wb') as f:
+                f.write(image)
+
             self.image_num += 1
 
-        image = np.array(Image.open(BytesIO(image)))
-
-        if image.shape != self.img_res:
-            image = cv2.resize(image, (self.img_res[0], self.img_res[1])).astype(np.uint8)
+        image = cmvae_utils.dataset_utils.load_img_from_file_or_array_and_resize_cv2(img_array=image, res=self.img_res, normalise=True)
 
         self.set_obsv(image)
 

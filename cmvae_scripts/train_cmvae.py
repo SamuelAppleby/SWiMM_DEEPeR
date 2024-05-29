@@ -3,8 +3,7 @@ import os
 from tqdm import tqdm
 
 import cmvae_utils.dataset_utils
-from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, save_configs, load_cmvae_training_config, output_devices, TENSORBOARD_FILE_NAME, \
-    count_directories_in_directory
+from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, save_configs, load_cmvae_training_config, output_devices, TENSORBOARD_FILE_NAME, count_directories_in_directory
 
 import tensorflow as tf
 

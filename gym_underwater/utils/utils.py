@@ -1,17 +1,13 @@
 import importlib
 import os
 import shutil
-from typing import Dict, Type, Any, Optional, Callable, List, Union, Tuple
+from typing import Dict, Type, Any, Optional, Callable, List, Tuple
 
-import cv2
 import gymnasium
 import numpy as np
 import tensorflow as tf
 import torch
 import yaml
-from cv2 import resize
-from gymnasium import Env
-from numpy.linalg import norm
 
 from stable_baselines3 import DDPG, PPO, SAC, TD3
 from stable_baselines3.common.base_class import BaseAlgorithm
@@ -21,21 +17,21 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
+from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE
 from gym_underwater.enums import Protocol
 from gym_underwater.gym_env import UnderwaterEnv
 
-ENVIRONMENT_TO_LOAD = 'UnderwaterEnv'
-TENSORBOARD_FILE_NAME = 'tensorboard_dir.txt'
 
-
-def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, project_dir, protocol=Protocol.TCP, host='127.0.0.1:60260', seed=None, inference_only=False) -> Env:
+def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, exe_args=None) -> UnderwaterEnv:
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
-    uenv = UnderwaterEnv(obs=obs, opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, host=host, seed=seed, cmvae=cmvae)
-    with open(os.path.join(project_dir, 'configs', 'env_wrapper.yml'), 'r') as f:
+    uenv = UnderwaterEnv(obs=obs, opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, ip=ip, port=port, seed=seed, cmvae=cmvae, exe_args=exe_args)
+    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'configs', 'env_wrapper.yml'), 'r') as f:
         env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
-        env_wrapper = get_wrapper_class(env_wrapper_config, tensorboard_log=tensorboard_log, inference_only=inference_only)
+
+        env_wrapper = get_wrapper_class(env_wrapper_config,
+                                        monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv') if port == PORT_TRAIN else os.path.join(tensorboard_log, 'evaluation_monitor.csv'))
         if env_wrapper is not None:
             env = env_wrapper(uenv)
 
@@ -66,7 +62,7 @@ def linear_schedule(initial_value):
 def middle_drop(initial_value):
     """
     Similar to stable_baselines.common.schedules middle_drop, but func returns actual LR value not multiplier.
-    Produces linear schedule but with a drop half way through training to a constant schedule at 1/10th initial value.
+    Produces linear schedule but with a drop halfway through training to a constant schedule at 1/10th initial value.
 
     :param initial_value: (float or str)
     :return: (function)
@@ -122,21 +118,21 @@ ALGOS: Dict[str, Type[BaseAlgorithm]] = {
 }
 
 
-# We require that SwimMonitor is the very last wrapper to execute, as it relies on values obtained from others (at the moment, SwimTimeLimit)
+# We require that Monitor is the very last wrapper to execute, as it relies on values obtained from TimeLimit
 def custom_wrapper_sort(item):
     if isinstance(item, dict):
         item = next(iter(item.keys()))
     match item:
-        case 'gym_underwater.env_wrappers.swim_time_limit.SwimTimeLimit':
+        case 'gymnasium.wrappers.time_limit.TimeLimit':
             return 0
-        case 'gym_underwater.env_wrappers.swim_monitor.SwimMonitor':
+        case 'stable_baselines3.common.monitor.Monitor':
             return np.inf
         case _:
             return 0
 
 
 # Adapted from https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/rl_zoo3/utils.py#L47
-def get_wrapper_class(wrapper_list: List[Any], tensorboard_log: str = None, inference_only: bool = False) -> Optional[Callable[[gymnasium.Env], gymnasium.Env]]:
+def get_wrapper_class(wrapper_list: List[Any], monitor_filename: str = None) -> Optional[Callable[[gymnasium.Env], gymnasium.Env]]:
     def get_module_name(wrapper_name):
         return ".".join(wrapper_name.split(".")[:-1])
 
@@ -167,8 +163,7 @@ def get_wrapper_class(wrapper_list: List[Any], tensorboard_log: str = None, infe
 
         if issubclass(wrapper_class, Monitor):
             kwargs.update({
-                'filename': tensorboard_log,
-                'inference_only': inference_only
+                'filename': monitor_filename
             })
 
         wrapper_kwargs.append(kwargs)
@@ -225,7 +220,7 @@ def custom_callback_sort(item):
             return 0
 
 
-def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_log: str = None, inference_only: bool = False) -> List[BaseCallback]:
+def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_log: str = None) -> List[BaseCallback]:
     callbacks: List[BaseCallback] = []
 
     # We need to order our callbacks in a precedential manner
@@ -250,8 +245,14 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_
         callback_class = get_class_by_name(callback_name)
 
         if issubclass(callback_class, EvalCallback):
+            exe_args = ['ip', IP_HOST, 'port', str(PORT_INFERENCE), 'modeServerControl', 'debugLogs']
+
+            eval_env = make_env(cmvae=env.unwrapped.cmvae, obs=env.unwrapped.obs, opt_d=env.unwrapped.handler.opt_d, max_d=env.unwrapped.handler.max_d, img_res=env.unwrapped.handler.img_res,
+                                tensorboard_log=env.unwrapped.tensorboard_log, protocol=env.unwrapped.handler.protocol, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed, exe_args=exe_args)
+            eval_env.unwrapped.wait_until_client_ready()
+
             kwargs.update({
-                'eval_env': env,
+                'eval_env': eval_env,
                 'log_path': tensorboard_log,
                 'best_model_save_path': tensorboard_log
             })
@@ -262,24 +263,21 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_
 
             for nested in nested_keys:
                 if nested in kwargs.keys():
-                    if not inference_only:
-                        assert isinstance(kwargs[nested], dict), (
-                            f'There is an error within the {nested}'
-                            'callback definition, check the configuration file'
-                        )
+                    assert isinstance(kwargs[nested], dict), (
+                        f'There is an error within the {nested}'
+                        'callback definition, check the configuration file'
+                    )
 
-                        nested_dict = kwargs[nested]
+                    nested_dict = kwargs[nested]
 
-                        nested_dict_name = next(iter(nested_dict.keys()))
-                        nested_kwargs = nested_dict[nested_dict_name]
+                    nested_dict_name = next(iter(nested_dict.keys()))
+                    nested_kwargs = nested_dict[nested_dict_name]
 
-                        nested_class = get_class_by_name(nested_dict_name)
+                    nested_class = get_class_by_name(nested_dict_name)
 
-                        kwargs.update({
-                            nested: nested_class(**nested_kwargs)
-                        })
-                    else:
-                        del kwargs[nested]
+                    kwargs.update({
+                        nested: nested_class(**nested_kwargs)
+                    })
 
         callbacks.append(callback_class(**kwargs))
 
@@ -396,10 +394,10 @@ def load_model(env, algorithm_name, model_path=None, hyperparams=None) -> BaseAl
     return model
 
 
-def load_callbacks(project_dir, env, tensorboard_log, inference_only=False) -> List[BaseCallback]:
+def load_callbacks(project_dir, env, tensorboard_log) -> List[BaseCallback]:
     with open(os.path.join(project_dir, 'configs', 'callbacks.yml'), 'r') as f:
         callback_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
-        return get_callback_list(callback_wrapper_config, env, tensorboard_log=tensorboard_log, inference_only=inference_only)
+        return get_callback_list(callback_wrapper_config, env, tensorboard_log=tensorboard_log)
 
 
 def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude=None):

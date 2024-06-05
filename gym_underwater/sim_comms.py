@@ -15,6 +15,7 @@ from datetime import datetime
 from stable_baselines3.common.type_aliases import TrainFrequencyUnit
 
 import cmvae_utils.dataset_utils
+from gym_underwater.constants import PORT_TRAIN
 from gym_underwater.enums import Protocol, EpisodeTerminationType, TrainingType
 
 
@@ -76,12 +77,11 @@ class ClientDisconnectedException(Exception):
 
 
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_res, tensorboard_log, protocol, host, seed):
+    def __init__(self, opt_d, max_d, img_res, tensorboard_log, protocol, ip, port, seed):
         self.interval = 1 / PERIOD
         self.timeout = self.interval * PERIOD * 60 * 10  # Timeout will occur if 10 minutes have occurred without message
         self.sim_ready = False
         self.last_obs = None
-        self.last_obs_before_inference = None
         self.rover_info = None
         self.target_info = None
         self.opt_d = opt_d
@@ -90,18 +90,15 @@ class UnitySimHandler:
         self.image_array = None
         self.img_event = threading.Event()
         self.cancel_event = threading.Event()
-        self.training_type = TrainingType.TRAINING
         self.msg = None
-        self.debug_logs = False
+        self.debug_logs = True
 
         self.fns = {
             'clientReady': self.on_client_ready,
             'onTelemetry': self.on_telemetry
         }
 
-        self.episode_num = -1
-        self.inference_test_num = (-1, -1)
-        self.eval_inference_freq = None
+        self.episode_num = 0
         self.eval_packet_sent = 0
         self.packet_received_num = 0
         self.packet_sent_num = 0
@@ -117,28 +114,31 @@ class UnitySimHandler:
         self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.max_d
         self.server_config['payload']['serverConfig']['envConfig']['seed'] = seed
 
-        self.network_log = os.path.join(tensorboard_log, 'network') if self.debug_logs else None
-        if self.network_log is not None:
-            self.debug_logs_dir = os.path.join(self.network_log, 'training', f'episode_{self.episode_num}')
-            clean_and_remake(os.path.dirname(os.path.dirname(self.debug_logs_dir)))
+        self.training_type = TrainingType.TRAINING if port == PORT_TRAIN else TrainingType.INFERENCE
+
+        # TODO Okay, so the network log is being written to the same place, we need to overwrite this so that if we are the
+        # training client (check ip), then our network log is ALWAYS \training, otherwise \evaluation (on c# side i need to remove the training/evaluation and leave it as 0/1)
+        if self.debug_logs is not None:
+            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'), f'episode_{self.episode_num}')
+            clean_and_remake(self.debug_logs_dir)
             self.clean_and_create_debug_directories()
 
         self.sock = None
         self.addr = None
-        self.msg_discard = False
         self.conn = None
         self.action_buffer_size = None
         self.threads = []
 
         self.protocol = protocol
-        full_host = host.split(':')
-        self.address = (full_host[0], (int(full_host[1])))
+        self.address = (ip, port)
 
         self.observation_buffer_size = 8192
-        self.read_write_thread = None
         self.img_res = img_res
 
-    def connect(self, host='127.0.0.1', port=60260):
+        self.read_write_thread = self.connect(*self.address)
+        self.read_write_thread.start()
+
+    def connect(self, host='127.0.0.1', port=60260) -> threading.Thread:
         """
         Open a tcp/udp socket
         """
@@ -160,7 +160,7 @@ class UnitySimHandler:
             self.sock.settimeout(self.timeout)
 
         print(f'Connecting by {self.addr[0]}:{self.addr[1]} ({datetime.now().ctime()})')
-        self.read_write_thread = threading.Thread(target=self.continue_read_write, daemon=True)
+        return threading.Thread(target=self.continue_read_write, daemon=True)
 
     def set_obsv(self, image):
         while self.img_event.is_set():
@@ -307,16 +307,13 @@ class UnitySimHandler:
                 # print(f'Received: {json_str}')
                 json_dict = json.loads(json_str)
 
-                if (self.network_log is not None) and not self.msg_discard:
+                if self.debug_logs_dir is not None:
                     with open(os.path.join(self.debug_logs_dir, 'packets_received', f'step_{self.packet_received_num}.json'), 'w', encoding='utf-8') as f:
                         json.dump(json_dict, f, indent=2)
                         f.close()
                         self.packet_received_num += 1
 
                 self.on_recv_message(json_dict)
-
-                if self.msg_discard:
-                    self.msg_discard = False
 
             except Exception as e:
                 print('[NETWORK ERROR] Read error:', e)
@@ -342,7 +339,7 @@ class UnitySimHandler:
 
         image = bytearray(base64.b64decode(self.rover_info['obs']))
 
-        if (self.network_log is not None) and not self.msg_discard:
+        if self.debug_logs_dir is not None:
             with open(os.path.join(self.debug_logs_dir, 'images', f'step_{self.image_num}.jpg'), 'wb') as f:
                 f.write(image)
 
@@ -370,20 +367,7 @@ class UnitySimHandler:
                 json_str = json.dumps(self.msg)
                 # print(f'Sending: {json_str}')
 
-                if self.network_log is not None:
-                    match self.msg['msgType']:
-                        case 'inferenceStart':
-                            self.inference_test_num = (self.inference_test_num[0] + 1, -1)
-                            self.packet_sent_num = 0
-                            self.eval_packet_sent = 0
-                            self.debug_logs_dir = os.path.join(self.network_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
-                            self.clean_and_create_debug_directories()
-                        case 'action':
-                            if self.training_type == TrainingType.INFERENCE:
-                                self.eval_packet_sent += 1
-                        case _:
-                            pass
-
+                if self.debug_logs_dir is not None:
                     with open(os.path.join(self.debug_logs_dir, 'packets_sent', f'step_{self.packet_sent_num}.json'), 'w', encoding='utf-8') as f:
                         json.dump(self.msg, f, indent=2)
                         f.close()
@@ -391,32 +375,12 @@ class UnitySimHandler:
 
                     match self.msg['msgType']:
                         case 'resetEpisode':
-                            should_keep_evaluating = True
-
-                            if self.training_type == TrainingType.TRAINING:
-                                self.episode_num += 1
-                                self.debug_logs_dir = os.path.join(self.network_log, 'training', f'episode_{self.episode_num}')
-                            else:
-                                should_keep_evaluating = ((self.inference_test_num[1] + 1) < self.eval_inference_freq.frequency) if (self.eval_inference_freq.unit == TrainFrequencyUnit.EPISODE) else (
-                                        self.eval_packet_sent < self.eval_inference_freq.frequency)
-
-                                if should_keep_evaluating:
-                                    self.inference_test_num = (self.inference_test_num[0], self.inference_test_num[1] + 1)
-                                    self.debug_logs_dir = os.path.join(self.network_log, 'inference', f'run_{self.inference_test_num[0]}', f'episode_{self.inference_test_num[1]}')
-                                else:
-                                    # This is to prevent writing any logs that are not ever going to be used, i.e. after an evaluation is complete, gymnasium enforces a reset that is never used
-                                    self.msg_discard = True
-
-                            if (self.training_type == TrainingType.TRAINING) or should_keep_evaluating:
-                                self.clean_and_create_debug_directories()
-                                self.packet_received_num = 0
-                                self.packet_sent_num = 0
-                                self.image_num = 0
-                        case 'inferenceEnd':
-                            self.debug_logs_dir = os.path.join(self.network_log, 'training', f'episode_{self.episode_num}')
-                            self.packet_received_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_received')))
-                            self.packet_sent_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'packets_sent')))
-                            self.image_num = len(os.listdir(os.path.join(self.debug_logs_dir, 'images')))
+                            self.episode_num += 1
+                            self.debug_logs_dir = self.debug_logs_dir[:self.debug_logs_dir.rfind('_') + 1] + str(self.episode_num)
+                            self.clean_and_create_debug_directories()
+                            self.packet_received_num = 0
+                            self.packet_sent_num = 0
+                            self.image_num = 0
                         case _:
                             pass
 
@@ -484,17 +448,10 @@ class UnitySimHandler:
             'payload': {}
         })
 
-    def send_inference_start(self, eval_inference_freq):
-        self.training_type = TrainingType.INFERENCE
-        self.eval_inference_freq = eval_inference_freq
-        self.last_obs_before_inference = self.last_obs
+    def send_inference_start(self):
         self.set_msg({
             'msgType': 'inferenceStart',
             'payload': {
-                'inferenceData': {
-                    'evalInferenceFreq': self.eval_inference_freq.unit.value,
-                    'nEvalCount': self.eval_inference_freq.frequency
-                }
             }
         })
 
@@ -507,8 +464,6 @@ class UnitySimHandler:
         })
 
     def send_inference_end(self):
-        self.training_type = TrainingType.TRAINING
-        self.last_obs = self.last_obs_before_inference
         self.set_msg({
             'msgType': 'inferenceEnd',
             'payload': {}

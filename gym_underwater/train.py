@@ -4,7 +4,9 @@ Parent script for initiating a training run
 import os
 
 from stable_baselines3.common.utils import constant_fn, configure_logger
-from gym_underwater.args import args
+
+from gym_underwater.constants import IP_HOST, PORT_TRAIN
+from gym_underwater.enums import Protocol
 from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_cmvae_global_config, load_environment_config, load_hyperparams, load_model, load_callbacks, \
     ENVIRONMENT_TO_LOAD, load_cmvae_inference_config, output_devices, duplicate_directory
 
@@ -44,19 +46,21 @@ hyperparams.update({
     'tensorboard_log': logger.dir
 })
 
+exe_args = ['ip', IP_HOST, 'port', str(PORT_TRAIN), 'modeServerControl', 'debugLogs']
+
 # Also performs environment wrapping
-env = make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'], hyperparams['tensorboard_log'] if env_config['debug_logs'] else None, project_dir, args.protocol, args.host, env_config['seed'], inference_only=False)
+env = make_env(cmvae=cmvae, obs=env_config['obs'], opt_d=env_config['opt_d'], max_d=env_config['max_d'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'] if env_config['debug_logs'] else None, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=env_config['seed'], exe_args=exe_args)
+env.unwrapped.wait_until_client_ready()
 
 # If model_path_train is None, will load a new agent
 model = load_model(env, env_config['algo'], env_config['model_path_train'], hyperparams)
 model.set_logger(logger)
 
-callbacks = load_callbacks(project_dir, env, hyperparams['tensorboard_log'], inference_only=False)
+callbacks = load_callbacks(project_dir, env, hyperparams['tensorboard_log'])
+
 kwargs.update({
     'callback': callbacks
 })
-
-model.env.envs[0].unwrapped.wait_until_client_ready()
 
 print('Starting training run...')
 model.learn(**kwargs)

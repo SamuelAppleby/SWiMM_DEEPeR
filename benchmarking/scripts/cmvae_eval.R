@@ -32,12 +32,14 @@ for (seed_dir in directory_path) {
   
   for (folder in folders) {
     data <- read.csv(file.path(folder, "prediction_stats.csv"))
-    data <- subset(data, select = c(Feature, MAE))
+    data <- subset(data, select = c(Feature, MAE, Standard.Error))
     
     data_img <- read.csv(file.path(folder, "prediction_img.csv"))
     
-    data[nrow(data) + 1,] = c("Image", data_img$MAE)
+    data[nrow(data) + 1,] = c("Image", data_img$MAE, data_img$Standard.Error)
     data$MAE <- as.numeric(data$MAE)
+    data$Standard.Error <- as.numeric(data$Standard.Error)
+    
     data <- cbind(data, yaml_data$seed)
     
     data$seed <- factor(data$seed)
@@ -89,9 +91,11 @@ for (element in early_stop_arr) {
   print(p)
 }
 
-combined_data$MAE <- normalize_by_max(combined_data, c("Feature"), "MAE")
+# combined_data$MAE <- normalize_by_max(combined_data, c("Feature"), "MAE")
 
-combined_data <- aggregate(list(MAE=combined_data$MAE),
-                    by = list(ModelSeed = combined_data$ModelSeed,
-                              EarlyStopping = combined_data$EarlyStopping),
-                    FUN = mean)
+combined_data <- aggregate(list(MAE = combined_data$MAE, Standard_Error = combined_data$Standard.Error),
+                           by = list(ModelSeed = combined_data$ModelSeed,
+                                     EarlyStopping = combined_data$EarlyStopping,
+                                     Feature = combined_data$Feature),
+                           FUN = mean)
+

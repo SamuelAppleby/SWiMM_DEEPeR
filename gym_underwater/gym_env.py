@@ -1,17 +1,32 @@
-import logging
 import os
+import subprocess
+import threading
 import time
 
-import cv2
 import numpy as np
-
-import cmvae_utils.dataset_utils
 
 import gymnasium
 from gymnasium import spaces
 
+from gym_underwater.constants import IP_HOST, PORT_TRAIN
 from gym_underwater.enums import Protocol
 from gym_underwater.sim_comms import UnitySimHandler
+
+
+def run_executable(path, args):
+    subprocess.run([path] + args)
+
+
+def launch_simulation(args, linux=False) -> threading.Thread:
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'builds', 'linux', 'SWiMM_DEEPeR.x86_64') if linux else os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'builds', 'windows', 'SWiMM_DEEPeR.exe')
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Executable not found at {path}")
+
+    thread = threading.Thread(target=run_executable, args=(path, args))
+    thread.start()
+    return thread
 
 
 class UnderwaterEnv(gymnasium.Env):
@@ -19,12 +34,9 @@ class UnderwaterEnv(gymnasium.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, obs, opt_d=6, max_d=4, img_res=(64, 64, 3), tensorboard_log=None, protocol=Protocol.TCP, host='127.0.0.1', seed=None, cmvae=None):
+    def __init__(self, obs, opt_d=6, max_d=4, img_res=(64, 64, 3), tensorboard_log=None, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, cmvae=None, exe_args=None):
         super().__init__()
         print('Starting underwater environment ..')
-
-        # set logging level
-        logging.basicConfig(level=logging.INFO)
 
         # initialise VAE
         self.cmvae = cmvae
@@ -33,12 +45,13 @@ class UnderwaterEnv(gymnasium.Env):
         # make obs arg instance variable
         self.obs = obs
 
+        self.tensorboard_log = tensorboard_log
+        self.seed = seed
+
+        self.thread_exe = launch_simulation(args=exe_args)
+
         # create instance of class that deals with Unity communications
-        self.handler = UnitySimHandler(opt_d, max_d, img_res, tensorboard_log, protocol, host, seed)
-
-        self.handler.connect(*self.handler.address)
-        self.handler.read_write_thread.start()
-
+        self.handler = UnitySimHandler(opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, ip=ip, port=port, seed=seed)
         self.handler.send_server_config()
 
         # action space declaration
@@ -66,7 +79,6 @@ class UnderwaterEnv(gymnasium.Env):
         # if vae has been passed, raw image observation encoded to latent vector
         if self.cmvae is not None:
             # add a dimension on the front so that has the shape (N, vae_res, vae_res, 3) that network expects
-            # TODO Check still require this
             observation = np.expand_dims(observation, axis=0)
 
             # set latent vector as observation
@@ -96,8 +108,8 @@ class UnderwaterEnv(gymnasium.Env):
     def on_rollout_end(self):
         self.handler.send_rollout_end()
 
-    def on_inference_start(self, eval_inference_freq):
-        self.handler.send_inference_start(eval_inference_freq)
+    def on_inference_start(self):
+        self.handler.send_inference_start()
 
     def on_inference_end(self):
         self.handler.send_inference_end()
@@ -108,3 +120,4 @@ class UnderwaterEnv(gymnasium.Env):
 
     def close(self):
         self.handler.close()
+        self.thread_exe.join()

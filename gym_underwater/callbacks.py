@@ -1,9 +1,11 @@
 import cv2
+from gymnasium.wrappers import TimeLimit
 from stable_baselines3.common import base_class
 from stable_baselines3.common.logger import TensorBoardOutputFormat
 import os
 from typing import Union, Optional, Tuple, Callable, Dict, Any, List
 import numpy as np
+from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import should_collect_more_steps
 from tqdm import tqdm
 
@@ -13,12 +15,10 @@ from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, StopT
 from stable_baselines3.common.type_aliases import TrainFrequencyUnit, TrainFreq
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
-import cmvae_utils.dataset_utils
-from .env_wrappers.swim_monitor import SwimMonitor
-from .env_wrappers.swim_time_limit import SwimTimeLimit
+from .constants import TENSORBOARD_FILE_NAME
 from .sim_comms import MAX_STEP_REWARD
 from .enums import EpisodeTerminationType
-from .utils.utils import convert_train_freq, TENSORBOARD_FILE_NAME
+from .utils.utils import convert_train_freq
 
 
 # Code adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py#L337. This is to fix the issue where we
@@ -120,7 +120,7 @@ class SwimCallback(BaseCallback):
 
     def init_callback(self, model: "base_class.BaseAlgorithm") -> None:
         super().init_callback(model)
-        self.is_monitor_wrapped = self.training_env.env_is_wrapped(SwimMonitor)[0]
+        self.is_monitor_wrapped = self.training_env.env_is_wrapped(Monitor)[0]
 
 
 class SwimEvalCallback(EvalCallback):
@@ -144,7 +144,6 @@ class SwimEvalCallback(EvalCallback):
             warn: bool = True,
     ):
         super().__init__(eval_env, callback_on_new_best, callback_after_eval, 0, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn)
-        self.is_time_limit_wrapped = False
         self.eval_inference_freq = convert_train_freq(eval_inference_freq)
         self.n_rollout_calls = 0
         self.continue_training = True
@@ -238,7 +237,7 @@ class SwimEvalCallback(EvalCallback):
                     if callback is not None:
                         callback(locals(), globals())
 
-                    # Even if wrapped with a SwimMonitor, we cannot use the monitor values as we supress logging for evaluation episodes
+                    # Even if wrapped with a Monitor, we cannot use the monitor values as we supress logging for evaluation episodes
                     if dones[i] or ((eval_inference_freq.unit == TrainFrequencyUnit.STEP) and (step_counts[i] == eval_inference_freq.frequency)):
                         episode_rewards.append(current_rewards[i])
                         episode_lengths.append(current_lengths[i])
@@ -265,27 +264,23 @@ class SwimEvalCallback(EvalCallback):
 
         return episode_rewards, episode_lengths
 
-    def evaluate(self, inference_only: bool = False) -> None:
+    def evaluate(self) -> None:
         """
         Method called by either an inference only run or a training run, performing evaluation metrics and reporting to logger.
         """
         # We could have either just reset or stepped, so cache the relevant data
-        if not inference_only:
-            restore_state = self.training_env.reset_infos[0] if self.training_env.buf_dones[0] else self.training_env.buf_infos[0]
-            self.training_env.envs[0].unwrapped.on_inference_start(self.eval_inference_freq)
+        self.training_env.envs[0].unwrapped.on_inference_start()
 
-            # Sync training and eval env if there is VecNormalize
-            if self.model.get_vec_normalize_env() is not None:
-                try:
-                    sync_envs_normalization(self.training_env, self.eval_env)
-                except AttributeError as e:
-                    raise AssertionError(
-                        'Training and eval env are not wrapped the same way, '
-                        'see https://stable-baselines3.readthedocs.io/en/master/guide/callbacks.html#evalcallback '
-                        'and warning above.'
-                    ) from e
-        else:
-            self.eval_env.envs[0].unwrapped.on_inference_start(self.eval_inference_freq)
+        # Sync training and eval env if there is VecNormalize
+        if self.model.get_vec_normalize_env() is not None:
+            try:
+                sync_envs_normalization(self.training_env, self.eval_env)
+            except AttributeError as e:
+                raise AssertionError(
+                    'Training and eval env are not wrapped the same way, '
+                    'see https://stable-baselines3.readthedocs.io/en/master/guide/callbacks.html#evalcallback '
+                    'and warning above.'
+                ) from e
 
         # Reset success rate buffer
         self._is_success_buffer = []
@@ -340,29 +335,21 @@ class SwimEvalCallback(EvalCallback):
         self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
         self.logger.dump(self.num_timesteps)
 
-        if not inference_only:
-            if mean_ep_reward > self.best_mean_reward:
-                if self.verbose >= 1:
-                    print('New best mean reward!')
-                if self.best_model_save_path is not None:
-                    self.model.save(os.path.join(self.best_model_save_path, 'best_model'))
-                self.best_mean_reward = float(mean_ep_reward)
-                # Trigger callback on new best model, if needed
-                if self.callback_on_new_best is not None:
-                    self.continue_training = self.callback_on_new_best.on_step()
+        if mean_ep_reward > self.best_mean_reward:
+            if self.verbose >= 1:
+                print('New best mean reward!')
+            if self.best_model_save_path is not None:
+                self.model.save(os.path.join(self.best_model_save_path, 'best_model'))
+            self.best_mean_reward = float(mean_ep_reward)
+            # Trigger callback on new best model, if needed
+            if self.callback_on_new_best is not None:
+                self.continue_training = self.callback_on_new_best.on_step()
 
-            # Trigger callback after every evaluation, if needed
-            if self.callback is not None:
-                self.continue_training = self.continue_training and self._on_event()
+        # Trigger callback after every evaluation, if needed
+        if self.callback is not None:
+            self.continue_training = self.continue_training and self._on_event()
 
-            self.training_env.envs[0].unwrapped.on_set_world_state({
-                'rover': restore_state['rover'],
-                'target': restore_state['target']
-            })
-
-            self.training_env.envs[0].unwrapped.on_inference_end()
-        else:
-            self.eval_env.envs[0].unwrapped.on_inference_end()
+        self.training_env.envs[0].unwrapped.on_inference_end()
 
     def _on_rollout_start(self) -> None:
         # We can guarantee that at this point either:
@@ -371,18 +358,14 @@ class SwimEvalCallback(EvalCallback):
         # We only want to evaluate in the case of 2)
         self.n_rollout_calls += 1
         if (self.n_rollout_calls > 1) and (((self.n_rollout_calls - 1) % self.eval_freq) == 0):
-            self.evaluate(inference_only=False)
+            self.evaluate()
 
     def init_callback(self, model: "base_class.BaseAlgorithm") -> None:
         super().init_callback(model)
-        self.is_time_limit_wrapped = self.training_env.env_is_wrapped(SwimTimeLimit)[0]
 
         if isinstance(self.callback_on_new_best, StopTrainingOnRewardThreshold):
-            self.callback_on_new_best.reward_threshold *= MAX_STEP_REWARD * self.eval_env.envs[0].get_wrapper_attr('max_episode_steps_inference')
-            if self.eval_inference_freq.unit == TrainFrequencyUnit.EPISODE:
-                assert self.is_time_limit_wrapped, (
-                    'If providing a StopTrainingOnRewardThreshold on episodic learning, you must wrap the environment in a SwimTimeLimit wrapper.'
-                )
+            assert (self.training_env.env_is_wrapped(TimeLimit)[0] is not None, 'If callback_on_new_best is StopTrainingOnRewardThreshold, then we must wrap the environment with a TimeLimit')
+            self.callback_on_new_best.reward_threshold *= MAX_STEP_REWARD * self.training_env.envs[0].get_wrapper_attr('_max_episode_steps')
 
 
 class SwimProgressBarCallback(BaseCallback):

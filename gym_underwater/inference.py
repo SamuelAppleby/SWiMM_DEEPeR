@@ -25,7 +25,7 @@ cmvae, _ = load_cmvae_global_config(project_dir, weights_path=cmvae_inference_co
 logger = configure_logger(verbose=1, tensorboard_log=os.path.join(os.path.dirname(env_config['model_path_inference']), 'inference'), tb_log_name=f'{env_config["algo"]}', reset_num_timesteps=True)
 
 # Also performs environment wrapping
-env = make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'], logger.dir if env_config['debug_logs'] else None, Protocol.TCP, IP_EVAL, env_config['seed'])
+env = make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'], logger.dir if env_config['debug_logs'] else None, Protocol.TCP, IP_EVAL, env_config['seed'], cancel_event=None, read_write_thread_other=None)
 
 model = load_model(env, env_config['algo'], env_config['model_path_inference'])
 model.set_logger(logger)

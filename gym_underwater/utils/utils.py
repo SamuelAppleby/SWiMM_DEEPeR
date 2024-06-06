@@ -22,11 +22,11 @@ from gym_underwater.enums import Protocol
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, exe_args=None) -> UnderwaterEnv:
+def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, exe_args=None, cancel_event=None, read_write_thread_other=None) -> UnderwaterEnv:
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
-    uenv = UnderwaterEnv(obs=obs, opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, ip=ip, port=port, seed=seed, cmvae=cmvae, exe_args=exe_args)
+    uenv = UnderwaterEnv(obs=obs, opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, ip=ip, port=port, seed=seed, cmvae=cmvae, exe_args=exe_args, cancel_event=cancel_event, read_write_thread_other=read_write_thread_other)
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'configs', 'env_wrapper.yml'), 'r') as f:
         env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
 
@@ -248,7 +248,11 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_
             exe_args = ['ip', IP_HOST, 'port', str(PORT_INFERENCE), 'modeServerControl', 'debugLogs']
 
             eval_env = make_env(cmvae=env.unwrapped.cmvae, obs=env.unwrapped.obs, opt_d=env.unwrapped.handler.opt_d, max_d=env.unwrapped.handler.max_d, img_res=env.unwrapped.handler.img_res,
-                                tensorboard_log=env.unwrapped.tensorboard_log, protocol=env.unwrapped.handler.protocol, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed, exe_args=exe_args)
+                                tensorboard_log=env.unwrapped.tensorboard_log, protocol=env.unwrapped.handler.protocol, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed, exe_args=exe_args, cancel_event=env.unwrapped.handler.cancel_event, read_write_thread_other=env.unwrapped.handler.read_write_thread)
+
+            # This is important for clean-up
+            env.unwrapped.handler.read_write_thread_other = eval_env.unwrapped.handler.read_write_thread
+
             eval_env.unwrapped.wait_until_client_ready()
 
             kwargs.update({

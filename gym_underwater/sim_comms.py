@@ -77,7 +77,7 @@ class ClientDisconnectedException(Exception):
 
 
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_res, tensorboard_log, protocol, ip, port, seed):
+    def __init__(self, opt_d, max_d, img_res, tensorboard_log, protocol, ip, port, seed, cancel_event=None, read_write_thread_other=None):
         self.interval = 1 / PERIOD
         self.timeout = self.interval * PERIOD * 60 * 10  # Timeout will occur if 10 minutes have occurred without message
         self.sim_ready = False
@@ -89,7 +89,7 @@ class UnitySimHandler:
         self.msg_event = threading.Event()
         self.image_array = None
         self.img_event = threading.Event()
-        self.cancel_event = threading.Event()
+        self.cancel_event = threading.Event() if cancel_event is None else cancel_event
         self.msg = None
         self.debug_logs = True
 
@@ -99,10 +99,11 @@ class UnitySimHandler:
         }
 
         self.episode_num = 0
-        self.eval_packet_sent = 0
         self.packet_received_num = 0
         self.packet_sent_num = 0
         self.image_num = 0
+
+        self.read_write_thread_other = read_write_thread_other
 
         conf_arr = process_and_validate_configs({
             os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'schemas',
@@ -116,10 +117,9 @@ class UnitySimHandler:
 
         self.training_type = TrainingType.TRAINING if port == PORT_TRAIN else TrainingType.INFERENCE
 
-        # TODO Okay, so the network log is being written to the same place, we need to overwrite this so that if we are the
-        # training client (check ip), then our network log is ALWAYS \training, otherwise \evaluation (on c# side i need to remove the training/evaluation and leave it as 0/1)
         if self.debug_logs is not None:
-            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'), f'episode_{self.episode_num}')
+            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'),
+                                               f'episode_{self.episode_num}')
             clean_and_remake(self.debug_logs_dir)
             self.clean_and_create_debug_directories()
 
@@ -203,8 +203,13 @@ class UnitySimHandler:
         while not self.img_event.is_set() and self.read_write_thread.is_alive():
             time.sleep(self.interval)
 
-        if not self.read_write_thread.is_alive():
+        if self.cancel_event.is_set():
             self.read_write_thread.join()
+
+            # Our evaluation/training environments needs to consider each-other
+            if self.read_write_thread_other is not None:
+                self.read_write_thread_other.join()
+
             sys.exit(0)
 
         if self.last_obs is not None:
@@ -275,7 +280,7 @@ class UnitySimHandler:
         for t in self.threads:
             t.join()
 
-        self.disconnect()
+        return
 
     def disconnect(self):
         self.addr = None
@@ -317,9 +322,7 @@ class UnitySimHandler:
 
             except Exception as e:
                 print('[NETWORK ERROR] Read error:', e)
-                break
-
-        self.cancel_event.set()
+                self.cancel_event.set()
 
     def on_recv_message(self, message):
         assert 'msgType' in message, 'msgType not found in message'
@@ -360,7 +363,7 @@ class UnitySimHandler:
                     time.sleep(self.interval)
 
                 if self.cancel_event.is_set():
-                    return
+                    continue
 
                 assert self.msg is not None
 
@@ -393,9 +396,10 @@ class UnitySimHandler:
                 self.msg_event.clear()
             except Exception as e:
                 print('[NETWORK ERROR] Write error:', e)
-                break
+                self.cancel_event.set()
 
-        self.cancel_event.set()
+        # Let's limit disconnection from here only
+        self.disconnect()
 
     def send_action(self, action):
         self.set_msg({

@@ -49,7 +49,7 @@ hyperparams.update({
 exe_args = ['ip', IP_HOST, 'port', str(PORT_TRAIN), 'modeServerControl', 'debugLogs']
 
 # Also performs environment wrapping
-env = make_env(cmvae=cmvae, obs=env_config['obs'], opt_d=env_config['opt_d'], max_d=env_config['max_d'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'] if env_config['debug_logs'] else None, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=env_config['seed'], exe_args=exe_args)
+env = make_env(cmvae=cmvae, obs=env_config['obs'], opt_d=env_config['opt_d'], max_d=env_config['max_d'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'] if env_config['debug_logs'] else None, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=env_config['seed'], exe_args=exe_args, cancel_event=None, read_write_thread_other=None)
 env.unwrapped.wait_until_client_ready()
 
 # If model_path_train is None, will load a new agent

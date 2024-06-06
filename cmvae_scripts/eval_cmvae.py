@@ -89,7 +89,7 @@ for i in range(1, num_imgs_display + 1):
     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon[i - 1, :])
     plt.axis('off')
     plt.imshow(img_display)
-fig.savefig(os.path.join(output_dir, 'reconstruction_results.png'))
+fig.savefig(os.path.join(output_dir, 'reconstruction_results.pdf'))
 
 images_np_interps, raw_table_interps = cmvae_utils.dataset_utils.create_test_dataset_csv(interpolation_dir, img_res)
 
@@ -151,7 +151,7 @@ for z_int in z_interp:
 
     label = 'r' if idx == 0 else 'theta' if idx == 1 else 'psi'
 
-    fig.savefig(os.path.join(output_dir, 'state_stats_interpolation_results_{}.png'.format(label)))
+    fig.savefig(os.path.join(output_dir, 'state_stats_interpolation_results_{}.pdf'.format(label)))
 
     # plot the interpolated images
     fig2 = plt.figure(figsize=(96, 96))
@@ -170,7 +170,7 @@ for z_int in z_interp:
     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(images_np_interps[(2 * idx) + 1, :])
     plt.axis('off')
     plt.imshow(img_display)
-    fig2.savefig(os.path.join(output_dir, 'reconstruction_interpolation_results_{}.png'.format(label)))
+    fig2.savefig(os.path.join(output_dir, 'reconstruction_interpolation_results_{}.pdf'.format(label)))
     idx += 1
 
 # new plot traveling through latent space
@@ -191,7 +191,7 @@ for i in range(1, z_num_mural * n_z + 1):
     img_display = cmvae_utils.dataset_utils.convert_bgr2rgb(img_recon_interp)
     plt.axis('off')
     plt.imshow(img_display)
-fig3.savefig(os.path.join(output_dir, 'z_mural.png'))
+fig3.savefig(os.path.join(output_dir, 'z_mural.pdf'))
 
 # single-channel version of above
 # fig4 = plt.figure(figsize=(96, 96))

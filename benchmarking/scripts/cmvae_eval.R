@@ -86,16 +86,17 @@ for (element in early_stop_arr) {
           axis.title.x = element_blank(),
           axis.text.x = element_blank(),   
           axis.ticks.x = element_blank())  + 
-    labs(fill = "Training Seed", shape="Inference Seed") 
+    labs(fill = "Training Seed", shape="Inference Seed") +
+    guides(fill = guide_legend(order = 1),shape = guide_legend(order = 2))
   
   print(p)
 }
 
-# combined_data$MAE <- normalize_by_max(combined_data, c("Feature"), "MAE")
+combined_data$MAE <- normalize_by_max(combined_data, c("Feature"), "MAE")
 
 combined_data <- aggregate(list(MAE = combined_data$MAE, Standard_Error = combined_data$Standard.Error),
                            by = list(ModelSeed = combined_data$ModelSeed,
                                      EarlyStopping = combined_data$EarlyStopping,
-                                     Feature = combined_data$Feature),
+                                     Seed = combined_data$Seed),
                            FUN = mean)
 

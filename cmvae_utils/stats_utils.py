@@ -78,7 +78,7 @@ def calculate_gate_stats(predictions, poses, output_dir):
 
     axs[0].set_ylabel('Error Density')
 
-    fig.savefig(os.path.join(output_dir, 'state_stats_error_histograms.png'))
+    fig.savefig(os.path.join(output_dir, 'state_stats_error_histograms.pdf'))
 
     # plt.show()
 

@@ -10,6 +10,10 @@ normalize_by_max <- function(df, group_cols, target_col) {
   return(normalized_values)
 }
 
+scientific_10 <- function(x) {
+  parse(text=gsub("e", "%*% 10^", scales::scientific_format()(x)))
+}
+
 directory_path <- list(
   "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\0\\best_model\\inference_results",
   "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\cmvae\\1\\best_model\\inference_results",
@@ -51,7 +55,8 @@ for (seed_dir in directory_path) {
     names(data)[names(data) == "seed"] <- "Seed"
     
     yaml_data2 <- as.data.frame(t(yaml.load_file(file.path(dirname(dirname(seed_dir)), "configs", "cmvae_training_config.yml"))))
-    data$EarlyStopping <- ifelse(!is.na(as.numeric(as.character(yaml_data2$window_size))), "Yes", "No")
+    data$EarlyStopping <- ifelse(all(sapply(yaml_data2$window_size, is.numeric)), "Early Stopping", "No Early Stopping")
+    data$EarlyStopping <- factor(data$EarlyStopping, levels = c("No Early Stopping", "Early Stopping"))
     
     combined_data <- rbind(combined_data,data)
   }
@@ -60,36 +65,27 @@ for (seed_dir in directory_path) {
 point_shape <- c(1:length(unique(factor(combined_data$Seed))))
 point_shape <- point_shape[factor(combined_data$Seed)]
 
-p <- ggplot(combined_data, aes(x = "", y = MAE, fill=EarlyStopping)) +
-  geom_boxplot(position = position_dodge(1)) +
+ggplot(combined_data, aes(x = EarlyStopping, y = MAE)) +
+  geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
   geom_jitter(position = position_dodge(1)) +
   facet_wrap(~ Feature, scales = "free_y") +
-  scale_y_continuous(labels = scientific) +
+  scale_y_continuous(name = expression("MAE"), labels = scientific_10) +
   theme(legend.position = "bottom",
-        axis.title.x = element_blank(),
-        axis.text.x = element_blank(),   
-        axis.ticks.x = element_blank()) + 
+        axis.title.x = element_blank()) + 
   labs(fill = "Early Stopping") 
 
-print(p)
-
-early_stop_arr <- c("No", "Yes")
+early_stop_arr <- c("No Early Stopping", "Early Stopping")
 
 for (element in early_stop_arr) {
   section_data <- combined_data[combined_data$EarlyStopping == element, ]
   
-  p <- ggplot(section_data, aes(x = ModelSeed, y = MAE, fill=ModelSeed)) +
-    geom_boxplot(position = position_dodge(1)) +
-    geom_jitter(aes(shape=Seed)) +
+  print(ggplot(section_data, aes(x = ModelSeed, y = MAE)) +
+    geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
+    geom_jitter(aes(color=Seed)) +
     facet_wrap(~ Feature, scales = "free_y") +
-    theme(legend.position = "bottom",
-          axis.title.x = element_blank(),
-          axis.text.x = element_blank(),   
-          axis.ticks.x = element_blank())  + 
-    labs(fill = "Training Seed", shape="Inference Seed") +
-    guides(fill = guide_legend(order = 1),shape = guide_legend(order = 2))
-  
-  print(p)
+    scale_y_continuous(name = expression("MAE"), labels = scientific_10) +
+    theme(legend.position = "bottom")  + 
+    labs(x = "Model Seed", color = "Inference Seed"))
 }
 
 combined_data$MAE <- normalize_by_max(combined_data, c("Feature"), "MAE")

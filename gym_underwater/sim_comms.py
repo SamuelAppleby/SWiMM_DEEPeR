@@ -91,7 +91,7 @@ class UnitySimHandler:
         self.img_event = threading.Event()
         self.cancel_event = threading.Event() if cancel_event is None else cancel_event
         self.msg = None
-        self.debug_logs = True
+        self.debug_logs = False
 
         self.fns = {
             'clientReady': self.on_client_ready,

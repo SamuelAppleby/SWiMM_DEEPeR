@@ -69,7 +69,7 @@ for (element in early_stop_arr) {
   print(ggplot(data = early_data, aes(x = Step, y = ValidationLoss, colour = ModelSeed)) +
     geom_line() +
     scale_x_continuous(name =expression("Epoch"), labels = scientific_10)+
-    scale_y_continuous(name =expression("Training Loss"), labels = scientific_10)+
+    scale_y_continuous(name =expression("Validation Loss"), labels = scientific_10)+
     theme(legend.position = "bottom"))
 }
 

@@ -21,8 +21,7 @@ from .enums import EpisodeTerminationType
 from .utils.utils import convert_train_freq
 
 
-# Code adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py#L337. This is to fix the issue where we
-# have stagnant observations due to the interruption of the rollout collection.
+# Code adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py#L337.
 def should_collect_more_steps_vec(
         train_freq: TrainFreq,
         num_collected_steps: np.ndarray[int],

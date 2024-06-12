@@ -31,10 +31,6 @@
                 }
             },
             "envConfig": {
-                "drawRewardRings": true,
-                "drawOptimumHeading": true,
-                "enableUI": true,
-                "enableSecondaryCameras": true,
                 "actionInference": "freeze",
                 "randomiseRestart": true,
                 "faunaConfig": {

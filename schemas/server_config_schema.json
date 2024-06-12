@@ -95,18 +95,6 @@
             "envConfig": {
               "type": "object",
               "properties": {
-                "drawRewardRings": {
-                  "type": "boolean"
-                },
-                "drawOptimumHeading": {
-                  "type": "boolean"
-                },
-                "enableUI": {
-                  "type": "boolean"
-                },
-                "enableSecondaryCameras": {
-                  "type": "boolean"
-                },
                 "actionInference": {
                   "type": "string"
                 },
@@ -312,10 +300,6 @@
                 }
               },
               "required": [
-                "drawRewardRings",
-                "drawOptimumHeading",
-                "enableUI",
-                "enableSecondaryCameras",
                 "actionInference",
                 "randomiseRestart",
                 "faunaConfig"

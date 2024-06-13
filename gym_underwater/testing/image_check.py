@@ -1,26 +1,24 @@
 import os
 
 import numpy as np
-from PIL import Image
-from numpy.linalg import norm
 
-imgs = ([], [])
-dir = "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SiM_DEEPeR\\Logs\\run_0"
+from cmvae_utils.dataset_utils import load_img_from_file_or_array_and_resize_cv2
 
-for file in os.listdir(dir):
-    if file.endswith('.jpg'):
-        img = np.array(Image.open(os.path.join(dir, file))).flatten() / 255
-        imgs[0].append(img)
+# NB CV2 Reads images in the form height x width
+res = (64, 64, 3)
 
-dir = "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SiM_DEEPeR\\Logs\\run_1"
+dir = "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\data\\image_similarity\\1920x1080\\64x64"
+imgs = np.zeros(np.concatenate(([len(os.listdir(dir))], res))).astype(np.int8)
 
-for file in os.listdir(dir):
-    if file.endswith('.jpg'):
-        img = np.array(Image.open(os.path.join(dir, file))).flatten() / 255
-        imgs[1].append(img)
+for idx, filename in enumerate(os.listdir(dir)):
+    imgs[idx, :] = load_img_from_file_or_array_and_resize_cv2(file=os.path.join(dir, filename), res=res, normalise=False)
 
-for img_1, img_2 in zip(*imgs):
-    result = np.dot(img_1, img_2) / (norm(img_1) * norm(img_2))
-    print(result)
-    assert result == 1
 
+dir = "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\data\\test\\1920x1080\\64x64"
+imgs_1 = np.zeros(np.concatenate(([len(os.listdir(dir))], res))).astype(np.int8)
+
+for idx, filename in enumerate(os.listdir(dir)):
+    imgs_1[idx, :] = load_img_from_file_or_array_and_resize_cv2(file=os.path.join(dir, filename), res=res, normalise=False)
+
+
+assert np.array_equal(imgs, imgs_1)

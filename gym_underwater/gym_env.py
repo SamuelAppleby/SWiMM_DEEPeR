@@ -1,6 +1,3 @@
-import os
-import subprocess
-import threading
 import time
 
 import numpy as np
@@ -13,28 +10,12 @@ from gym_underwater.enums import Protocol
 from gym_underwater.sim_comms import UnitySimHandler
 
 
-def run_executable(path, args):
-    subprocess.run([path] + args)
-
-
-def launch_simulation(args, linux=False) -> threading.Thread:
-    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'builds', 'linux', 'SWiMM_DEEPeR.x86_64') if linux else os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'builds', 'windows', 'SWiMM_DEEPeR.exe')
-
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Executable not found at {path}")
-
-    thread = threading.Thread(target=run_executable, args=(path, args))
-    thread.start()
-    return thread
-
-
 class UnderwaterEnv(gymnasium.Env):
     """
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, obs, opt_d=6, max_d=4, img_res=(64, 64, 3), tensorboard_log=None, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, cmvae=None, exe_args=None, cancel_event=None, read_write_thread_other=None):
+    def __init__(self, obs, opt_d=6, max_d=4, img_res=(64, 64, 3), tensorboard_log=None, debug_logs=False, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, cmvae=None, cancel_event=None, read_write_thread_other=None):
         super().__init__()
         print('Starting underwater environment ..')
 
@@ -45,13 +26,12 @@ class UnderwaterEnv(gymnasium.Env):
         # make obs arg instance variable
         self.obs = obs
 
-        self.tensorboard_log = tensorboard_log
         self.seed = seed
 
-        self.thread_exe = launch_simulation(args=exe_args)
+        self.tensorboard_log = tensorboard_log
 
         # create instance of class that deals with Unity communications
-        self.handler = UnitySimHandler(opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, ip=ip, port=port, seed=seed, cancel_event=cancel_event, read_write_thread_other=read_write_thread_other)
+        self.handler = UnitySimHandler(opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=self.tensorboard_log if debug_logs else None, protocol=protocol, ip=ip, port=port, seed=seed, cancel_event=cancel_event, read_write_thread_other=read_write_thread_other)
         self.handler.send_server_config()
 
         # action space declaration
@@ -120,4 +100,3 @@ class UnderwaterEnv(gymnasium.Env):
 
     def close(self):
         self.handler.close()
-        self.thread_exe.join()

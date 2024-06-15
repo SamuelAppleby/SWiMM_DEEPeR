@@ -6,9 +6,9 @@ import os
 from stable_baselines3.common.utils import configure_logger
 
 from gym_underwater.callbacks import SwimEvalCallback
+from gym_underwater.constants import IP_HOST, PORT_INFERENCE
 from gym_underwater.enums import Protocol
-from gym_underwater.utils.utils import make_env, load_model, load_callbacks, load_environment_config, load_cmvae_inference_config, load_cmvae_global_config, output_devices, duplicate_directory, \
-    IP_EVAL
+from gym_underwater.utils.utils import make_env, load_model, load_callbacks, load_environment_config, load_cmvae_inference_config, load_cmvae_global_config, output_devices, duplicate_directory
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -25,7 +25,7 @@ cmvae, _ = load_cmvae_global_config(project_dir, weights_path=cmvae_inference_co
 logger = configure_logger(verbose=1, tensorboard_log=os.path.join(os.path.dirname(env_config['model_path_inference']), 'inference'), tb_log_name=f'{env_config["algo"]}', reset_num_timesteps=True)
 
 # Also performs environment wrapping
-env = make_env(cmvae, env_config['obs'], env_config['opt_d'], env_config['max_d'], env_config['img_res'], logger.dir if env_config['debug_logs'] else None, Protocol.TCP, IP_EVAL, env_config['seed'], cancel_event=None, read_write_thread_other=None)
+env = make_env(cmvae=cmvae, obs=env_config['obs'], opt_d=env_config['opt_d'], max_d=env_config['max_d'], img_res=env_config['img_res'], tensorboard_log=logger.dir, debug_logs=env_config['debug_logs'], protocol=Protocol.TCP, ip=IP_HOST, port=PORT_INFERENCE, seed=env_config['seed'], cancel_event=None, read_write_thread_other=None)
 
 model = load_model(env, env_config['algo'], env_config['model_path_inference'])
 model.set_logger(logger)

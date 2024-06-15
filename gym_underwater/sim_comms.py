@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import shutil
+import subprocess
 import sys
 import time
 import socket
@@ -12,14 +13,28 @@ import math
 from jsonschema.validators import validate
 from datetime import datetime
 
-from stable_baselines3.common.type_aliases import TrainFrequencyUnit
-
 import cmvae_utils.dataset_utils
 from gym_underwater.constants import PORT_TRAIN
 from gym_underwater.enums import Protocol, EpisodeTerminationType, TrainingType
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
+def run_executable(path, args):
+    subprocess.run([path] + args)
+
+
+def launch_simulation(args, linux=False) -> threading.Thread:
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'builds', 'linux', 'SWiMM_DEEPeR.x86_64') if linux else os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'builds', 'windows', 'SWiMM_DEEPeR.exe')
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Executable not found at {path}")
+
+    thread = threading.Thread(target=run_executable, args=(path, args))
+    thread.start()
+    return thread
+
+
 def calc_metrics(rov_pos, rov_fwd, target_pos):
     # heading vector from rover to target
     heading = target_pos - rov_pos
@@ -91,7 +106,7 @@ class UnitySimHandler:
         self.img_event = threading.Event()
         self.cancel_event = threading.Event() if cancel_event is None else cancel_event
         self.msg = None
-        self.debug_logs = False
+        self.debug_logs = tensorboard_log is not None
 
         self.fns = {
             'clientReady': self.on_client_ready,
@@ -117,11 +132,16 @@ class UnitySimHandler:
 
         self.training_type = TrainingType.TRAINING if port == PORT_TRAIN else TrainingType.INFERENCE
 
-        if self.debug_logs is not None:
+        exe_args = ['ip', ip, 'port', str(port), 'modeServerControl']
+
+        self.debug_logs_dir = None
+
+        if self.debug_logs:
             self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'),
                                                f'episode_{self.episode_num}')
             clean_and_remake(self.debug_logs_dir)
             self.clean_and_create_debug_directories()
+            exe_args.append('debugLogs')
 
         self.sock = None
         self.addr = None
@@ -134,6 +154,8 @@ class UnitySimHandler:
 
         self.observation_buffer_size = 8192
         self.img_res = img_res
+
+        self.thread_exe = launch_simulation(args=exe_args)
 
         self.read_write_thread = self.connect(*self.address)
         self.read_write_thread.start()
@@ -488,3 +510,4 @@ class UnitySimHandler:
     def close(self):
         self.send_end_simulation()
         self.read_write_thread.join()
+        self.thread_exe.join()

@@ -28,14 +28,16 @@ def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, protocol=Protoc
     """
     uenv = UnderwaterEnv(obs=obs, opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, protocol=protocol, ip=ip, port=port, seed=seed, cmvae=cmvae, exe_args=exe_args, cancel_event=cancel_event, read_write_thread_other=read_write_thread_other)
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'configs', 'env_wrapper.yml'), 'r') as f:
-        env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
+        env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-        env_wrapper = get_wrapper_class(env_wrapper_config,
-                                        monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv') if port == PORT_TRAIN else os.path.join(tensorboard_log, 'evaluation_monitor.csv'))
-        if env_wrapper is not None:
-            env = env_wrapper(uenv)
+        if env_wrapper_config is not None:
+            uenv_conf = env_wrapper_config[ENVIRONMENT_TO_LOAD]
+            env_wrapper = get_wrapper_class(uenv_conf, monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv') if port == PORT_TRAIN else os.path.join(tensorboard_log, 'evaluation_monitor.csv'))
 
-    return env
+            if env_wrapper is not None:
+                uenv = env_wrapper(uenv)
+
+    return uenv
 
 
 def linear_schedule(initial_value):
@@ -138,6 +140,9 @@ def get_wrapper_class(wrapper_list: List[Any], monitor_filename: str = None) -> 
 
     def get_class_name(wrapper_name):
         return wrapper_name.split(".")[-1]
+
+    if wrapper_list is None or len(wrapper_list) == 0:
+        return None
 
     wrapper_list.sort(key=custom_wrapper_sort)
 

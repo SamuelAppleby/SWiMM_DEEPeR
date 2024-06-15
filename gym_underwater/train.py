@@ -10,6 +10,8 @@ from gym_underwater.enums import Protocol
 from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_cmvae_global_config, load_environment_config, load_hyperparams, load_model, load_callbacks, \
     ENVIRONMENT_TO_LOAD, load_cmvae_inference_config, output_devices, duplicate_directory
 
+from stable_baselines3 import SAC, PPO
+
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 env_config = load_environment_config(project_dir, seed_tensorflow=True, seed_sb=True)

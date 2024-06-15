@@ -81,9 +81,6 @@ class SwimCallback(BaseCallback):
         using the current policy.
         This event is triggered before collecting new samples.
         """
-        if self.num_timesteps > 0:
-            self.logger.dump(self.num_timesteps)
-
         self.training_env.envs[0].unwrapped.on_rollout_start()
         return
 
@@ -244,11 +241,12 @@ class SwimEvalCallback(EvalCallback):
                         if dones[i]:
                             validate_episode_termination(info)
 
-                        self.logger.record('eval/episode_termination', info['episode_termination_type'])
-                        self.logger.record('eval/ep_reward', episode_rewards[-1])
-                        self.logger.record('eval/ep_length', episode_lengths[-1])
-                        self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
-                        self.logger.dump(self.num_timesteps + step_counts[i])
+                            # As with training, only log when the episode is terminated or truncated, not when steps is reached
+                            self.logger.record('eval/episode_termination', info['episode_termination_type'])
+                            self.logger.record('eval/ep_reward', episode_rewards[-1])
+                            self.logger.record('eval/ep_length', episode_lengths[-1])
+                            self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
+                            self.logger.dump(self.num_timesteps + step_counts[i])
 
                         current_rewards[i] = 0
                         current_lengths[i] = 0
@@ -363,7 +361,7 @@ class SwimEvalCallback(EvalCallback):
         super().init_callback(model)
 
         if isinstance(self.callback_on_new_best, StopTrainingOnRewardThreshold):
-            assert (self.training_env.env_is_wrapped(TimeLimit)[0] is not None, 'If callback_on_new_best is StopTrainingOnRewardThreshold, then we must wrap the environment with a TimeLimit')
+            assert (self.training_env.env_is_wrapped(TimeLimit)[0] is not None), 'If callback_on_new_best is StopTrainingOnRewardThreshold, then we must wrap the environment with a TimeLimit'
             self.callback_on_new_best.reward_threshold *= MAX_STEP_REWARD * self.training_env.envs[0].get_wrapper_attr('_max_episode_steps')
 
 

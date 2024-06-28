@@ -15,7 +15,6 @@ from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, StopT
 from stable_baselines3.common.type_aliases import TrainFrequencyUnit, TrainFreq
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
-from .constants import TENSORBOARD_FILE_NAME
 from .sim_comms import MAX_STEP_REWARD
 from .enums import EpisodeTerminationType
 from .utils.utils import convert_train_freq
@@ -67,12 +66,6 @@ class SwimCallback(BaseCallback):
         """
         This method is called before the first rollout starts.
         """
-        for _format in self.logger.output_formats:
-            if isinstance(_format, TensorBoardOutputFormat):
-                with open(TENSORBOARD_FILE_NAME, 'w') as log_file:
-                    print('Tensorboard event file: {}'.format(_format.writer.file_writer.event_writer._file_name))
-                    log_file.write('Tensorboard event file: {}\n'.format(_format.writer.file_writer.event_writer._file_name))
-
         return
 
     def _on_rollout_start(self) -> None:

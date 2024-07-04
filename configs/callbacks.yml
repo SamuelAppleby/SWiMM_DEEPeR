@@ -10,7 +10,7 @@ UnderwaterEnv:
 #            reward_threshold: 0.9999
 #            verbose: 1
         eval_inference_freq: [2, 'episode']
-        eval_freq: 3
+        eval_freq: 10
         deterministic: True
         verbose: 1
   - gym_underwater.callbacks.SwimProgressBarCallback

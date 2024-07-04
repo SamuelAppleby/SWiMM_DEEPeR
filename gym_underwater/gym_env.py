@@ -15,7 +15,7 @@ class UnderwaterEnv(gymnasium.Env):
     OpenAI Gym Environment for controlling an underwater vehicle 
     """
 
-    def __init__(self, obs, opt_d=6, max_d=4, img_res=(64, 64, 3), tensorboard_log=None, debug_logs=False, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, cmvae=None, cancel_event=None, read_write_thread_other=None):
+    def __init__(self, obs, img_res=(64, 64, 3), tensorboard_log=None, debug_logs=False, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, cmvae=None):
         super().__init__()
         print('Starting underwater environment ..')
 
@@ -31,7 +31,7 @@ class UnderwaterEnv(gymnasium.Env):
         self.tensorboard_log = tensorboard_log
 
         # create instance of class that deals with Unity communications
-        self.handler = UnitySimHandler(opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=self.tensorboard_log if debug_logs else None, protocol=protocol, ip=ip, port=port, seed=seed, cancel_event=cancel_event, read_write_thread_other=read_write_thread_other)
+        self.handler = UnitySimHandler(img_res=img_res, tensorboard_log=self.tensorboard_log if debug_logs else None, protocol=protocol, ip=ip, port=port, seed=seed)
         self.handler.send_server_config()
 
         # action space declaration

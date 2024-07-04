@@ -92,19 +92,17 @@ class ClientDisconnectedException(Exception):
 
 
 class UnitySimHandler:
-    def __init__(self, opt_d, max_d, img_res, tensorboard_log, protocol, ip, port, seed, cancel_event=None, read_write_thread_other=None):
+    def __init__(self, img_res, tensorboard_log, protocol, ip, port, seed):
         self.interval = 1 / PERIOD
         self.timeout = self.interval * PERIOD * 60 * 10  # Timeout will occur if 10 minutes have occurred without message
         self.sim_ready = False
         self.last_obs = None
         self.rover_info = None
         self.target_info = None
-        self.opt_d = opt_d
-        self.max_d = max_d
         self.msg_event = threading.Event()
         self.image_array = None
         self.img_event = threading.Event()
-        self.cancel_event = threading.Event() if cancel_event is None else cancel_event
+        self.cancel_event = threading.Event()
         self.msg = None
         self.debug_logs = tensorboard_log is not None
 
@@ -118,27 +116,22 @@ class UnitySimHandler:
         self.packet_sent_num = 0
         self.image_num = 0
 
-        self.read_write_thread_other = read_write_thread_other
-
         conf_arr = process_and_validate_configs({
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'schemas',
-                                                                                                                               'server_config_schema.json')
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'schemas', 'server_config_schema.json')
         })
 
         self.server_config = conf_arr.pop()
-        self.server_config['payload']['serverConfig']['envConfig']['optD'] = self.opt_d
-        self.server_config['payload']['serverConfig']['envConfig']['maxD'] = self.max_d
-        self.server_config['payload']['serverConfig']['envConfig']['seed'] = seed
+        self.opt_d = self.server_config['payload']['serverConfig']['envConfig']['optD']
+        self.max_d = self.server_config['payload']['serverConfig']['envConfig']['maxD']
 
-        self.training_type = TrainingType.TRAINING if port == PORT_TRAIN else TrainingType.INFERENCE
+        self.training_type = TrainingType.TRAINING if (port == PORT_TRAIN) else TrainingType.INFERENCE
 
-        exe_args = ['ip', ip, 'port', str(port), 'modeServerControl']
+        exe_args = ['ip', ip, 'port', str(port), 'modeServerControl', 'seed', str(seed)]
 
         self.debug_logs_dir = None
 
         if self.debug_logs:
-            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'),
-                                               f'episode_{self.episode_num}')
+            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'), f'episode_{self.episode_num}')
             clean_and_remake(self.debug_logs_dir)
             self.clean_and_create_debug_directories()
             exe_args.append('debugLogs')
@@ -177,7 +170,7 @@ class UnitySimHandler:
                     self.conn, self.addr = self.sock.accept()
                     self.conn.settimeout(self.timeout)
                 except ConnectionRefusedError as refuse_error:
-                    print('[NETWORK ERROR] Connection refused:', refuse_error)
+                    print('Connection refused:', refuse_error)
         else:
             self.sock.settimeout(self.timeout)
 
@@ -198,16 +191,6 @@ class UnitySimHandler:
         self.msg = msg
         self.msg_event.set()
 
-    def stop(self):
-        """
-        Signal proc_msg loop to stop, wait for thread to finish, close socket
-        """
-        self.set_msg({
-            'msgType': 'endSimulation',
-            'payload': {
-            }
-        })
-
     def render(self):
         pass
 
@@ -227,11 +210,6 @@ class UnitySimHandler:
 
         if self.cancel_event.is_set():
             self.read_write_thread.join()
-
-            # Our evaluation/training environments needs to consider each-other
-            if self.read_write_thread_other is not None:
-                self.read_write_thread_other.join()
-
             sys.exit(0)
 
         if self.last_obs is not None:
@@ -276,7 +254,7 @@ class UnitySimHandler:
 
     def calc_reward(self, raw_d, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        return (MAX_STEP_REWARD - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180)))
+        return MAX_STEP_REWARD - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180))
 
     def determine_episode_over(self, raw_d):
         if self.target_info['colliding']:
@@ -302,6 +280,7 @@ class UnitySimHandler:
         for t in self.threads:
             t.join()
 
+        self.disconnect()
         return
 
     def disconnect(self):
@@ -343,7 +322,7 @@ class UnitySimHandler:
                 self.on_recv_message(json_dict)
 
             except Exception as e:
-                print('[NETWORK ERROR] Read error:', e)
+                print('Stop receive:', e)
                 self.cancel_event.set()
 
     def on_recv_message(self, message):
@@ -417,11 +396,8 @@ class UnitySimHandler:
                 self.msg = None
                 self.msg_event.clear()
             except Exception as e:
-                print('[NETWORK ERROR] Write error:', e)
+                print('Stop send:', e)
                 self.cancel_event.set()
-
-        # Let's limit disconnection from here only
-        self.disconnect()
 
     def send_action(self, action):
         self.set_msg({
@@ -509,5 +485,5 @@ class UnitySimHandler:
 
     def close(self):
         self.send_end_simulation()
-        self.read_write_thread.join()
         self.thread_exe.join()
+        self.read_write_thread.join()

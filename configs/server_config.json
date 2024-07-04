@@ -31,8 +31,10 @@
                 }
             },
             "envConfig": {
-                "actionInference": "freeze",
+                "actionInference": "maintain",
                 "randomiseRestart": true,
+                "optD": 6,
+                "maxD": 4,
                 "faunaConfig": {
                     "spawnTimer": 5.0,
                     "spawnContainerRatio": 0.8,

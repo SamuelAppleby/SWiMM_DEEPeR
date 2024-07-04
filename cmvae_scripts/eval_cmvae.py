@@ -7,13 +7,17 @@ from matplotlib import pyplot as plt
 import cmvae_utils.dataset_utils
 import cmvae_utils.stats_utils
 import cmvae_utils.geom_utils
-from gym_underwater.utils.utils import load_environment_config, load_cmvae_global_config, save_configs, load_cmvae_inference_config, output_devices, count_directories_in_directory
+from gym_underwater.utils.utils import load_environment_config, load_cmvae_global_config, load_cmvae_inference_config, output_devices, count_directories_in_directory, parse_command_args, \
+    tensorflow_seeding, duplicate_directory
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-env_config = load_environment_config(project_dir, seed_tensorflow=True, seed_sb=False)
-
+env_config = load_environment_config(project_dir)
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
+
+parse_command_args(env_config, cmvae_inference_config)
+
+tensorflow_seeding(env_config['seed'])
 
 assert (cmvae_inference_config['test_dir'] != ''), 'No data directory specified, quitting'
 assert (cmvae_inference_config['weights_path'] != ''), 'Require pre-trained weights'
@@ -22,7 +26,7 @@ assert (cmvae_inference_config['interpolation_dir'] != ''), 'Require interpolati
 test_dir = cmvae_inference_config['test_dir']
 interpolation_dir = cmvae_inference_config['interpolation_dir']
 
-cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, weights_path=cmvae_inference_config['weights_path'], seed=env_config['seed'])
+cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, weights_path=cmvae_inference_config['weights_path'])
 
 output_dir = os.path.join(os.path.dirname(cmvae_inference_config['weights_path']), 'inference_results')
 
@@ -212,13 +216,6 @@ fig3.savefig(os.path.join(output_dir, 'z_mural.pdf'))
 
 config_dir = os.path.join(output_dir, 'configs')
 
-if not os.path.exists(config_dir):
-    os.makedirs(config_dir)
-
-save_configs({
-    os.path.join(config_dir, 'env_config.yml'): env_config,
-    os.path.join(config_dir, 'cmvae_global_config.yml'): cmvae_global_config,
-    os.path.join(config_dir, 'cmvae_inference_config.yml'): cmvae_inference_config
-})
+duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=['hyperparams'], files_to_exclude=['cmvae_training_config.yml', 'callbacks.yml', 'env_wrapper.yml', 'server_config.json'])
 
 output_devices(config_dir, tensorflow_device=True)

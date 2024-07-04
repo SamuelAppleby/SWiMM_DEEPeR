@@ -10,5 +10,4 @@ logs/
 *.RData
 *.Rhistory
 Pipfile.lock
-tensorboard_dir.txt
 models/

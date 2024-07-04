@@ -74,6 +74,9 @@ class SwimCallback(BaseCallback):
         using the current policy.
         This event is triggered before collecting new samples.
         """
+        # We only want to dump training logs if we have performed at least 1 gradient step
+        if self.model._n_updates > 0 and self.logger.name_to_value:
+            self.logger.dump(self.num_timesteps)
         self.training_env.envs[0].unwrapped.on_rollout_start()
         return
 
@@ -88,7 +91,8 @@ class SwimCallback(BaseCallback):
         """
         if self.training_env.buf_dones[0]:
             if self.is_monitor_wrapped:
-                print('[TRAINING] Episode finished. \nReward: {:.2f} \nSteps: {}'.format(self.training_env.envs[0].get_wrapper_attr('episode_returns')[-1], self.training_env.envs[0].get_wrapper_attr('episode_lengths')[-1]))
+                print('[TRAINING] Episode finished. \nReward: {:.2f} \nSteps: {}'.format(self.training_env.envs[0].get_wrapper_attr('episode_returns')[-1],
+                                                                                         self.training_env.envs[0].get_wrapper_attr('episode_lengths')[-1]))
             validate_episode_termination(self.training_env.buf_infos[0])
             self.logger.record('rollout/episode_termination', self.training_env.buf_infos[0]['episode_termination_type'])
 
@@ -239,7 +243,7 @@ class SwimEvalCallback(EvalCallback):
                             self.logger.record('eval/ep_reward', episode_rewards[-1])
                             self.logger.record('eval/ep_length', episode_lengths[-1])
                             self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
-                            self.logger.dump(self.num_timesteps + step_counts[i])
+                            self.logger.dump(step=self.num_timesteps + step_counts[i])
 
                         current_rewards[i] = 0
                         current_lengths[i] = 0
@@ -258,8 +262,8 @@ class SwimEvalCallback(EvalCallback):
         """
         Method called by either an inference only run or a training run, performing evaluation metrics and reporting to logger.
         """
-        # We could have either just reset or stepped, so cache the relevant data
-        self.training_env.envs[0].unwrapped.on_inference_start()
+        # N.B. Only the evaluation environment needs to know about the inference, all training behaviour is self-contained
+        self.eval_env.envs[0].unwrapped.on_inference_start()
 
         # Sync training and eval env if there is VecNormalize
         if self.model.get_vec_normalize_env() is not None:
@@ -339,16 +343,25 @@ class SwimEvalCallback(EvalCallback):
         if self.callback is not None:
             self.continue_training = self.continue_training and self._on_event()
 
-        self.training_env.envs[0].unwrapped.on_inference_end()
+        self.eval_env.envs[0].unwrapped.on_inference_end()
 
     def _on_rollout_start(self) -> None:
         # We can guarantee that at this point either:
         # 1) We have just started training
         # 2) We have just complete an optimization cycle
         # We only want to evaluate in the case of 2)
-        self.n_rollout_calls += 1
-        if (self.n_rollout_calls > 1) and (((self.n_rollout_calls - 1) % self.eval_freq) == 0):
+        if self.model._n_updates > 0:
+            assert self.logger.name_to_value, 'Callbacks should be ordered such that we should have some training data here'
+            self.logger.dump(self.num_timesteps)
+
+        if (self.n_rollout_calls > 0) and ((self.n_rollout_calls % self.eval_freq) == 0):
             self.evaluate()
+
+    def _on_rollout_end(self) -> None:
+        self.n_rollout_calls += 1
+
+    def _on_training_end(self) -> None:
+        self.eval_env.close()
 
     def init_callback(self, model: "base_class.BaseAlgorithm") -> None:
         super().init_callback(model)

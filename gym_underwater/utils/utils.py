@@ -1,4 +1,6 @@
+import argparse
 import importlib
+import json
 import os
 import shutil
 from typing import Dict, Type, Any, Optional, Callable, List, Tuple
@@ -14,7 +16,6 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.type_aliases import TrainFreq, TrainFrequencyUnit
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.utils import set_random_seed
 
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
 from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE
@@ -22,17 +23,18 @@ from gym_underwater.enums import Protocol
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae, obs, opt_d, max_d, img_res, tensorboard_log, debug_logs=False, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None, cancel_event=None, read_write_thread_other=None) -> UnderwaterEnv:
+def make_env(cmvae, obs, img_res, tensorboard_log, debug_logs=False, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None) -> gymnasium.Env:
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
-    uenv = UnderwaterEnv(obs=obs, opt_d=opt_d, max_d=max_d, img_res=img_res, tensorboard_log=tensorboard_log, debug_logs=debug_logs, protocol=protocol, ip=ip, port=port, seed=seed, cmvae=cmvae, cancel_event=cancel_event, read_write_thread_other=read_write_thread_other)
+    uenv = UnderwaterEnv(obs=obs, img_res=img_res, tensorboard_log=tensorboard_log, debug_logs=debug_logs, protocol=protocol, ip=ip, port=port, seed=seed, cmvae=cmvae)
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'configs', 'env_wrapper.yml'), 'r') as f:
         env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
         if env_wrapper_config is not None:
             uenv_conf = env_wrapper_config[ENVIRONMENT_TO_LOAD]
-            env_wrapper = get_wrapper_class(uenv_conf, monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv') if port == PORT_TRAIN else os.path.join(tensorboard_log, 'evaluation_monitor.csv'))
+            env_wrapper = get_wrapper_class(uenv_conf,
+                                            monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv') if port == PORT_TRAIN else os.path.join(tensorboard_log, 'evaluation_monitor.csv'))
 
             if env_wrapper is not None:
                 uenv = env_wrapper(uenv)
@@ -209,17 +211,16 @@ nested_keys = ['callback_on_new_best', 'callback_after_eval']
 eval_callback_name = ''
 
 
-# We require that callbacks are sorted into a custom list, as those at the head have dependencies on the values of those further nested
-# Specifically, if we want to inject some evaluation. we need to ensure that SwimEvalCallback is the last callback
+# SwimCallback must be last, as that is the one restarting physics
 def custom_callback_sort(item):
     if isinstance(item, dict):
         item = next(iter(item.keys()))
     match item:
-        case 'gym_underwater.callbacks.SwimCallback':
+        case 'gym_underwater.callbacks.SwimEvalCallback':
             return 0
         case 'gym_underwater.callbacks.SwimProgressBarCallback':
             return 1
-        case 'gym_underwater.callbacks.SwimEvalCallback':
+        case 'gym_underwater.callbacks.SwimCallback':
             return np.inf
         case _:
             return 0
@@ -250,10 +251,8 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_
         callback_class = get_class_by_name(callback_name)
 
         if issubclass(callback_class, EvalCallback):
-            eval_env = make_env(cmvae=env.unwrapped.cmvae, obs=env.unwrapped.obs, opt_d=env.unwrapped.handler.opt_d, max_d=env.unwrapped.handler.max_d, img_res=env.unwrapped.handler.img_res, tensorboard_log=env.unwrapped.tensorboard_log, debug_logs=env.unwrapped.handler.debug_logs, protocol=env.unwrapped.handler.protocol, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed, cancel_event=env.unwrapped.handler.cancel_event, read_write_thread_other=env.unwrapped.handler.read_write_thread)
-
-            # This is important for clean-up
-            env.unwrapped.handler.read_write_thread_other = eval_env.unwrapped.handler.read_write_thread
+            eval_env = make_env(cmvae=env.unwrapped.cmvae, obs=env.unwrapped.obs, img_res=env.unwrapped.handler.img_res, tensorboard_log=env.unwrapped.tensorboard_log,
+                                debug_logs=env.unwrapped.handler.debug_logs, protocol=env.unwrapped.handler.protocol, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed)
 
             eval_env.unwrapped.wait_until_client_ready()
 
@@ -314,13 +313,13 @@ def convert_train_freq(train_freq) -> TrainFreq:
     return TrainFreq(*train_freq)
 
 
-def load_cmvae_global_config(project_dir, weights_path=None, seed=None) -> Tuple[tf.keras.Model, Dict[str, Any]]:
+def load_cmvae_global_config(project_dir, weights_path=None) -> Tuple[tf.keras.Model, Dict[str, Any]]:
     with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
         cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
         if cmvae_global_config['latent_space_constraints']:
-            cmvae = CmvaeDirect(n_z=cmvae_global_config['n_z'], img_res=cmvae_global_config['img_res'], seed=seed)
+            cmvae = CmvaeDirect(n_z=cmvae_global_config['n_z'], img_res=cmvae_global_config['img_res'])
         else:
-            cmvae = Cmvae(n_z=cmvae_global_config['n_z'], gate_dim=3, seed=seed)
+            cmvae = Cmvae(n_z=cmvae_global_config['n_z'], gate_dim=3)
 
         if weights_path is not None:
             cmvae.load_weights(weights_path).expect_partial()
@@ -363,25 +362,22 @@ def load_hyperparams(project_dir, algorithm_name, environment_name, seed=None) -
         return hyperparams
 
 
-def load_environment_config(project_dir, seed_tensorflow=True, seed_sb=True) -> Dict[str, Any]:
+def load_environment_config(project_dir) -> Dict[str, Any]:
     print('Loading environment configuration ...')
     with open(os.path.join(project_dir, 'configs', 'env_config.yml'), 'r') as f:
         env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-        if env_config['seed'] is not None:
-            global_seeding(env_config['seed'], tensorflow=seed_tensorflow, sb=seed_sb)
         return env_config
 
 
 # Braces and belts, could optimize by calling each seeding function per module but
 # would likely cause future issues, so we can simply call the helper functions
-def global_seeding(seed, tensorflow=True, sb=True) -> None:
+def tensorflow_seeding(seed) -> None:
+    if seed is None:
+        return
+
     assert isinstance(seed, int), f'{seed} is not a valid seed, please provide a valid integer'
-    if tensorflow:
-        # Tensorflow seeding (random.seed(seed), np.random.seed(seed), tf.random.set_seed(seed))
-        tf.keras.utils.set_random_seed(seed)
-    if sb:
-        # SB3 seeding (random.seed(seed), np.random.seed(seed), th.manual_seed(seed))
-        set_random_seed(seed, True)
+    # Tensorflow seeding (random.seed(seed), np.random.seed(seed), tf.random.set_seed(seed))
+    tf.keras.utils.set_random_seed(seed)
 
 
 def load_model(env, algorithm_name, model_path=None, hyperparams=None) -> BaseAlgorithm:
@@ -400,10 +396,10 @@ def load_model(env, algorithm_name, model_path=None, hyperparams=None) -> BaseAl
     return model
 
 
-def load_callbacks(project_dir, env, tensorboard_log) -> List[BaseCallback]:
+def load_callbacks(project_dir: str, env: gymnasium.Env, tensorboard_log: str) -> List[BaseCallback]:
     with open(os.path.join(project_dir, 'configs', 'callbacks.yml'), 'r') as f:
         callback_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
-        return get_callback_list(callback_wrapper_config, env, tensorboard_log=tensorboard_log)
+        return get_callback_list(callback_list=callback_wrapper_config, env=env, tensorboard_log=tensorboard_log)
 
 
 def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude=None):
@@ -413,10 +409,10 @@ def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude
         dirs_to_exclude = []
 
     def _exclude_func(directory, contents):
-        excluded = set(files_to_exclude)
+        excluded_files = set(files_to_exclude)
         excluded_dirs = set(dirs_to_exclude)
 
-        return set(content for content in contents if content in excluded or os.path.join(directory, content) in excluded_dirs)
+        return [content for content in contents if content in excluded_files or content in excluded_dirs and os.path.isdir(os.path.join(directory, content))]
 
     try:
         shutil.copytree(src_dir, dst_dir, ignore=_exclude_func)
@@ -424,10 +420,13 @@ def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude
         raise FileExistsError(f'Destination directory "{dst_dir}" already exists.')
 
 
-def save_configs(configs) -> None:
+def save_configs(configs: Dict[str, Dict[str, Any]]) -> None:
     for key, value in configs.items():
         with open(key, 'w') as file:
-            yaml.dump(value, file)
+            if key.endswith('.yml'):
+                yaml.dump(value, file)
+            elif key.endswith('.json'):
+                json.dump(value, file, indent=2)
 
 
 def output_devices(output_dir, tensorflow_device=False, torch_device=False):
@@ -462,3 +461,16 @@ def count_directories_in_directory(directory):
             directory_count += 1
 
     return directory_count
+
+
+def parse_command_args(env_config, cmvae_inference_config=None) -> None:
+    parser = argparse.ArgumentParser(description='Process a seed parameter.')
+    parser.add_argument('--seed', type=int, default=None, help='Random seed', required=False)
+    parser.add_argument('--weights_path', type=str, default=None, help='Path to cmvae weights', required=False)
+    args = parser.parse_args()
+
+    if args.seed is not None:
+        env_config['seed'] = args.seed
+
+    if args.weights_path is not None:
+        cmvae_inference_config['weights_path'] = args.weights_path

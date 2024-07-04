@@ -7,22 +7,13 @@ obs: 'cmvae'
 img_res: [64,64,3]
 
 # Do we want to output the packet information and save images
-debug_logs: True
+debug_logs: False
 
 # Set seed with arbitrary int so that can report with results this also sets the seed on the simulation
-# Appended to server_config.json
-seed: 11
+seed: 89
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'ddpg'
 algo: 'sac'
-
-# Absolute distance from optimal tracking position.
-# Appended to server_config.json
-opt_d: 6.0
-
-# Maximum deviation allowed from opt_d before an episode is reset.
-# Appended to server_config.json
-max_d: 4.0
 
 ### THE FOLLOWING ARE TRAINING PARAMETERS  ###
 # If you want to train on top of an existing model, provide filepath, else pass empty string

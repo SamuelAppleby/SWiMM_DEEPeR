@@ -3,19 +3,24 @@ import os
 from tqdm import tqdm
 
 import cmvae_utils.dataset_utils
-from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, save_configs, load_cmvae_training_config, output_devices, TENSORBOARD_FILE_NAME, count_directories_in_directory
+from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, load_cmvae_training_config, output_devices, count_directories_in_directory, parse_command_args, \
+    tensorflow_seeding, duplicate_directory
 
 import tensorflow as tf
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-env_config = load_environment_config(project_dir, seed_tensorflow=True, seed_sb=False)
+env_config = load_environment_config(project_dir)
+
+parse_command_args(env_config)
+
+tensorflow_seeding(env_config['seed'])
 
 cmvae_training_config = load_cmvae_training_config(project_dir)
 
 assert (cmvae_training_config['train_dir'] != '') and os.path.isdir(cmvae_training_config['train_dir']), 'Require valid image/state_data directory'
 
-cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, seed=env_config['seed'])
+cmvae, cmvae_global_config = load_cmvae_global_config(project_dir)
 
 output_dir = os.path.join(project_dir, 'models', 'cmvae')
 
@@ -240,10 +245,6 @@ for epoch in tqdm(range(epochs)):
             tf.summary.scalar('test/loss_kl', test_loss_kl.result(), step=epoch)
             tf.summary.scalar('test/total_loss', test_total_loss, step=epoch)
 
-            if epoch == 0:
-                with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'launchers', TENSORBOARD_FILE_NAME), 'w') as log_file:
-                    log_file.write('Tensorboard event file: {}\n'.format(output_dir))
-
             print('Epoch {} | TRAIN: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {} | TEST: L_img: {}, L_gate: {}, L_kl: {}, L_tot: {}'
                   .format(epoch, train_loss_rec_img.result(), train_loss_rec_gate.result(), train_loss_kl.result(), train_total_loss,
                           test_loss_rec_img.result(), test_loss_rec_gate.result(), test_loss_kl.result(), test_total_loss))
@@ -274,13 +275,6 @@ with metrics_writer.as_default():
 
 config_dir = os.path.join(output_dir, 'configs')
 
-if not os.path.exists(config_dir):
-    os.makedirs(config_dir)
-
-save_configs({
-    os.path.join(config_dir, 'env_config.yml'): env_config,
-    os.path.join(config_dir, 'cmvae_global_config.yml'): cmvae_global_config,
-    os.path.join(config_dir, 'cmvae_training_config.yml'): cmvae_training_config
-})
+duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=['hyperparams'], files_to_exclude=['cmvae_inference_config.yml', 'callbacks.yml', 'env_wrapper.yml', 'server_config.json'])
 
 output_devices(config_dir, tensorflow_device=True)

@@ -2,4 +2,4 @@ UnderwaterEnv:
   - stable_baselines3.common.monitor.Monitor:
         allow_early_resets: True
   - gymnasium.wrappers.time_limit.TimeLimit:
-      max_episode_steps: 1000
+      max_episode_steps: 100

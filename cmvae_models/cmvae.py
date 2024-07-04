@@ -9,7 +9,7 @@ from . import transformer
 
 # model definition class
 class Cmvae(tf.keras.Model):
-    def __init__(self, n_z, gate_dim=3, seed=None):
+    def __init__(self, n_z, gate_dim=3):
         super(Cmvae, self).__init__()
         # create the 3 base models:
         self.q_img = dronet.Dronet(num_outputs=n_z * 2, include_top=True)
@@ -18,62 +18,47 @@ class Cmvae(tf.keras.Model):
         # Create sampler
         self.mean_params = Lambda(lambda x: x[:, : n_z])
         self.stddev_params = Lambda(lambda x: x[:, n_z:])
-        self.seed = seed
 
     @tf.function
-    def call(self, x, mode):
+    def call(self, x, mode, training=False):
         # Possible modes for reconstruction:
         # 0: img -> img + gate
         # 1: img -> img
         # 2: img -> gate
-        x = self.q_img(x)
-        means = self.mean_params(x)
-        stddev = tf.math.exp(0.5 * self.stddev_params(x))
-        eps = random_normal(tf.shape(stddev), seed=self.seed)
-        z = means + eps * stddev
-        if mode == 0:
-            img_recon = self.p_img(z)
-            gate_recon = self.p_gate(z)
-            return img_recon, gate_recon, means, stddev, z
-        elif mode == 1:
-            img_recon = self.p_img(z)
-            gate_recon = False
-            return img_recon, gate_recon, means, stddev, z
-        elif mode == 2:
-            img_recon = False
-            gate_recon = self.p_gate(z)
-            return img_recon, gate_recon, means, stddev, z
+        z, means, stddev = self.encode(x, training=training)
+        img_recon, gate_recon = self.decode(z, mode, training=training)
+        return img_recon, gate_recon, means, stddev, z
 
-    def encode(self, x):
-        x = self.q_img(x)
-        means = self.mean_params(x)
-        stddev = tf.math.exp(0.5 * self.stddev_params(x))
+    def encode(self, x, training=False):
+        x = self.q_img(x, training=training)
+        means = self.mean_params(x, training=training)
+        stddev = tf.math.exp(0.5 * self.stddev_params(x, training=training))
         eps = random_normal(tf.shape(stddev))
         z = means + eps * stddev
         return z, means, stddev
 
-    def decode(self, z, mode):
+    def decode(self, z, mode, training=False):
         # Possible modes for reconstruction:
         # 0: z -> img + gate
         # 1: z -> img
         # 2: z -> gate
         if mode == 0:
-            img_recon = self.p_img(z)
-            gate_recon = self.p_gate(z)
+            img_recon = self.p_img(z, training=training)
+            gate_recon = self.p_gate(z, training=training)
             return img_recon, gate_recon
         elif mode == 1:
-            img_recon = self.p_img(z)
+            img_recon = self.p_img(z, training=training)
             gate_recon = False
             return img_recon, gate_recon
         elif mode == 2:
             img_recon = False
-            gate_recon = self.p_gate(z)
+            gate_recon = self.p_gate(z, training=training)
             return img_recon, gate_recon
 
 
 # model definition class. This is the benchmarked and tested one for the pipeline.
 class CmvaeDirect(tf.keras.Model):
-    def __init__(self, n_z, seed=None, img_res=None):
+    def __init__(self, n_z, img_res=None):
         super(CmvaeDirect, self).__init__()
         # create the base models:
         self.q_img = dronet.Dronet(num_outputs=n_z * 2, include_top=True)
@@ -87,7 +72,6 @@ class CmvaeDirect(tf.keras.Model):
         self.R_params = tf.keras.layers.Lambda(lambda x: x[:, 0])
         self.Theta_params = tf.keras.layers.Lambda(lambda x: x[:, 1])
         self.Psi_params = tf.keras.layers.Lambda(lambda x: x[:, 2])
-        self.seed = seed
         self.img_res = img_res
 
     @tf.function

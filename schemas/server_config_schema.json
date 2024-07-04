@@ -101,6 +101,12 @@
                 "randomiseRestart": {
                   "type": "string"
                 },
+                "optD": {
+                  "type": "number"
+                },
+                "maxD": {
+                  "type": "number"
+                },
                 "faunaConfig": {
                   "type": "object",
                   "properties": {
@@ -302,6 +308,8 @@
               "required": [
                 "actionInference",
                 "randomiseRestart",
+                "optD",
+                "maxD",
                 "faunaConfig"
               ]
             },

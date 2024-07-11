@@ -1,7 +1,7 @@
-import cv2
+import time
+
 from gymnasium.wrappers import TimeLimit
 from stable_baselines3.common import base_class
-from stable_baselines3.common.logger import TensorBoardOutputFormat
 import os
 from typing import Union, Optional, Tuple, Callable, Dict, Any, List
 import numpy as np
@@ -17,7 +17,30 @@ from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
 from .sim_comms import MAX_STEP_REWARD
 from .enums import EpisodeTerminationType
-from .utils.utils import convert_train_freq
+
+
+def convert_train_freq(train_freq) -> TrainFreq:
+    """
+    Convert `train_freq` parameter (int or tuple)
+    to a TrainFreq object.
+    """
+    if isinstance(train_freq, TrainFreq):
+        return train_freq
+
+    # The value of the train frequency will be checked later
+    if not isinstance(train_freq, tuple):
+        train_freq = (train_freq, 'step')
+    try:
+        train_freq = (train_freq[0], TrainFrequencyUnit(train_freq[1]))  # type: ignore[assignment]
+    except ValueError as e:
+        raise ValueError(
+            f"The unit of the `train_freq` must be either 'step' or 'episode' not '{train_freq[1]}'!"
+        ) from e
+
+    if not isinstance(train_freq[0], int):
+        raise ValueError(f"The frequency of `train_freq` must be an integer and not {train_freq[0]}")
+
+    return TrainFreq(*train_freq)
 
 
 # Code adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py#L337.
@@ -66,7 +89,7 @@ class SwimCallback(BaseCallback):
         """
         This method is called before the first rollout starts.
         """
-        return
+        pass
 
     def _on_rollout_start(self) -> None:
         """
@@ -74,10 +97,16 @@ class SwimCallback(BaseCallback):
         using the current policy.
         This event is triggered before collecting new samples.
         """
-        # We only want to dump training logs if we have performed at least 1 gradient step
-        if self.model._n_updates > 0 and self.logger.name_to_value:
+        # At this point we are guaranteed to have training information (as train() has just been called)
+        if self.model._n_updates > 0:
             self.logger.dump(self.num_timesteps)
-        self.training_env.envs[0].unwrapped.on_rollout_start()
+
+        eval_callback = [obj for obj in self.locals['callback'].callbacks if isinstance(obj, SwimEvalCallback)]
+
+        # If an evaluation is about to be injected, don't resume physics
+        if not ((len(eval_callback) > 0) and (self.num_timesteps > eval_callback[0].min_train_steps) and (eval_callback[0].n_rollout_calls > 0) and ((eval_callback[0].n_rollout_calls % eval_callback[0].eval_freq) == 0)):
+            self.training_env.envs[0].unwrapped.on_rollout_start()
+
         return
 
     def _on_step(self) -> bool:
@@ -109,7 +138,7 @@ class SwimCallback(BaseCallback):
         """
         This event is triggered before exiting the `learn()` method.
         """
-        pass
+        self.training_env.close()
 
     def init_callback(self, model: "base_class.BaseAlgorithm") -> None:
         super().init_callback(model)
@@ -120,6 +149,8 @@ class SwimEvalCallback(EvalCallback):
     """
     Extension of EvalCallback for Swim Deeper agents.
     stable_baselines3.common.callbacks.StopTrainingOnRewardThreshold.reward_threshold is now treated as a fraction of the total episode/step reward
+
+    :param min_train_steps: Wait min_train_steps training steps before evaluating the model
     """
 
     def __init__(
@@ -129,18 +160,20 @@ class SwimEvalCallback(EvalCallback):
             callback_after_eval: Optional[BaseCallback] = None,
             eval_inference_freq: Union[int, Tuple[int, str]] = (1, 'episode'),
             eval_freq: int = 5,
+            min_train_steps: float = 10000,
             log_path: Optional[str] = None,
             best_model_save_path: Optional[str] = None,
             deterministic: bool = True,
             render: bool = False,
             verbose: int = 1,
-            warn: bool = True,
+            warn: bool = True
     ):
         super().__init__(eval_env, callback_on_new_best, callback_after_eval, 0, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn)
+        self.min_train_steps = min_train_steps
         self.eval_inference_freq = convert_train_freq(eval_inference_freq)
         self.n_rollout_calls = 0
         self.continue_training = True
-        self.img_num = 0
+        self.total_eval_steps = 0
 
     def _on_step(self) -> bool:
         """
@@ -204,8 +237,15 @@ class SwimEvalCallback(EvalCallback):
         current_lengths = np.zeros(n_envs, dtype='int')
 
         observations = env.reset()
+
+        # for i in range(100000):
+        #     x = time.time()
+        #     observations = env.reset()
+        #     print(f'Reset {i}: {time.time() - x}')
+
         states = None
         episode_starts = np.ones((env.num_envs,), dtype=bool)
+
         while should_collect_more_steps_vec(eval_inference_freq, step_counts, episode_counts, count_targets):
             actions, states = model.predict(
                 observations,  # type: ignore[arg-type]
@@ -215,11 +255,11 @@ class SwimEvalCallback(EvalCallback):
             )
 
             new_observations, rewards, dones, infos = env.step(actions)
-
             current_rewards += rewards
             current_lengths += 1
 
             step_counts += 1
+            self.total_eval_steps += 1
             for i in range(n_envs):
                 if should_collect_more_steps(eval_inference_freq, step_counts[i] - 1, episode_counts[i]):
                     reward = rewards[i]
@@ -243,7 +283,7 @@ class SwimEvalCallback(EvalCallback):
                             self.logger.record('eval/ep_reward', episode_rewards[-1])
                             self.logger.record('eval/ep_length', episode_lengths[-1])
                             self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
-                            self.logger.dump(step=self.num_timesteps + step_counts[i])
+                            self.logger.dump(step=self.total_eval_steps)
 
                         current_rewards[i] = 0
                         current_lengths[i] = 0
@@ -262,6 +302,8 @@ class SwimEvalCallback(EvalCallback):
         """
         Method called by either an inference only run or a training run, performing evaluation metrics and reporting to logger.
         """
+        print('[INFERENCE START]')
+
         # N.B. Only the evaluation environment needs to know about the inference, all training behaviour is self-contained
         self.eval_env.envs[0].unwrapped.on_inference_start()
 
@@ -350,15 +392,15 @@ class SwimEvalCallback(EvalCallback):
         # 1) We have just started training
         # 2) We have just complete an optimization cycle
         # We only want to evaluate in the case of 2)
-        if self.model._n_updates > 0:
-            assert self.logger.name_to_value, 'Callbacks should be ordered such that we should have some training data here'
-            self.logger.dump(self.num_timesteps)
-
-        if (self.n_rollout_calls > 0) and ((self.n_rollout_calls % self.eval_freq) == 0):
+        if (self.num_timesteps > self.min_train_steps) and (self.n_rollout_calls > 0) and ((self.n_rollout_calls % self.eval_freq) == 0):
             self.evaluate()
+            # Now we can resume physics
+            self.training_env.envs[0].unwrapped.on_rollout_start()
+
+        self.n_rollout_calls += 1
 
     def _on_rollout_end(self) -> None:
-        self.n_rollout_calls += 1
+        pass
 
     def _on_training_end(self) -> None:
         self.eval_env.close()

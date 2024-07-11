@@ -1,3 +1,5 @@
+import time
+
 import tensorflow as tf
 from keras.backend import random_normal
 from keras.layers import Lambda

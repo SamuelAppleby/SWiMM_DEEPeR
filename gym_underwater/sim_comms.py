@@ -126,7 +126,7 @@ class UnitySimHandler:
 
         self.training_type = TrainingType.TRAINING if (port == PORT_TRAIN) else TrainingType.INFERENCE
 
-        exe_args = ['ip', ip, 'port', str(port), 'modeServerControl', 'seed', str(seed)]
+        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed)]
 
         self.debug_logs_dir = None
 
@@ -134,7 +134,7 @@ class UnitySimHandler:
             self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'), f'episode_{self.episode_num}')
             clean_and_remake(self.debug_logs_dir)
             self.clean_and_create_debug_directories()
-            exe_args.append('debugLogs')
+            exe_args.append('-debugLogs')
 
         self.sock = None
         self.addr = None
@@ -392,6 +392,9 @@ class UnitySimHandler:
                     self.sock.sendto(bytes(json_str, encoding='utf-8'), self.addr)
                 else:
                     self.conn.sendall(bytes(json_str, encoding='utf-8'))
+
+                if self.msg['msgType'] == 'resetEpisode':
+                    print('RESETTING')
 
                 self.msg = None
                 self.msg_event.clear()

@@ -13,7 +13,7 @@ debug_logs: False
 seed: 89
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'ddpg'
-algo: 'sac'
+algorithm: 'sac'
 
 ### THE FOLLOWING ARE TRAINING PARAMETERS  ###
 # If you want to train on top of an existing model, provide filepath, else pass empty string
@@ -21,4 +21,4 @@ model_path_train: ~
 
 ### THE FOLLOWING ARE INFERENCE PARAMETERS  ###
 # The path to the trained model (should point directly to the .zip file)
-model_path_inference: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\Logs\sac\sac_10\best_model.zip'
+model_path_inference: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_6\best_model.zip'

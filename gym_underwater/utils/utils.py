@@ -11,19 +11,19 @@ import tensorflow as tf
 import torch
 import yaml
 
-from stable_baselines3 import DDPG, PPO, SAC, TD3
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
-from stable_baselines3.common.type_aliases import TrainFreq, TrainFrequencyUnit
 from stable_baselines3.common.monitor import Monitor
 
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
-from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE
+from gym_underwater.callbacks import convert_train_freq
+from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE, ALGOS
 from gym_underwater.enums import Protocol
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae, obs, img_res, tensorboard_log, debug_logs=False, protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=None) -> gymnasium.Env:
+def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, protocol: Protocol = Protocol.TCP, ip: str = IP_HOST, port: int = PORT_TRAIN,
+             seed: int = None) -> gymnasium.Env:
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
@@ -33,12 +33,12 @@ def make_env(cmvae, obs, img_res, tensorboard_log, debug_logs=False, protocol=Pr
 
         if env_wrapper_config is not None:
             uenv_conf = env_wrapper_config[ENVIRONMENT_TO_LOAD]
-            env_wrapper = get_wrapper_class(uenv_conf,
-                                            monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv') if port == PORT_TRAIN else os.path.join(tensorboard_log, 'evaluation_monitor.csv'))
+            env_wrapper = get_wrapper_class(uenv_conf, monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv' if port == PORT_TRAIN else 'testing_monitor.csv'))
 
             if env_wrapper is not None:
                 uenv = env_wrapper(uenv)
 
+    uenv.unwrapped.wait_until_client_ready()
     return uenv
 
 
@@ -112,14 +112,6 @@ def accelerated_schedule(initial_value):
         return progress * initial_value
 
     return func
-
-
-ALGOS: Dict[str, Type[BaseAlgorithm]] = {
-    "ddpg": DDPG,
-    "ppo": PPO,
-    "sac": SAC,
-    "td3": TD3
-}
 
 
 # We require that Monitor is the very last wrapper to execute, as it relies on values obtained from TimeLimit
@@ -207,26 +199,22 @@ def get_class_by_name(name: str) -> Type:
     return getattr(module, get_class_name(name))
 
 
-nested_keys = ['callback_on_new_best', 'callback_after_eval']
-eval_callback_name = ''
-
-
 # SwimCallback must be last, as that is the one restarting physics
 def custom_callback_sort(item):
     if isinstance(item, dict):
         item = next(iter(item.keys()))
     match item:
-        case 'gym_underwater.callbacks.SwimEvalCallback':
+        case 'gym_underwater.callbacks.SwimCallback':
             return 0
         case 'gym_underwater.callbacks.SwimProgressBarCallback':
             return 1
-        case 'gym_underwater.callbacks.SwimCallback':
+        case 'gym_underwater.callbacks.SwimEvalCallback':
             return np.inf
         case _:
             return 0
 
 
-def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_log: str = None) -> List[BaseCallback]:
+def get_callback_list(callback_list: List[Any], env: gymnasium.Env = None, tensorboard_log: str = None) -> List[BaseCallback]:
     callbacks: List[BaseCallback] = []
 
     # We need to order our callbacks in a precedential manner
@@ -254,8 +242,6 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_
             eval_env = make_env(cmvae=env.unwrapped.cmvae, obs=env.unwrapped.obs, img_res=env.unwrapped.handler.img_res, tensorboard_log=env.unwrapped.tensorboard_log,
                                 debug_logs=env.unwrapped.handler.debug_logs, protocol=env.unwrapped.handler.protocol, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed)
 
-            eval_env.unwrapped.wait_until_client_ready()
-
             kwargs.update({
                 'eval_env': eval_env,
                 'log_path': tensorboard_log,
@@ -263,57 +249,46 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env, tensorboard_
             })
 
             for freq in ['eval_freq', 'eval_inference_freq']:
-                if isinstance(kwargs[freq], List):
+                if freq in kwargs and isinstance(kwargs[freq], List):
                     kwargs[freq] = tuple(kwargs[freq])
 
-            for nested in nested_keys:
-                if nested in kwargs.keys():
-                    assert isinstance(kwargs[nested], dict), (
-                        f'There is an error within the {nested}'
-                        'callback definition, check the configuration file'
-                    )
-
-                    nested_dict = kwargs[nested]
-
-                    nested_dict_name = next(iter(nested_dict.keys()))
-                    nested_kwargs = nested_dict[nested_dict_name]
-
-                    nested_class = get_class_by_name(nested_dict_name)
-
-                    kwargs.update({
-                        nested: nested_class(**nested_kwargs)
-                    })
+            for c_name in ['callback_on_new_best', 'callback_after_eval']:
+                recurse_callbacks(c_name, kwargs, env, tensorboard_log)
 
         callbacks.append(callback_class(**kwargs))
 
     return callbacks
 
 
-def convert_train_freq(train_freq) -> TrainFreq:
-    """
-    Convert `train_freq` parameter (int or tuple)
-    to a TrainFreq object.
-    """
-    if isinstance(train_freq, TrainFreq):
-        return train_freq
+def recurse_callbacks(nested_item: str = None, kwargs: Dict[str, Any] = None, env: gymnasium.Env = None, tensorboard_log: str = None):
+    # No valid nested key was found
+    if nested_item not in kwargs.keys():
+        return
 
-    # The value of the train frequency will be checked later
-    if not isinstance(train_freq, tuple):
-        train_freq = (train_freq, 'step')
-    try:
-        train_freq = (train_freq[0], TrainFrequencyUnit(train_freq[1]))  # type: ignore[assignment]
-    except ValueError as e:
-        raise ValueError(
-            f"The unit of the `train_freq` must be either 'step' or 'episode' not '{train_freq[1]}'!"
-        ) from e
+    assert nested_item in kwargs.keys()
+    nest_list = []
 
-    if not isinstance(train_freq[0], int):
-        raise ValueError(f"The frequency of `train_freq` must be an integer and not {train_freq[0]}")
+    assert isinstance(kwargs[nested_item], dict), (
+        f'There is an error within the {nested_item}'
+        'callback definition, check the configuration file'
+    )
 
-    return TrainFreq(*train_freq)
+    nested_dict = kwargs[nested_item]
+
+    nested_dict_name = next(iter(nested_dict.keys()))
+    nested_kwargs = nested_dict[nested_dict_name]
+
+    nested_class = get_class_by_name(nested_dict_name)
+
+    for nest in nest_list:
+        recurse_callbacks(nest, nested_kwargs, env, tensorboard_log)
+
+    kwargs.update({
+        nested_item: nested_class(**nested_kwargs)
+    })
 
 
-def load_cmvae_global_config(project_dir, weights_path=None) -> Tuple[tf.keras.Model, Dict[str, Any]]:
+def load_cmvae_global_config(project_dir: str, weights_path: str = None) -> Tuple[tf.keras.Model, Dict[str, Any]]:
     with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
         cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
         if cmvae_global_config['latent_space_constraints']:
@@ -337,19 +312,23 @@ def load_cmvae_global_config(project_dir, weights_path=None) -> Tuple[tf.keras.M
         return cmvae, cmvae_global_config
 
 
-def load_cmvae_training_config(project_dir) -> Dict[str, Any]:
+def load_cmvae_training_config(project_dir: str) -> Dict[str, Any]:
     with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_training_config.yml'), 'r') as f:
         return yaml.load(f, Loader=yaml.UnsafeLoader)
 
 
-def load_cmvae_inference_config(project_dir) -> Dict[str, Any]:
+def load_cmvae_inference_config(project_dir: str) -> Dict[str, Any]:
     with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_inference_config.yml'), 'r') as f:
         return yaml.load(f, Loader=yaml.UnsafeLoader)
 
 
-def load_hyperparams(project_dir, algorithm_name, environment_name, seed=None) -> Dict[str, Any]:
+def load_hyperparams(project_dir: str, algorithm_name: str, environment_name: str, seed: int = None) -> Dict[str, Any]:
     print('Loading hyperparameters ...')
-    with open(os.path.join(project_dir, 'configs', 'hyperparams', f'{algorithm_name}.yml'), 'r') as f:
+    config_dir = os.path.join(project_dir, 'configs', 'hyperparams', f'{algorithm_name.lower()}.yml')
+
+    assert os.path.exists(config_dir) and os.path.isfile(config_dir), f'Must provide a valid path to an algorithm config file: {config_dir} does not exist'
+
+    with open(config_dir, 'r') as f:
         hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)[environment_name]
         if isinstance(hyperparams['train_freq'], List):
             hyperparams['train_freq'] = tuple(hyperparams['train_freq'])
@@ -362,7 +341,7 @@ def load_hyperparams(project_dir, algorithm_name, environment_name, seed=None) -
         return hyperparams
 
 
-def load_environment_config(project_dir) -> Dict[str, Any]:
+def load_environment_config(project_dir: str) -> Dict[str, Any]:
     print('Loading environment configuration ...')
     with open(os.path.join(project_dir, 'configs', 'env_config.yml'), 'r') as f:
         env_config = yaml.load(f, Loader=yaml.UnsafeLoader)
@@ -371,7 +350,7 @@ def load_environment_config(project_dir) -> Dict[str, Any]:
 
 # Braces and belts, could optimize by calling each seeding function per module but
 # would likely cause future issues, so we can simply call the helper functions
-def tensorflow_seeding(seed) -> None:
+def tensorflow_seeding(seed: int) -> None:
     if seed is None:
         return
 
@@ -380,18 +359,22 @@ def tensorflow_seeding(seed) -> None:
     tf.keras.utils.set_random_seed(seed)
 
 
-def load_model(env, algorithm_name, model_path=None, hyperparams=None) -> BaseAlgorithm:
-    if model_path is not None:
-        print('Loading pretrained agent ...')
-        assert os.path.isfile(model_path) and model_path.endswith('.zip'), 'The argument model_path_train must be a valid path to a .zip file'
-        if hyperparams is not None:
-            del hyperparams['policy']  # network architecture already set so don't need
-            model = ALGOS[algorithm_name].load(path=model_path, env=env, **hyperparams)
-        else:
-            model = ALGOS[algorithm_name].load(path=model_path, env=env)
+def load_new_model(env: gymnasium.Env, algorithm_name: str, hyperparams: Dict[str, Any] = None) -> BaseAlgorithm:
+    print('Training from scratch: initialising new model ...')
+    assert algorithm_name in ALGOS, f'Algorithm {algorithm_name} is not supported, please choose from {ALGOS}'
+    return ALGOS[algorithm_name](env=env, **hyperparams)
+
+
+def load_pretrained_model(env: gymnasium.Env, algorithm_name: str, model_path: str, hyperparams: Dict[str, Any] = None):
+    print('Loading pretrained agent ...')
+    assert algorithm_name in ALGOS, f'Algorithm {algorithm_name} is not supported, please choose from {ALGOS}'
+
+    assert os.path.isfile(model_path) and model_path.endswith('.zip'), 'The argument model_path_train must be a valid path to a .zip file'
+    if hyperparams is not None:
+        del hyperparams['policy']  # network architecture already set so don't need
+        model = ALGOS[algorithm_name].load(path=model_path, env=env, **hyperparams)
     else:
-        print('Training from scratch: initialising new model ...')
-        model = ALGOS[algorithm_name](env=env, **hyperparams)
+        model = ALGOS[algorithm_name].load(path=model_path, env=env)
 
     return model
 
@@ -402,7 +385,7 @@ def load_callbacks(project_dir: str, env: gymnasium.Env, tensorboard_log: str) -
         return get_callback_list(callback_list=callback_wrapper_config, env=env, tensorboard_log=tensorboard_log)
 
 
-def duplicate_directory(src_dir, dst_dir, files_to_exclude=None, dirs_to_exclude=None):
+def duplicate_directory(src_dir: str, dst_dir: str, files_to_exclude: List[str] = None, dirs_to_exclude: List[str] = None):
     if files_to_exclude is None:
         files_to_exclude = []
     if dirs_to_exclude is None:
@@ -429,7 +412,7 @@ def save_configs(configs: Dict[str, Dict[str, Any]]) -> None:
                 json.dump(value, file, indent=2)
 
 
-def output_devices(output_dir, tensorflow_device=False, torch_device=False):
+def output_devices(output_dir: str, tensorflow_device=False, torch_device=False):
     with open(os.path.join(output_dir, 'devices.txt'), 'w') as file:
         if tensorflow_device:
             file.write('TENSORFLOW\n')
@@ -441,7 +424,7 @@ def output_devices(output_dir, tensorflow_device=False, torch_device=False):
                 file.write(torch.cuda.get_device_name(i) + "\n")
 
 
-def count_files_in_directory(directory):
+def count_files_in_directory(directory: str):
     file_count = 0
 
     for item in os.listdir(directory):
@@ -451,7 +434,7 @@ def count_files_in_directory(directory):
     return file_count
 
 
-def count_directories_in_directory(directory):
+def count_directories_in_directory(directory: str):
     directory_count = 0
 
     # Iterate through all items in the directory
@@ -463,14 +446,18 @@ def count_directories_in_directory(directory):
     return directory_count
 
 
-def parse_command_args(env_config, cmvae_inference_config=None) -> None:
+def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) -> None:
     parser = argparse.ArgumentParser(description='Process a seed parameter.')
     parser.add_argument('--seed', type=int, default=None, help='Random seed', required=False)
+    parser.add_argument('--algorithm', type=str, default=None, help='Reinforcement Learning Algorithm (choose from "sac", "ppo" or "ddpg")', required=False)
     parser.add_argument('--weights_path', type=str, default=None, help='Path to cmvae weights', required=False)
     args = parser.parse_args()
 
     if args.seed is not None:
         env_config['seed'] = args.seed
+
+    if args.algorithm is not None:
+        env_config['algorithm'] = args.algorithm
 
     if args.weights_path is not None:
         cmvae_inference_config['weights_path'] = args.weights_path

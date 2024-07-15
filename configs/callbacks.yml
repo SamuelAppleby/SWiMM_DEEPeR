@@ -9,9 +9,9 @@ UnderwaterEnv:
           stable_baselines3.common.callbacks.StopTrainingOnRewardThreshold:
             reward_threshold: 0.9999
             verbose: 1
-        eval_inference_freq: [10, 'step']
-        eval_freq: 1
-        min_train_steps: 20000
+        eval_inference_freq: [2, 'episode']
+        eval_freq: 10
+        min_train_steps: 200000
         deterministic: True
         verbose: 1
   - gym_underwater.callbacks.SwimProgressBarCallback

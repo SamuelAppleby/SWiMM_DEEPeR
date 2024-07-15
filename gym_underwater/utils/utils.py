@@ -18,16 +18,14 @@ from stable_baselines3.common.monitor import Monitor
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
 from gym_underwater.callbacks import convert_train_freq
 from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE, ALGOS
-from gym_underwater.enums import Protocol
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, protocol: Protocol = Protocol.TCP, ip: str = IP_HOST, port: int = PORT_TRAIN,
-             seed: int = None) -> gymnasium.Env:
+def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, ip: str = IP_HOST, port: int = PORT_TRAIN, seed: int = None) -> gymnasium.Env:
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
-    uenv = UnderwaterEnv(obs=obs, img_res=img_res, tensorboard_log=tensorboard_log, debug_logs=debug_logs, protocol=protocol, ip=ip, port=port, seed=seed, cmvae=cmvae)
+    uenv = UnderwaterEnv(obs=obs, img_res=img_res, tensorboard_log=tensorboard_log, debug_logs=debug_logs, ip=ip, port=port, seed=seed, cmvae=cmvae)
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'configs', 'env_wrapper.yml'), 'r') as f:
         env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
@@ -240,7 +238,7 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env = None, tenso
 
         if issubclass(callback_class, EvalCallback):
             eval_env = make_env(cmvae=env.unwrapped.cmvae, obs=env.unwrapped.obs, img_res=env.unwrapped.handler.img_res, tensorboard_log=env.unwrapped.tensorboard_log,
-                                debug_logs=env.unwrapped.handler.debug_logs, protocol=env.unwrapped.handler.protocol, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed)
+                                debug_logs=env.unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed)
 
             kwargs.update({
                 'eval_env': eval_env,

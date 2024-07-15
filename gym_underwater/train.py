@@ -6,7 +6,6 @@ import os
 from stable_baselines3.common.utils import constant_fn, configure_logger
 
 from gym_underwater.constants import IP_HOST, PORT_TRAIN
-from gym_underwater.enums import Protocol
 from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_cmvae_global_config, load_environment_config, load_hyperparams, load_callbacks, \
     ENVIRONMENT_TO_LOAD, load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model
 
@@ -54,7 +53,7 @@ hyperparams.update({
 })
 
 # Also performs environment wrapping
-env = make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], protocol=Protocol.TCP, ip=IP_HOST, port=PORT_TRAIN, seed=env_config['seed'])
+env = make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=PORT_TRAIN, seed=env_config['seed'])
 
 # If model_path_train is None, will load a new agent
 model = load_pretrained_model(env, env_config['model_path_train'], hyperparams) if env_config['model_path_train'] is not None else load_new_model(env, env_config['algorithm'], hyperparams)

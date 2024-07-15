@@ -1,7 +1,9 @@
 import base64
 import json
 import os
+import queue
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -15,7 +17,7 @@ from datetime import datetime
 
 import cmvae_utils.dataset_utils
 from gym_underwater.constants import PORT_TRAIN
-from gym_underwater.enums import Protocol, EpisodeTerminationType, TrainingType
+from gym_underwater.enums import EpisodeTerminationType, TrainingType
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -92,18 +94,15 @@ class ClientDisconnectedException(Exception):
 
 
 class UnitySimHandler:
-    def __init__(self, img_res, tensorboard_log, protocol, ip, port, seed):
+    def __init__(self, img_res, tensorboard_log, ip, port, seed):
         self.interval = 1 / PERIOD
-        self.timeout = self.interval * PERIOD * 60 * 10  # Timeout will occur if 10 minutes have occurred without message
         self.sim_ready = False
         self.last_obs = None
         self.rover_info = None
         self.target_info = None
-        self.msg_event = threading.Event()
-        self.image_array = None
-        self.img_event = threading.Event()
+        self.msg_queue = queue.Queue()
+        self.img_queue = queue.Queue()
         self.cancel_event = threading.Event()
-        self.msg = None
         self.debug_logs = tensorboard_log is not None
 
         self.fns = {
@@ -117,7 +116,8 @@ class UnitySimHandler:
         self.image_num = 0
 
         conf_arr = process_and_validate_configs({
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'schemas', 'server_config_schema.json')
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'schemas',
+                                                                                                                               'server_config_schema.json')
         })
 
         self.server_config = conf_arr.pop()
@@ -126,12 +126,13 @@ class UnitySimHandler:
 
         self.training_type = TrainingType.TRAINING if (port == PORT_TRAIN) else TrainingType.INFERENCE
 
-        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed), '-batchmode']
+        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed)]
 
         self.debug_logs_dir = None
 
         if self.debug_logs:
-            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'), f'episode_{self.episode_num}')
+            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'),
+                                               f'episode_{self.episode_num}')
             clean_and_remake(self.debug_logs_dir)
             self.clean_and_create_debug_directories()
             exe_args.append('-debugLogs')
@@ -139,16 +140,14 @@ class UnitySimHandler:
         self.sock = None
         self.addr = None
         self.conn = None
-        self.action_buffer_size = None
         self.threads = []
 
-        self.protocol = protocol
         self.address = (ip, port)
 
-        self.observation_buffer_size = 8192
         self.img_res = img_res
 
-        self.thread_exe = launch_simulation(args=exe_args)
+        if port != PORT_TRAIN:
+            self.thread_exe = launch_simulation(args=exe_args)
 
         self.read_write_thread = self.connect(*self.address)
         self.read_write_thread.start()
@@ -158,44 +157,28 @@ class UnitySimHandler:
         Open a tcp/udp socket
         """
         # create socket and associate the socket with local address
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM if self.protocol == Protocol.UDP else socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.sock.bind((host, port))
         print(f'Listening on {host}:{port}')
 
-        if self.protocol == Protocol.TCP:
-            while self.conn is None:
-                try:
-                    self.sock.listen()
-                    self.conn, self.addr = self.sock.accept()
-                    self.conn.settimeout(self.timeout)
-                except ConnectionRefusedError as refuse_error:
-                    print('Connection refused:', refuse_error)
-        else:
-            self.sock.settimeout(self.timeout)
+        while self.conn is None:
+            try:
+                self.sock.listen()
+                self.conn, self.addr = self.sock.accept()
+            except ConnectionRefusedError as refuse_error:
+                print('Connection refused:', refuse_error)
 
         print(f'Connecting by {self.addr[0]}:{self.addr[1]} ({datetime.now().ctime()})')
         return threading.Thread(target=self.continue_read_write, daemon=True)
 
-    def set_obsv(self, image):
-        while self.img_event.is_set():
-            time.sleep(self.interval)
-        self.image_array = image
-        self.img_event.set()
-
     def set_msg(self, msg):
-        # For some rapidly occurring messages, we may have to briefly wait until the event is free
-        while self.msg_event.is_set():
-            time.sleep(self.interval)
-
-        self.msg = msg
-        self.msg_event.set()
+        self.msg_queue.put(msg)
 
     def render(self):
         pass
 
     def reset(self):
-        self.image_array = None
         self.last_obs = None
         self.rover_info = None
         self.target_info = None
@@ -205,18 +188,20 @@ class UnitySimHandler:
         })
 
     def observe(self, obs):
-        while not self.img_event.is_set() and self.read_write_thread.is_alive():
+        while not self.img_queue.empty() and self.read_write_thread.is_alive():
             time.sleep(self.interval)
 
         if self.cancel_event.is_set():
             self.read_write_thread.join()
             sys.exit(0)
 
-        if self.last_obs is not None:
-            assert not np.array_equal(self.image_array, self.last_obs)
+        img_array = self.img_queue.get()
 
-        self.last_obs = self.image_array
-        observation = self.image_array
+        # Sanity check, we should NEVER have two identical images following each other, as that violates rendering and Newtonian physics
+        if self.last_obs is not None:
+            assert not np.array_equal(img_array, self.last_obs)
+
+        self.last_obs = img_array
 
         info = {
             'rover': self.rover_info,
@@ -226,8 +211,8 @@ class UnitySimHandler:
         # for vector obs training run, overwrite image observation with vector obs
         # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
         if obs == 'vector':
-            observation = np.array([info['rover']['pos'][0], info['rover']['pos'][1], info['rover']['pos'][2], info['rover']['fwd'][0], info['rover']['fwd'][1], info['rover']['fwd'][2],
-                                    info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
+            img_array = np.array([info['rover']['pos'][0], info['rover']['pos'][1], info['rover']['pos'][2], info['rover']['fwd'][0], info['rover']['fwd'][1], info['rover']['fwd'][2],
+                                  info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
 
         raw_d, a = calc_metrics(np.array(info['rover']['pos']), np.array(info['rover']['fwd']), np.array(info['target']['pos']))
         reward = self.calc_reward(raw_d, a)
@@ -248,9 +233,7 @@ class UnitySimHandler:
         if (self.training_type == TrainingType.TRAINING) and over is None:
             assert (-1 <= reward <= 1)
 
-        self.img_event.clear()
-
-        return observation, reward, True if over is not None else False, False, info
+        return img_array, reward, True if over is not None else False, False, info
 
     def calc_reward(self, raw_d, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
@@ -270,8 +253,8 @@ class UnitySimHandler:
 
     def continue_read_write(self):
         self.threads = [
-            threading.Thread(target=self.recv_msg, daemon=True),
-            threading.Thread(target=self.send_msg, daemon=True)
+            threading.Thread(target=self.send_msg, daemon=True),
+            threading.Thread(target=self.recv_msg, daemon=True)
         ]
 
         for t in self.threads:
@@ -279,6 +262,7 @@ class UnitySimHandler:
 
         for t in self.threads:
             t.join()
+            print('THREAD JOINED')
 
         self.disconnect()
         return
@@ -301,16 +285,20 @@ class UnitySimHandler:
         """
         while not self.cancel_event.is_set():
             try:
-                if self.protocol == Protocol.UDP:
-                    data, self.addr = self.sock.recvfrom(self.observation_buffer_size)
-                else:
-                    data = self.conn.recv(self.observation_buffer_size)
-                if not data:
-                    # This is the normal flow, i.e. when the client closes the connection
-                    raise ClientDisconnectedException(f'Client closed the connection')
+                # Read the length prefix (4 bytes)
+                length_prefix = self.conn.recv(4)
+                if not length_prefix:
+                    raise ClientDisconnectedException('Client closed the connection')
+
+                # Unpack the length prefix as an unsigned integer (little-endian)
+                msg_length = struct.unpack('<I', length_prefix)[0]
+
+                data = self.conn.recv(msg_length)
+
+                if not data or len(data) != msg_length:
+                    raise ValueError(f'Incomplete message received. Expected {msg_length} bytes, received {len(data)} bytes.')
 
                 json_str = data.decode('UTF-8')
-                # print(f'Received: {json_str}')
                 json_dict = json.loads(json_str)
 
                 if self.debug_logs_dir is not None:
@@ -319,20 +307,13 @@ class UnitySimHandler:
                         f.close()
                         self.packet_received_num += 1
 
-                self.on_recv_message(json_dict)
+                msg_type = json_dict['msgType']
+                assert msg_type is not None and msg_type in self.fns, f'Unknown message type {msg_type}'
+                self.fns[msg_type](json_dict['payload'])
 
             except Exception as e:
                 print('Stop receive:', e)
                 self.cancel_event.set()
-
-    def on_recv_message(self, message):
-        assert 'msgType' in message, 'msgType not found in message'
-
-        msg_type = message['msgType']
-        payload = message['payload']
-
-        assert msg_type in self.fns, f'Unknown message type {msg_type}'
-        self.fns[msg_type](payload)
 
     def on_client_ready(self, payload):
         self.sim_ready = True
@@ -351,7 +332,7 @@ class UnitySimHandler:
 
         image = cmvae_utils.dataset_utils.load_img_from_file_or_array_and_resize_cv2(img_array=image, res=self.img_res, normalise=True)
 
-        self.set_obsv(image)
+        self.img_queue.put(image)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Outgoing Communications ~~~~~~~~~~~~~~~~~~~~~~~~~#
     def send_msg(self):
@@ -360,24 +341,28 @@ class UnitySimHandler:
         """
         while not self.cancel_event.is_set():
             try:
-                while not self.msg_event.is_set() and not self.cancel_event.is_set():
+                while self.msg_queue.empty() and not self.cancel_event.is_set():
                     time.sleep(self.interval)
 
                 if self.cancel_event.is_set():
                     continue
 
-                assert self.msg is not None
+                msg = self.msg_queue.get()
+                assert msg is not None
 
-                json_str = json.dumps(self.msg)
-                # print(f'Sending: {json_str}')
+                json_str = json.dumps(msg)
+                json_bytes = json_str.encode('utf-8')
+                json_length = struct.pack('<I', len(json_bytes))  # Little endian
+
+                assert bytes(json_str, encoding='utf-8') == json_bytes
 
                 if self.debug_logs_dir is not None:
                     with open(os.path.join(self.debug_logs_dir, 'packets_sent', f'step_{self.packet_sent_num}.json'), 'w', encoding='utf-8') as f:
-                        json.dump(self.msg, f, indent=2)
+                        json.dump(msg, f, indent=2)
                         f.close()
                         self.packet_sent_num += 1
 
-                    match self.msg['msgType']:
+                    match msg['msgType']:
                         case 'resetEpisode':
                             self.episode_num += 1
                             self.debug_logs_dir = self.debug_logs_dir[:self.debug_logs_dir.rfind('_') + 1] + str(self.episode_num)
@@ -388,16 +373,8 @@ class UnitySimHandler:
                         case _:
                             pass
 
-                if self.protocol == Protocol.UDP:
-                    self.sock.sendto(bytes(json_str, encoding='utf-8'), self.addr)
-                else:
-                    self.conn.sendall(bytes(json_str, encoding='utf-8'))
+                self.conn.sendall(json_length + json_bytes)
 
-                if self.msg['msgType'] == 'resetEpisode':
-                    print('RESETTING')
-
-                self.msg = None
-                self.msg_event.clear()
             except Exception as e:
                 print('Stop send:', e)
                 self.cancel_event.set()

@@ -146,8 +146,7 @@ class UnitySimHandler:
 
         self.img_res = img_res
 
-        if port != PORT_TRAIN:
-            self.thread_exe = launch_simulation(args=exe_args)
+        self.thread_exe = launch_simulation(args=exe_args)
 
         self.read_write_thread = self.connect(*self.address)
         self.read_write_thread.start()

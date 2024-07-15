@@ -1,6 +1,3 @@
-import time
-
-from gymnasium.wrappers import TimeLimit
 from stable_baselines3.common import base_class
 import os
 from typing import Union, Optional, Tuple, Callable, Dict, Any, List
@@ -11,11 +8,10 @@ from tqdm import tqdm
 
 import gymnasium
 
-from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, StopTrainingOnRewardThreshold
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.type_aliases import TrainFrequencyUnit, TrainFreq
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
-from .sim_comms import MAX_STEP_REWARD
 from .enums import EpisodeTerminationType
 
 
@@ -148,8 +144,6 @@ class SwimCallback(BaseCallback):
 class SwimEvalCallback(EvalCallback):
     """
     Extension of EvalCallback for Swim Deeper agents.
-    stable_baselines3.common.callbacks.StopTrainingOnRewardThreshold.reward_threshold is now treated as a fraction of the total episode/step reward
-
     :param min_train_steps: Wait min_train_steps training steps before evaluating the model
     """
 
@@ -404,13 +398,6 @@ class SwimEvalCallback(EvalCallback):
 
     def _on_training_end(self) -> None:
         self.eval_env.close()
-
-    def init_callback(self, model: "base_class.BaseAlgorithm") -> None:
-        super().init_callback(model)
-
-        if isinstance(self.callback_on_new_best, StopTrainingOnRewardThreshold):
-            assert (self.training_env.env_is_wrapped(TimeLimit)[0] is not None), 'If callback_on_new_best is StopTrainingOnRewardThreshold, then we must wrap the environment with a TimeLimit'
-            self.callback_on_new_best.reward_threshold *= MAX_STEP_REWARD * self.training_env.envs[0].get_wrapper_attr('_max_episode_steps')
 
 
 class SwimProgressBarCallback(BaseCallback):

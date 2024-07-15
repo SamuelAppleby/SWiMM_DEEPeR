@@ -25,7 +25,6 @@ UnderwaterEnv:
   policy_kwargs:
     log_std_init: -2
     net_arch: [ 64, 64 ]
-    use_sde: True
   verbose: 1
   device: 'auto'
   _init_setup_model: True

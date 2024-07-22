@@ -1,14 +1,22 @@
 import os
+import yaml
+
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
+    cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+
+import tensorflow as tf
+
+if cmvae_global_config['use_cpu_only']:
+    tf.config.set_visible_devices([], 'GPU')
 
 from tqdm import tqdm
 
 import cmvae_utils.dataset_utils
-from gym_underwater.utils.utils import load_cmvae_global_config, load_environment_config, load_cmvae_training_config, output_devices, count_directories_in_directory, parse_command_args, \
-    tensorflow_seeding, duplicate_directory
+from gym_underwater.utils.utils import load_environment_config, load_cmvae_training_config, output_devices, count_directories_in_directory, parse_command_args, \
+    tensorflow_seeding, duplicate_directory, load_cmvae
 
-import tensorflow as tf
-
-project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+cmvae = load_cmvae(cmvae_global_config=cmvae_global_config)
 
 env_config = load_environment_config(project_dir)
 
@@ -19,8 +27,6 @@ tensorflow_seeding(env_config['seed'])
 cmvae_training_config = load_cmvae_training_config(project_dir)
 
 assert (cmvae_training_config['train_dir'] != '') and os.path.isdir(cmvae_training_config['train_dir']), 'Require valid image/state_data directory'
-
-cmvae, cmvae_global_config = load_cmvae_global_config(project_dir)
 
 output_dir = os.path.join(project_dir, 'models', 'cmvae')
 

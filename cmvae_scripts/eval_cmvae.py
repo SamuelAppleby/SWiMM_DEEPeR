@@ -1,5 +1,16 @@
-import csv
 import os
+import yaml
+
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
+    cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+
+import tensorflow as tf
+
+if cmvae_global_config['use_cpu_only']:
+    tf.config.set_visible_devices([], 'GPU')
+
+import csv
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -7,10 +18,8 @@ from matplotlib import pyplot as plt
 import cmvae_utils.dataset_utils
 import cmvae_utils.stats_utils
 import cmvae_utils.geom_utils
-from gym_underwater.utils.utils import load_environment_config, load_cmvae_global_config, load_cmvae_inference_config, output_devices, count_directories_in_directory, parse_command_args, \
-    tensorflow_seeding, duplicate_directory
-
-project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from gym_underwater.utils.utils import load_environment_config, load_cmvae_inference_config, output_devices, count_directories_in_directory, parse_command_args, \
+    tensorflow_seeding, duplicate_directory, load_cmvae
 
 env_config = load_environment_config(project_dir)
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
@@ -26,7 +35,7 @@ assert (cmvae_inference_config['interpolation_dir'] != ''), 'Require interpolati
 test_dir = cmvae_inference_config['test_dir']
 interpolation_dir = cmvae_inference_config['interpolation_dir']
 
-cmvae, cmvae_global_config = load_cmvae_global_config(project_dir, weights_path=cmvae_inference_config['weights_path'])
+cmvae = load_cmvae(cmvae_global_config=cmvae_global_config, weights_path=cmvae_inference_config['weights_path'])
 
 output_dir = os.path.join(os.path.dirname(cmvae_inference_config['weights_path']), 'inference_results')
 

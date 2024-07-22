@@ -2,14 +2,23 @@
 Parent script for initiating a training run
 """
 import os
+import yaml
+
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
+    cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
+
+import torch
+import tensorflow as tf
+
+if cmvae_global_config['use_cpu_only']:
+    tf.config.set_visible_devices([], 'GPU')
 
 from stable_baselines3.common.utils import constant_fn, configure_logger
 
-from gym_underwater.constants import IP_HOST, PORT_TRAIN
-from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_cmvae_global_config, load_environment_config, load_hyperparams, load_callbacks, \
-    ENVIRONMENT_TO_LOAD, load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model
-
-project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from gym_underwater.constants import IP_HOST, PORT_TRAIN, ENVIRONMENT_TO_LOAD
+from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_environment_config, load_hyperparams, load_callbacks, \
+    load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae
 
 env_config = load_environment_config(project_dir)
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
@@ -40,7 +49,7 @@ match hyperparams['learning_rate']:
 
 assert env_config['obs'] == 'cmvae', 'For training, must provide a valid cmvae path'
 
-cmvae, _ = load_cmvae_global_config(project_dir, weights_path=cmvae_inference_config['weights_path'])
+cmvae = load_cmvae(cmvae_global_config=cmvae_global_config, weights_path=cmvae_inference_config['weights_path'])
 
 kwargs = {'total_timesteps': hyperparams['total_timesteps'], 'log_interval': hyperparams['log_interval'], 'tb_log_name': env_config['algorithm'], 'reset_num_timesteps': True}
 del hyperparams['total_timesteps']
@@ -56,7 +65,7 @@ hyperparams.update({
 env = make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=PORT_TRAIN, seed=env_config['seed'])
 
 # If model_path_train is None, will load a new agent
-model = load_pretrained_model(env, env_config['model_path_train'], hyperparams) if env_config['model_path_train'] is not None else load_new_model(env, env_config['algorithm'], hyperparams)
+model = load_pretrained_model(env=env, algorithm_name=env_config['algorithm'], model_path=env_config['model_path_train'], hyperparams=hyperparams) if env_config['model_path_train'] is not None else load_new_model(env=env, algorithm_name=env_config['algorithm'], hyperparams=hyperparams)
 model.set_logger(logger)
 
 callbacks = load_callbacks(project_dir, env, hyperparams['tensorboard_log'])

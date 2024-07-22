@@ -2,10 +2,12 @@ import argparse
 import importlib
 import json
 import os
+
 import shutil
 from typing import Dict, Type, Any, Optional, Callable, List, Tuple
 
 import gymnasium
+import keras
 import numpy as np
 import tensorflow as tf
 import torch
@@ -286,28 +288,23 @@ def recurse_callbacks(nested_item: str = None, kwargs: Dict[str, Any] = None, en
     })
 
 
-def load_cmvae_global_config(project_dir: str, weights_path: str = None) -> Tuple[tf.keras.Model, Dict[str, Any]]:
-    with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
-        cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
-        if cmvae_global_config['latent_space_constraints']:
-            cmvae = CmvaeDirect(n_z=cmvae_global_config['n_z'], img_res=cmvae_global_config['img_res'])
-        else:
-            cmvae = Cmvae(n_z=cmvae_global_config['n_z'], gate_dim=3)
+def load_cmvae(cmvae_global_config: Dict[str, Any], weights_path: str = None) -> keras.models.Model:
+    if cmvae_global_config['latent_space_constraints']:
+        cmvae = CmvaeDirect(n_z=cmvae_global_config['n_z'], img_res=cmvae_global_config['img_res'])
+    else:
+        cmvae = Cmvae(n_z=cmvae_global_config['n_z'], gate_dim=3)
 
-        if weights_path is not None:
-            cmvae.load_weights(weights_path).expect_partial()
-            cmvae.img_res = tuple(cmvae.img_res)
+    if weights_path is not None:
+        cmvae.load_weights(weights_path).expect_partial()
+        cmvae.img_res = tuple(cmvae.img_res)
 
-        if cmvae_global_config['use_cpu_only']:
-            os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
+    if cmvae_global_config['deterministic']:
+        os.environ['TF_DETERMINISTIC_OPS'] = '1'
+        if len(tf.config.list_logical_devices('GPU')) > 0:
+            os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+            os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-        if cmvae_global_config['deterministic']:
-            os.environ['TF_DETERMINISTIC_OPS'] = '1'
-            if len(tf.config.list_physical_devices('GPU')) > 0:
-                os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
-                os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
-        return cmvae, cmvae_global_config
+    return cmvae
 
 
 def load_cmvae_training_config(project_dir: str) -> Dict[str, Any]:

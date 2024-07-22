@@ -13,6 +13,7 @@ from stable_baselines3.common.type_aliases import TrainFrequencyUnit, TrainFreq
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
 from .enums import EpisodeTerminationType
+import psutil
 
 
 def convert_train_freq(train_freq) -> TrainFreq:
@@ -120,6 +121,7 @@ class SwimCallback(BaseCallback):
                                                                                          self.training_env.envs[0].get_wrapper_attr('episode_lengths')[-1]))
             validate_episode_termination(self.training_env.buf_infos[0])
             self.logger.record('rollout/episode_termination', self.training_env.buf_infos[0]['episode_termination_type'])
+            self.logger.record('memory/memory_usage_mb', psutil.Process().memory_info().rss / (1024 ** 2))
 
         return True
 

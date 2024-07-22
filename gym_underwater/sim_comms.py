@@ -126,7 +126,7 @@ class UnitySimHandler:
 
         self.training_type = TrainingType.TRAINING if (port == PORT_TRAIN) else TrainingType.INFERENCE
 
-        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed)]
+        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed), '-batchmode']
 
         self.debug_logs_dir = None
 

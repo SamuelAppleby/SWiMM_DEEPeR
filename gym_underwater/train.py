@@ -8,6 +8,7 @@ project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
     cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
+import torch
 import tensorflow as tf
 
 if cmvae_global_config['use_cpu_only']:

@@ -31,6 +31,7 @@ class Cmvae(tf.keras.Model):
         img_recon, gate_recon = self.decode(z, mode, training=training)
         return img_recon, gate_recon, means, stddev, z
 
+    @tf.function
     def encode(self, x, training=False):
         x = self.q_img(x, training=training)
         means = self.mean_params(x, training=training)
@@ -39,6 +40,7 @@ class Cmvae(tf.keras.Model):
         z = means + eps * stddev
         return z, means, stddev
 
+    @tf.function
     def decode(self, z, mode, training=False):
         # Possible modes for reconstruction:
         # 0: z -> img + gate

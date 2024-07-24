@@ -14,5 +14,4 @@ UnderwaterEnv:
 #        min_train_steps: 200000
 #        deterministic: True
 #        verbose: 1
-  - gym_underwater.callbacks.SwimProgressBarCallback
   - gym_underwater.callbacks.SwimCallback

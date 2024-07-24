@@ -4,8 +4,8 @@ UnderwaterEnv:
   log_interval: 1
   policy: 'MlpPolicy'
   learning_rate: !!float 7.3e-4
-  buffer_size: 1000
-  learning_starts: 0
+  buffer_size: 300000
+  learning_starts: 500
   batch_size: 256
   tau: 0.02
   gamma: 0.99

@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import tensorflow as tf
 import os
@@ -6,11 +8,11 @@ import cv2
 from natsort import natsorted
 from sklearn.model_selection import train_test_split
 
+from gym_underwater.constants import THETA_RANGE
+
 R_RANGE = [2, 10]
-CAM_FOV = 79.95185  # HORIZONTAL
-ALPHA = CAM_FOV / 2.0  # (cam_fov/180.0*np.pi/2.0)
-THETA_RANGE = [-ALPHA, ALPHA]  # [-90, 90]
 PSI_RANGE = [-180, 180]
+
 
 def convert_bgr2rgb(img_bgr):
     return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)

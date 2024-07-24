@@ -16,7 +16,9 @@ from jsonschema.validators import validate
 from datetime import datetime
 
 import cmvae_utils.dataset_utils
+from gym_underwater.constants import ALPHA
 from gym_underwater.enums import EpisodeTerminationType, TrainingType
+from gym_underwater.mathematics import calc_metrics, normalized_exponential_impact, normalized_natural_log_impact
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -34,31 +36,6 @@ def launch_simulation(args, linux=False) -> threading.Thread:
     thread = threading.Thread(target=run_executable, args=(path, args))
     thread.start()
     return thread
-
-
-def calc_metrics(rov_pos, rov_fwd, target_pos):
-    # heading vector from rover to target
-    heading = target_pos - rov_pos
-
-    # normalize
-    norm_heading = heading / np.linalg.norm(heading)
-
-    # calculate radial distance on the flat y-plane
-    raw_d = math.sqrt(math.pow(heading[0], 2) + math.pow(heading[2], 2))
-
-    # calculate angle between rover's forward facing vector and heading vector
-    dot = np.dot(norm_heading, rov_fwd)
-
-    # floating-point inaccuracy may cause epsilon violations, so clamp to legal values
-    dot = np.clip(dot, -1, 1)
-    acos = np.arccos(dot)
-
-    a = np.degrees(acos)
-
-    assert not math.isnan(a)
-
-    return raw_d, a
-
 
 def process_and_validate_configs(dir_map):
     arr = []
@@ -125,7 +102,7 @@ class UnitySimHandler:
 
         self.training_type = training_type
 
-        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed), '-batchmode']
+        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed), '-batchmode']
         exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
 
         self.sock = None
@@ -135,7 +112,7 @@ class UnitySimHandler:
 
         self.address = (ip, port)
 
-        # self.thread_exe = launch_simulation(args=exe_args)
+        self.thread_exe = launch_simulation(args=exe_args)
 
         self.read_write_thread = self.connect(*self.address)
 
@@ -235,8 +212,9 @@ class UnitySimHandler:
 
     def calc_reward(self, raw_d, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        print(f'ANGLE: {a} ANGLE LOSS: {math.fabs(a) / 180} DISTANCE LOSS: {(math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2))} REWARD: {1 - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180))}')
-        return 1 - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180))
+        distance_loss = normalized_exponential_impact(math.fabs(raw_d - self.opt_d), self.max_d)
+        angle_loss = normalized_natural_log_impact(a, ALPHA)
+        return 1 - (distance_loss + angle_loss)
 
     def determine_episode_over(self, raw_d):
         if self.target_info['colliding']:

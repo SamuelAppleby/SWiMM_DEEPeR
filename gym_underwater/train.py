@@ -68,8 +68,8 @@ hyperparams.update({
 # Also performs environment wrapping
 env = DummyVecEnv([make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_TRAIN+i), training_type=TrainingType.TRAINING, seed=(env_config['seed']+i)) for i in range(env_config['n_envs'])])
 
-# If model_path_train is None, will load a new agent
-if env_config['model_path_train'] is not None:
+# If pre_trained_model_path is None, will load a new agent
+if env_config['pre_trained_model_path'] is not None:
     model = load_pretrained_model(env=env, algorithm_name=env_config['algorithm'], model_path=env_config['pre_trained_model_path'], hyperparams=hyperparams)
 else:
     model = load_new_model(env=env, algorithm_name=env_config['algorithm'], hyperparams=hyperparams)

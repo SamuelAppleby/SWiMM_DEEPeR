@@ -370,7 +370,7 @@ def load_pretrained_model(env: DummyVecEnv, algorithm_name: str, model_path: str
     print('Loading pretrained agent ...')
     assert algorithm_name in ALGOS, f'Algorithm {algorithm_name} is not supported, please choose from {ALGOS}'
 
-    assert os.path.isfile(model_path) and model_path.endswith('.zip'), 'The argument model_path_train must be a valid path to a .zip file'
+    assert os.path.isfile(model_path) and model_path.endswith('.zip'), 'The argument pre_trained_model_path must be a valid path to a .zip file'
     if hyperparams is not None:
         del hyperparams['policy']  # network architecture already set so don't need
         model = ALGOS[algorithm_name].load(path=model_path, env=env, **hyperparams)

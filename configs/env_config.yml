@@ -10,7 +10,7 @@ n_envs: 1
 img_res: [64,64,3]
 
 # Do we want to output the packet information and save images
-debug_logs: True
+debug_logs: False
 
 # Set seed with arbitrary int so that can report with results this also sets the seed on the simulation
 seed: 112

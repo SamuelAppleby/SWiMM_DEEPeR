@@ -11,3 +11,10 @@ class EpisodeTerminationType(IntEnum):
 class TrainingType(IntEnum):
     TRAINING = 0
     INFERENCE = 1
+
+    def __str__(self):
+        if self == TrainingType.TRAINING:
+            return "training"
+        elif self == TrainingType.INFERENCE:
+            return "inference"
+        return super().__str__()

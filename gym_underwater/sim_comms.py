@@ -16,7 +16,6 @@ from jsonschema.validators import validate
 from datetime import datetime
 
 import cmvae_utils.dataset_utils
-from gym_underwater.constants import PORT_TRAIN
 from gym_underwater.enums import EpisodeTerminationType, TrainingType
 
 
@@ -85,7 +84,6 @@ def clean_and_remake(directory):
     os.makedirs(directory)
 
 
-MAX_STEP_REWARD = 1.0
 PERIOD = 120
 
 
@@ -94,7 +92,7 @@ class ClientDisconnectedException(Exception):
 
 
 class UnitySimHandler:
-    def __init__(self, img_res, tensorboard_log, ip, port, seed):
+    def __init__(self, img_res, tensorboard_log, ip, port, training_type, seed):
         self.interval = 1 / PERIOD
         self.sim_ready = False
         self.last_obs = None
@@ -103,6 +101,7 @@ class UnitySimHandler:
         self.msg_queue = queue.Queue()
         self.img_queue = queue.Queue()
         self.cancel_event = threading.Event()
+        self.img_res = img_res
         self.debug_logs = tensorboard_log is not None
 
         self.fns = {
@@ -124,18 +123,10 @@ class UnitySimHandler:
         self.opt_d = self.server_config['payload']['serverConfig']['envConfig']['optD']
         self.max_d = self.server_config['payload']['serverConfig']['envConfig']['maxD']
 
-        self.training_type = TrainingType.TRAINING if (port == PORT_TRAIN) else TrainingType.INFERENCE
+        self.training_type = training_type
 
-        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed), '-batchmode']
-
-        self.debug_logs_dir = None
-
-        if self.debug_logs:
-            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', 'training' if self.training_type == TrainingType.TRAINING else os.path.join(tensorboard_log, 'network', 'inference'),
-                                               f'episode_{self.episode_num}')
-            clean_and_remake(self.debug_logs_dir)
-            self.clean_and_create_debug_directories()
-            exe_args.append('-debugLogs')
+        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-seed', str(seed), '-batchmode']
+        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
 
         self.sock = None
         self.addr = None
@@ -144,11 +135,19 @@ class UnitySimHandler:
 
         self.address = (ip, port)
 
-        self.img_res = img_res
-
-        self.thread_exe = launch_simulation(args=exe_args)
+        # self.thread_exe = launch_simulation(args=exe_args)
 
         self.read_write_thread = self.connect(*self.address)
+
+        self.debug_logs_dir = None
+
+        if self.debug_logs:
+            parent_type = 'training' if self.training_type == TrainingType.TRAINING else 'inference'
+            self.debug_logs_dir = os.path.join(tensorboard_log, 'network', parent_type, f'{self.address[0]}_{self.address[1]}', f'episode_{self.episode_num}')
+            clean_and_remake(self.debug_logs_dir)
+            self.clean_and_create_debug_directories()
+            exe_args.append('-debugLogs')
+
         self.read_write_thread.start()
 
     def connect(self, host='127.0.0.1', port=60260) -> threading.Thread:
@@ -236,7 +235,8 @@ class UnitySimHandler:
 
     def calc_reward(self, raw_d, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        return MAX_STEP_REWARD - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180))
+        print(f'ANGLE: {a} ANGLE LOSS: {math.fabs(a) / 180} DISTANCE LOSS: {(math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2))} REWARD: {1 - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180))}')
+        return 1 - ((math.pow((raw_d - self.opt_d), 2) / math.pow(self.max_d, 2)) + (math.fabs(a) / 180))
 
     def determine_episode_over(self, raw_d):
         if self.target_info['colliding']:

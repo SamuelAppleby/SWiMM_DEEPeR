@@ -4,6 +4,8 @@ Parent script for initiating a training run
 import os
 import yaml
 
+from gym_underwater.enums import TrainingType
+
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
     cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
@@ -16,9 +18,11 @@ if cmvae_global_config['use_cpu_only']:
 
 from stable_baselines3.common.utils import constant_fn, configure_logger
 
-from gym_underwater.constants import IP_HOST, PORT_TRAIN, ENVIRONMENT_TO_LOAD
-from gym_underwater.utils.utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_environment_config, load_hyperparams, load_callbacks, \
+from constants import IP_HOST, PORT_TRAIN, ENVIRONMENT_TO_LOAD
+from utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_environment_config, load_hyperparams, load_callbacks, \
     load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae
+
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 env_config = load_environment_config(project_dir)
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
@@ -62,19 +66,22 @@ hyperparams.update({
 })
 
 # Also performs environment wrapping
-env = make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=PORT_TRAIN, seed=env_config['seed'])
+env = DummyVecEnv([make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_TRAIN+i), training_type=TrainingType.TRAINING, seed=(env_config['seed']+i)) for i in range(env_config['n_envs'])])
 
 # If model_path_train is None, will load a new agent
-model = load_pretrained_model(env=env, algorithm_name=env_config['algorithm'], model_path=env_config['model_path_train'], hyperparams=hyperparams) if env_config['model_path_train'] is not None else load_new_model(env=env, algorithm_name=env_config['algorithm'], hyperparams=hyperparams)
+if env_config['model_path_train'] is not None:
+    model = load_pretrained_model(env=env, algorithm_name=env_config['algorithm'], model_path=env_config['pre_trained_model_path'], hyperparams=hyperparams)
+else:
+    model = load_new_model(env=env, algorithm_name=env_config['algorithm'], hyperparams=hyperparams)
+
 model.set_logger(logger)
 
 callbacks = load_callbacks(project_dir, env, hyperparams['tensorboard_log'])
 
 kwargs.update({
-    'callback': callbacks
+    'callback': callbacks,
+    'progress_bar': True
 })
-
-print('[TRAINING START]')
 
 model.learn(**kwargs)
 model.save(os.path.join(model.tensorboard_log, 'final_model'))

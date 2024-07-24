@@ -16,30 +16,36 @@ import yaml
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
 from gym_underwater.callbacks import convert_train_freq
 from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE, ALGOS
+from gym_underwater.enums import TrainingType
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, ip: str = IP_HOST, port: int = PORT_TRAIN, seed: int = None) -> gymnasium.Env:
+def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, ip: str = IP_HOST, port: int = PORT_TRAIN, training_type=TrainingType.TRAINING, seed: int = None) -> ():
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
-    uenv = UnderwaterEnv(obs=obs, img_res=img_res, tensorboard_log=tensorboard_log, debug_logs=debug_logs, ip=ip, port=port, seed=seed, cmvae=cmvae)
-    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'configs', 'env_wrapper.yml'), 'r') as f:
-        env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-        if env_wrapper_config is not None:
-            uenv_conf = env_wrapper_config[ENVIRONMENT_TO_LOAD]
-            env_wrapper = get_wrapper_class(uenv_conf, monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv' if port == PORT_TRAIN else 'testing_monitor.csv'))
+    def _init():
+        uenv = UnderwaterEnv(obs=obs, img_res=img_res, cmvae=cmvae, tensorboard_log=tensorboard_log, debug_logs=debug_logs, ip=ip, port=port, training_type=training_type, seed=seed)
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configs', 'env_wrapper.yml'), 'r') as f:
+            env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
-            if env_wrapper is not None:
-                uenv = env_wrapper(uenv)
+            if env_wrapper_config is not None:
+                uenv_conf = env_wrapper_config[ENVIRONMENT_TO_LOAD]
+                env_wrapper = get_wrapper_class(uenv_conf, monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv' if (training_type == TrainingType.TRAINING) else 'testing_monitor.csv'))
 
-    uenv.unwrapped.wait_until_client_ready()
-    return uenv
+                if env_wrapper is not None:
+                    uenv = env_wrapper(uenv)
+
+        uenv.unwrapped.wait_until_client_ready()
+        return uenv
+
+    return _init
 
 
 def linear_schedule(initial_value):
@@ -214,7 +220,7 @@ def custom_callback_sort(item):
             return 0
 
 
-def get_callback_list(callback_list: List[Any], env: gymnasium.Env = None, tensorboard_log: str = None) -> List[BaseCallback]:
+def get_callback_list(callback_list: List[Any], env: DummyVecEnv = None, tensorboard_log: str = None) -> List[BaseCallback]:
     callbacks: List[BaseCallback] = []
 
     # We need to order our callbacks in a precedential manner
@@ -239,8 +245,8 @@ def get_callback_list(callback_list: List[Any], env: gymnasium.Env = None, tenso
         callback_class = get_class_by_name(callback_name)
 
         if issubclass(callback_class, EvalCallback):
-            eval_env = make_env(cmvae=env.unwrapped.cmvae, obs=env.unwrapped.obs, img_res=env.unwrapped.handler.img_res, tensorboard_log=env.unwrapped.tensorboard_log,
-                                debug_logs=env.unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, seed=env.unwrapped.seed)
+            eval_env = make_env(cmvae=env.envs[0].unwrapped.cmvae, obs=env.envs[0].unwrapped.obs, img_res=env.envs[0].unwrapped.handler.img_res, tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
+                                debug_logs=env.envs[0].unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, training_type=TrainingType.INFERENCE, seed=(env.envs[-1].unwrapped.seed + 1))
 
             kwargs.update({
                 'eval_env': eval_env,
@@ -354,13 +360,13 @@ def tensorflow_seeding(seed: int) -> None:
     tf.keras.utils.set_random_seed(seed)
 
 
-def load_new_model(env: gymnasium.Env, algorithm_name: str, hyperparams: Dict[str, Any] = None) -> BaseAlgorithm:
+def load_new_model(env: DummyVecEnv, algorithm_name: str, hyperparams: Dict[str, Any] = None) -> BaseAlgorithm:
     print('Training from scratch: initialising new model ...')
     assert algorithm_name in ALGOS, f'Algorithm {algorithm_name} is not supported, please choose from {ALGOS}'
     return ALGOS[algorithm_name](env=env, **hyperparams)
 
 
-def load_pretrained_model(env: gymnasium.Env, algorithm_name: str, model_path: str, hyperparams: Dict[str, Any] = None):
+def load_pretrained_model(env: DummyVecEnv, algorithm_name: str, model_path: str, hyperparams: Dict[str, Any] = None):
     print('Loading pretrained agent ...')
     assert algorithm_name in ALGOS, f'Algorithm {algorithm_name} is not supported, please choose from {ALGOS}'
 
@@ -374,7 +380,7 @@ def load_pretrained_model(env: gymnasium.Env, algorithm_name: str, model_path: s
     return model
 
 
-def load_callbacks(project_dir: str, env: gymnasium.Env, tensorboard_log: str) -> List[BaseCallback]:
+def load_callbacks(project_dir: str, env: DummyVecEnv, tensorboard_log: str) -> List[BaseCallback]:
     with open(os.path.join(project_dir, 'configs', 'callbacks.yml'), 'r') as f:
         callback_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
         return get_callback_list(callback_list=callback_wrapper_config, env=env, tensorboard_log=tensorboard_log)
@@ -446,6 +452,7 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
     parser.add_argument('--seed', type=int, default=None, help='Random seed', required=False)
     parser.add_argument('--algorithm', type=str, default=None, help='Reinforcement Learning Algorithm (choose from "sac", "ppo" or "ddpg")', required=False)
     parser.add_argument('--weights_path', type=str, default=None, help='Path to cmvae weights', required=False)
+    parser.add_argument('--n_envs', type=int, default=None, help='The number of gymnasium environments to run in parallel', required=False)
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -453,6 +460,9 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
 
     if args.algorithm is not None:
         env_config['algorithm'] = args.algorithm
+
+    if args.n_envs is not None:
+        env_config['n_envs'] = args.n_envs
 
     if args.weights_path is not None:
         cmvae_inference_config['weights_path'] = args.weights_path

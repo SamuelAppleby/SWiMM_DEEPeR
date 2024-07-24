@@ -3,22 +3,20 @@
 # Observation type. CHOICES: 'image', 'vector', 'cmvae'
 obs: 'cmvae'
 
+# Number of gymnasium environments to run in parallel
+n_envs: 1
+
 # If using image obs, declare desired output size of scaling function. NOTE this is DIFFERENT from cmvae img_res, which uses img_res contained in cmvae_config.
 img_res: [64,64,3]
 
 # Do we want to output the packet information and save images
-debug_logs: False
+debug_logs: True
 
 # Set seed with arbitrary int so that can report with results this also sets the seed on the simulation
-seed: 89
+seed: 112
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'ddpg'
 algorithm: 'sac'
 
-### THE FOLLOWING ARE TRAINING PARAMETERS  ###
-# If you want to train on top of an existing model, provide filepath, else pass empty string
-model_path_train: ~
-
-### THE FOLLOWING ARE INFERENCE PARAMETERS  ###
-# The path to the trained model (should point directly to the .zip file)
-model_path_inference: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_6\best_model.zip'
+# The path to the previously trained model. If running a training session, will train on top of this model, otherwise if running in inference mode will infer from this model.
+pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_214\final_model.zip'

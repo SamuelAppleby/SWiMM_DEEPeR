@@ -100,9 +100,15 @@ class SwimCallback(BaseCallback):
 
         eval_callback = [obj for obj in self.locals['callback'].callbacks if isinstance(obj, SwimEvalCallback)]
 
-        # If an evaluation is about to be injected, don't resume physics
-        if not ((len(eval_callback) > 0) and (self.num_timesteps > eval_callback[0].min_train_steps) and (eval_callback[0].n_rollout_calls > 0) and ((eval_callback[0].n_rollout_calls % eval_callback[0].eval_freq) == 0)):
-            self.training_env.envs[0].unwrapped.on_rollout_start()
+        if len(eval_callback) > 0:
+            eval_callback = eval_callback[0]
+
+            # If an evaluation is about to be injected, don't resume physics
+            if (self.num_timesteps > eval_callback.min_train_steps) and (eval_callback.n_rollout_calls > 0) and ((eval_callback.n_rollout_calls % eval_callback.eval_freq) == 0):
+                return
+
+        for env in self.training_env.envs:
+            env.unwrapped.on_rollout_start()
 
         return
 
@@ -115,13 +121,14 @@ class SwimCallback(BaseCallback):
 
         :return: If the callback returns False, training is aborted early.
         """
-        if self.training_env.buf_dones[0]:
-            if self.is_monitor_wrapped:
-                print('[TRAINING] Episode finished. \nReward: {:.2f} \nSteps: {}'.format(self.training_env.envs[0].get_wrapper_attr('episode_returns')[-1],
-                                                                                         self.training_env.envs[0].get_wrapper_attr('episode_lengths')[-1]))
-            validate_episode_termination(self.training_env.buf_infos[0])
-            self.logger.record('rollout/episode_termination', self.training_env.buf_infos[0]['episode_termination_type'])
-            self.logger.record('memory/memory_usage_mb', psutil.Process().memory_info().rss / (1024 ** 2))
+        for i in range(self.training_env.num_envs):
+            if self.training_env.buf_dones[i]:
+                if self.is_monitor_wrapped:
+                    print('[TRAINING] Episode finished. \nReward: {:.2f} \nSteps: {}'.format(self.training_env.envs[i].get_wrapper_attr('episode_returns')[-1],
+                                                                                             self.training_env.envs[i].get_wrapper_attr('episode_lengths')[-1]))
+                validate_episode_termination(self.training_env.buf_infos[i])
+                self.logger.record('rollout/episode_termination', self.training_env.buf_infos[i]['episode_termination_type'])
+                self.logger.record('memory/memory_usage_mb', psutil.Process().memory_info().rss / (1024 ** 2))
 
         return True
 
@@ -129,7 +136,8 @@ class SwimCallback(BaseCallback):
         """
         This event is triggered before updating the policy.
         """
-        self.training_env.envs[0].unwrapped.on_rollout_end()
+        for env in self.training_env.envs:
+            env.unwrapped.on_rollout_end()
         return
 
     def _on_training_end(self) -> None:
@@ -301,7 +309,8 @@ class SwimEvalCallback(EvalCallback):
         print('[INFERENCE START]')
 
         # N.B. Only the evaluation environment needs to know about the inference, all training behaviour is self-contained
-        self.eval_env.envs[0].unwrapped.on_inference_start()
+        for env in self.eval_env.envs:
+            env.unwrapped.on_inference_start()
 
         # Sync training and eval env if there is VecNormalize
         if self.model.get_vec_normalize_env() is not None:
@@ -381,7 +390,8 @@ class SwimEvalCallback(EvalCallback):
         if self.callback is not None:
             self.continue_training = self.continue_training and self._on_event()
 
-        self.eval_env.envs[0].unwrapped.on_inference_end()
+        for env in self.eval_env.envs:
+            env.unwrapped.on_inference_end()
 
     def _on_rollout_start(self) -> None:
         # We can guarantee that at this point either:
@@ -391,7 +401,8 @@ class SwimEvalCallback(EvalCallback):
         if (self.num_timesteps > self.min_train_steps) and (self.n_rollout_calls > 0) and ((self.n_rollout_calls % self.eval_freq) == 0):
             self.evaluate()
             # Now we can resume physics
-            self.training_env.envs[0].unwrapped.on_rollout_start()
+            for env in self.training_env.envs:
+                env.unwrapped.on_rollout_start()
 
         self.n_rollout_calls += 1
 
@@ -400,35 +411,3 @@ class SwimEvalCallback(EvalCallback):
 
     def _on_training_end(self) -> None:
         self.eval_env.close()
-
-
-class SwimProgressBarCallback(BaseCallback):
-    """
-    base ProgressBarCallback doesn't behave as intended, so use the same custom implementation from SB3
-    """
-
-    pbar: tqdm
-
-    def __init__(self) -> None:
-        super().__init__()
-        if tqdm is None:
-            raise ImportError(
-                "You must install tqdm and rich in order to use the progress bar callback. "
-                "It is included if you install stable-baselines with the extra packages: "
-                "`pip install stable-baselines3[extra]`"
-            )
-
-    def _on_training_start(self) -> None:
-        # Initialize progress bar
-        # Remove timesteps that were done in previous training sessions
-        self.pbar = tqdm(total=self.locals['total_timesteps'] - self.model.num_timesteps)
-
-    def _on_step(self) -> bool:
-        # Update progress bar, we do num_envs steps per call to `env.step()`
-        self.pbar.update(self.training_env.num_envs)
-        return True
-
-    def _on_training_end(self) -> None:
-        # Flush and close progress bar
-        self.pbar.refresh()
-        self.pbar.close()

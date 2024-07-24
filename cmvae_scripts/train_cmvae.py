@@ -13,7 +13,7 @@ if cmvae_global_config['use_cpu_only']:
 from tqdm import tqdm
 
 import cmvae_utils.dataset_utils
-from gym_underwater.utils.utils import load_environment_config, load_cmvae_training_config, output_devices, count_directories_in_directory, parse_command_args, \
+from gym_underwater.utils import load_environment_config, load_cmvae_training_config, output_devices, count_directories_in_directory, parse_command_args, \
     tensorflow_seeding, duplicate_directory, load_cmvae
 
 cmvae = load_cmvae(cmvae_global_config=cmvae_global_config)

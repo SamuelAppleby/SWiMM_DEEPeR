@@ -8,9 +8,10 @@ import cv2
 from natsort import natsorted
 from sklearn.model_selection import train_test_split
 
-from gym_underwater.constants import THETA_RANGE
+from gym_underwater.constants import ALPHA
 
 R_RANGE = [2, 10]
+THETA_RANGE = [-ALPHA, ALPHA]
 PSI_RANGE = [-180, 180]
 
 

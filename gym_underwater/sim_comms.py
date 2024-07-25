@@ -190,13 +190,16 @@ class UnitySimHandler:
                                   info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
 
         raw_d, a = calc_metrics(np.array(info['rover']['pos']), np.array(info['rover']['fwd']), np.array(info['target']['pos']))
-        reward = self.calc_reward(raw_d, a)
+        d_from_opt = math.fabs(raw_d - self.opt_d)
+
+        # a_out_of_bounds only considers the center of the dolphin's mesh and should not be regarded as exact
+        reward, d_out_of_bounds, a_out_of_bounds = self.calc_reward(d_from_opt, a)
 
         over = None
 
         # During inference, we still allow TimeLimit truncation but want to simulate the real-world inference, so no early reset
         if self.training_type == TrainingType.TRAINING:
-            over = self.determine_episode_over(raw_d)
+            over = self.determine_episode_over(d_out_of_bounds)
 
         info.update({
             'dist': raw_d,
@@ -206,25 +209,25 @@ class UnitySimHandler:
 
         # During training, guarantee that reward is between -1 and 1 if not over
         if (self.training_type == TrainingType.TRAINING) and over is None:
-            assert (-1 <= reward <= 1)
+            assert (-1 <= reward <= 1), 'We cannot allow a reward outside of the range [-1, 1]'
 
-        return img_array, reward, True if over is not None else False, False, info
+        return img_array, reward, over is not None, False, info
 
-    def calc_reward(self, raw_d, a):
+    def calc_reward(self, d_from_opt, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        distance_loss = normalized_exponential_impact(math.fabs(raw_d - self.opt_d), self.max_d)
-        angle_loss = normalized_natural_log_impact(a, ALPHA)
-        return 1 - (distance_loss + angle_loss)
+        distance_loss, d_out_of_bounds = normalized_exponential_impact(d_from_opt, self.max_d)
+        angle_loss, a_out_of_bounds = normalized_natural_log_impact(a, ALPHA)
+        return (1 - (distance_loss + angle_loss)), d_out_of_bounds, a_out_of_bounds
 
-    def determine_episode_over(self, raw_d):
+    def determine_episode_over(self, d_out_of_bounds):
         if self.target_info['colliding']:
             print('[EPISODE TERMINATED] Due to collision with target')
             return EpisodeTerminationType.TARGET_COLLISION
         if self.target_info['outOfView']:
             print('[EPISODE TERMINATED] Due to target out of view')
             return EpisodeTerminationType.TARGET_OUT_OF_VIEW
-        if abs(raw_d - self.opt_d) > self.max_d:
-            print(f'[EPISODE TERMINATED] Too far from the optimum distance: {abs(raw_d - self.opt_d)}')
+        if d_out_of_bounds:
+            print(f'[EPISODE TERMINATED] Too far from the optimum distance')
             return EpisodeTerminationType.MAXIMUM_DISTANCE
         return None
 

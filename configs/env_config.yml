@@ -13,7 +13,7 @@ img_res: [64,64,3]
 debug_logs: False
 
 # Set seed with arbitrary int so that can report with results this also sets the seed on the simulation
-seed: 112
+seed: 114
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'ddpg'
 algorithm: 'sac'

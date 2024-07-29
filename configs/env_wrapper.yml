@@ -3,3 +3,6 @@ UnderwaterEnv:
         allow_early_resets: True
   - gymnasium.wrappers.time_limit.TimeLimit:
       max_episode_steps: 3000
+  - gymnasium.wrappers.frame_stack.FrameStack:
+      num_stack: 4
+      lz4_compress: False

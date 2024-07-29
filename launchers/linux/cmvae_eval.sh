@@ -2,8 +2,8 @@ export "PYTHONPATH=C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR;
 source ../../.venv/bin/activate
 cd ../../cmvae_scripts
 
-dirs=(0 1)
-seeds=(29 31)
+dirs=(0 1 2 3 4)
+seeds=(29 31 37 41 43)
 
 for dir in "${dirs[@]}"
 do

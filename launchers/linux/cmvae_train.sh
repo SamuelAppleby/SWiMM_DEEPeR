@@ -2,7 +2,7 @@ export "PYTHONPATH=C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR;
 source ../../.venv/bin/activate
 cd ../../cmvae_scripts
 
-seeds=(11 13)
+seeds=(11 13 17 19 23)
 
 for seed in "${seeds[@]}"
 do

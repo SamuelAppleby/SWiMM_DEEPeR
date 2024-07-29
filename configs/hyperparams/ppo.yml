@@ -1,7 +1,11 @@
 # Hyperparameters inspired from https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml#L350
 UnderwaterEnv:
+  # learn() args
   total_timesteps: !!float 1e6
   log_interval: 1
+  reset_num_timesteps: True
+  progress_bar: True
+  # init() args
   policy: 'MlpPolicy'
   learning_rate: lin_1e-4
   n_steps: 512

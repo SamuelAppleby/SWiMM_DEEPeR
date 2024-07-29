@@ -1,16 +1,20 @@
 # Hyperparameters inspired from https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/td3.yml#L2
 UnderwaterEnv:
+  # learn() args
   total_timesteps: !!float 1e6
   log_interval: 1
+  reset_num_timesteps: True
+  progress_bar: True
+  # init() args
   policy: 'MlpPolicy'
   learning_rate: !!float 1e-3
   buffer_size: 1000000
-  learning_starts: 100
+  learning_starts: 500
   batch_size: 256
   tau: 0.005
   gamma: 0.99
   train_freq: [512, "step"]
-  gradient_steps: 512
+  gradient_steps: 64
   noise_type: 'ornstein-uhlenbeck'
   noise_std: 0.5
   replay_buffer_class: ~

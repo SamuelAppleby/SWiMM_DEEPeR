@@ -1,7 +1,11 @@
 # Hyperparameters inspired from https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml#L236
 UnderwaterEnv:
+  # learn() args
   total_timesteps: !!float 1e6
   log_interval: 1
+  reset_num_timesteps: True
+  progress_bar: True
+  # init() args
   policy: 'MlpPolicy'
   learning_rate: !!float 7.3e-4
   buffer_size: 300000

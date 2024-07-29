@@ -16,7 +16,7 @@ debug_logs: False
 seed: 114
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'td3'
-algorithm: 'td3'
+algorithm: 'sac'
 
 # The path to the previously trained model. If running a training session, will train on top of this model, otherwise if running in inference mode will infer from this model.
 #pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_238\final_model.zip'

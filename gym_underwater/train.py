@@ -60,9 +60,22 @@ match hyperparams['learning_rate']:
     case _:
         raise ValueError('Invalid value for learning rate: {}'.format(hyperparams['learning_rate']))
 
-kwargs = {'total_timesteps': hyperparams['total_timesteps'], 'log_interval': hyperparams['log_interval'], 'tb_log_name': env_config['algorithm'], 'reset_num_timesteps': True}
-del hyperparams['total_timesteps']
-del hyperparams['log_interval']
+kwargs = {
+    'total_timesteps': hyperparams['total_timesteps'],
+    'log_interval': hyperparams['log_interval'],
+    'tb_log_name': env_config['algorithm'],
+    'reset_num_timesteps': hyperparams['reset_num_timesteps'],
+    'progress_bar': hyperparams['progress_bar']
+}
+
+if 'total_timesteps' in hyperparams:
+    del hyperparams['total_timesteps']
+if 'log_interval' in hyperparams:
+    del hyperparams['log_interval']
+if 'reset_num_timesteps' in hyperparams:
+    del hyperparams['reset_num_timesteps']
+if 'progress_bar' in hyperparams:
+    del hyperparams['progress_bar']
 
 # Define the logger first to avoid reduplicating code caused by the file search in learn()
 logger = configure_logger(verbose=1, tensorboard_log=str(os.path.join(project_dir, 'models', env_config['algorithm'])), tb_log_name=env_config['algorithm'], reset_num_timesteps=kwargs['reset_num_timesteps'])
@@ -88,8 +101,7 @@ model.set_logger(logger)
 callbacks = load_callbacks(project_dir, env, hyperparams['tensorboard_log'])
 
 kwargs.update({
-    'callback': callbacks,
-    'progress_bar': True
+    'callback': callbacks
 })
 
 model.learn(**kwargs)

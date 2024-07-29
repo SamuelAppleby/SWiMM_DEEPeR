@@ -1,0 +1,28 @@
+# Hyperparameters inspired from https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/td3.yml#L2
+UnderwaterEnv:
+  total_timesteps: !!float 1e6
+  log_interval: 1
+  policy: 'MlpPolicy'
+  learning_rate: !!float 1e-3
+  buffer_size: 1000000
+  learning_starts: 100
+  batch_size: 256
+  tau: 0.005
+  gamma: 0.99
+  train_freq: [512, "step"]
+  gradient_steps: 512
+  noise_type: 'ornstein-uhlenbeck'
+  noise_std: 0.5
+  replay_buffer_class: ~
+  replay_buffer_kwargs: ~
+  optimize_memory_usage: False
+  policy_delay: 2
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
+  stats_window_size: 10
+  policy_kwargs: "dict(
+                    net_arch=[400, 300]
+                  )"
+  verbose: 1
+  device: 'cuda'
+  _init_setup_model: True

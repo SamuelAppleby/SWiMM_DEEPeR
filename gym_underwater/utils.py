@@ -4,7 +4,7 @@ import json
 import os
 
 import shutil
-from typing import Dict, Type, Any, Optional, Callable, List
+from typing import Dict, Type, Any, Optional, Callable, List, Union
 
 import gymnasium
 import keras
@@ -12,11 +12,13 @@ import numpy as np
 import tensorflow as tf
 import torch
 import yaml
+from gymnasium import spaces
 
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
+from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
 from gym_underwater.callbacks import convert_train_freq
@@ -25,7 +27,8 @@ from gym_underwater.enums import TrainingType
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, ip: str = IP_HOST, port: int = PORT_TRAIN, training_type=TrainingType.TRAINING, seed: int = None) -> ():
+def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, ip: str = IP_HOST, port: int = PORT_TRAIN, training_type=TrainingType.TRAINING,
+             seed: int = None) -> ():
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
@@ -37,7 +40,8 @@ def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, deb
 
             if env_wrapper_config is not None:
                 uenv_conf = env_wrapper_config[ENVIRONMENT_TO_LOAD]
-                env_wrapper = get_wrapper_class(uenv_conf, monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv' if (training_type == TrainingType.TRAINING) else 'testing_monitor.csv'))
+                env_wrapper = get_wrapper_class(uenv_conf,
+                                                monitor_filename=os.path.join(tensorboard_log, 'training_monitor.csv' if (training_type == TrainingType.TRAINING) else 'testing_monitor.csv'))
 
                 if env_wrapper is not None:
                     uenv = env_wrapper(uenv)
@@ -48,28 +52,28 @@ def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, deb
     return _init
 
 
-def linear_schedule(initial_value):
+def linear_schedule(initial_value: Union[float, str]) -> Callable[[float], float]:
     """
     Linear learning rate schedule.
 
     :param initial_value: (float or str)
     :return: (function)
     """
-    if isinstance(initial_value, str):
-        initial_value = float(initial_value)
+    # Force conversion to float
+    initial_value_ = float(initial_value)
 
-    def func(progress, _):
+    def func(progress_remaining: float) -> float:
         """
         Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
+        :param progress_remaining: (float)
         :return: (float)
         """
-        return progress * initial_value
+        return progress_remaining * initial_value_
 
     return func
 
 
-def middle_drop(initial_value):
+def middle_drop(initial_value: Union[float, str]) -> Callable[[float], float]:
     """
     Similar to stable_baselines.common.schedules middle_drop, but func returns actual LR value not multiplier.
     Produces linear schedule but with a drop halfway through training to a constant schedule at 1/10th initial value.
@@ -77,24 +81,23 @@ def middle_drop(initial_value):
     :param initial_value: (float or str)
     :return: (function)
     """
-    if isinstance(initial_value, str):
-        initial_value = float(initial_value)
+    initial_value_ = float(initial_value)
 
-    def func(progress, _):
+    def func(progress_remaining: float) -> float:
         """
         Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
+        :param progress_remaining: (float)
         :return: (float)
         """
         eps = 0.5
-        if progress < eps:
+        if progress_remaining < eps:
             return initial_value * 0.1
-        return progress * initial_value
+        return progress_remaining * initial_value_
 
     return func
 
 
-def accelerated_schedule(initial_value):
+def accelerated_schedule(initial_value: Union[float, str]) -> Callable[[float], float]:
     """
     Custom schedule, starts as linear schedule but once mean_reward (episodic reward averaged over the last 100 episodes)
     surpasses a threshold, schedule remains annealing but at the tail end toward an LR of zero, by taking
@@ -103,19 +106,19 @@ def accelerated_schedule(initial_value):
     :param initial_value: (float or str)
     :return: (function)
     """
-    if isinstance(initial_value, str):
-        initial_value = float(initial_value)
+    initial_value_ = float(initial_value)
 
-    def func(progress, mean_reward):
+    def func(progress_remaining: float, mean_reward: float) -> float:
         """
         Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
+        :param progress_remaining: (float)
+        :param mean_reward: (float)
         :return: (float)
         """
         rew_threshold = 1000
         if mean_reward >= rew_threshold:
-            return (progress * 0.1) * initial_value
-        return progress * initial_value
+            return (progress_remaining * 0.1) * initial_value_
+        return progress_remaining * initial_value_
 
     return func
 
@@ -245,8 +248,9 @@ def get_callback_list(callback_list: List[Any], env: DummyVecEnv = None, tensorb
         callback_class = get_class_by_name(callback_name)
 
         if issubclass(callback_class, EvalCallback):
-            eval_env = make_env(cmvae=env.envs[0].unwrapped.cmvae, obs=env.envs[0].unwrapped.obs, img_res=env.envs[0].unwrapped.handler.img_res, tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
-                                debug_logs=env.envs[0].unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, training_type=TrainingType.INFERENCE, seed=(env.envs[-1].unwrapped.seed + 1))
+            eval_env = DummyVecEnv(
+                [make_env(cmvae=env.envs[0].unwrapped.cmvae, obs=env.envs[0].unwrapped.obs, img_res=env.envs[0].unwrapped.handler.img_res, tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
+                          debug_logs=env.envs[0].unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, training_type=TrainingType.INFERENCE, seed=(env.envs[-1].unwrapped.seed + 1))])
 
             kwargs.update({
                 'eval_env': eval_env,
@@ -331,10 +335,9 @@ def load_hyperparams(project_dir: str, algorithm_name: str, environment_name: st
 
     with open(config_dir, 'r') as f:
         hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)[environment_name]
-        if isinstance(hyperparams['train_freq'], List):
+        if 'train_freq' in hyperparams and isinstance(hyperparams['train_freq'], List):
             hyperparams['train_freq'] = tuple(hyperparams['train_freq'])
-
-        hyperparams['train_freq'] = convert_train_freq(hyperparams['train_freq'])
+            hyperparams['train_freq'] = convert_train_freq(hyperparams['train_freq'])
 
         hyperparams.update({
             'seed': seed
@@ -466,3 +469,41 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
 
     if args.weights_path is not None:
         cmvae_inference_config['weights_path'] = args.weights_path
+
+
+def preprocess_action_noise(
+        hyperparams: Dict[str, Any], env: VecEnv
+) -> Dict[str, Any]:
+    # Parse noise string
+    # Note: only off-policy algorithms are supported
+    if hyperparams.get('noise_type') is not None:
+        noise_type = hyperparams['noise_type'].strip()
+        noise_std = hyperparams['noise_std']
+
+        # Save for later (hyperparameter optimization)
+        assert isinstance(
+            env.action_space, spaces.Box
+        ), f'Action noise can only be used with Box action space, not {env.action_space}'
+        n_actions = env.action_space.shape[0]
+
+        if 'normal' in noise_type:
+            hyperparams['action_noise'] = NormalActionNoise(
+                mean=np.zeros(n_actions),
+                sigma=noise_std * np.ones(n_actions),
+            )
+        elif 'ornstein-uhlenbeck' in noise_type:
+            hyperparams["action_noise"] = OrnsteinUhlenbeckActionNoise(
+                mean=np.zeros(n_actions),
+                sigma=noise_std * np.ones(n_actions),
+            )
+        else:
+            raise RuntimeError(f'Unknown noise type "{noise_type}"')
+
+        print(f'Applying {noise_type} noise with std {noise_std}')
+
+    if 'noise_type' in hyperparams:
+        del hyperparams['noise_type']
+    if 'noise_std' in hyperparams:
+        del hyperparams['noise_std']
+
+    return hyperparams

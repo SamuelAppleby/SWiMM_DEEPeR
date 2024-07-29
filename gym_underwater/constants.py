@@ -1,11 +1,11 @@
 import math
 from typing import Dict, Type
 
-from stable_baselines3 import DDPG, PPO, SAC
+from stable_baselines3 import TD3, PPO, SAC
 from stable_baselines3.common.base_class import BaseAlgorithm
 
 ALGOS: Dict[str, Type[BaseAlgorithm]] = {
-    "ddpg": DDPG,
+    "td3": TD3,
     "ppo": PPO,
     "sac": SAC
 }

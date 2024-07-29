@@ -15,9 +15,9 @@ debug_logs: False
 # Set seed with arbitrary int so that can report with results this also sets the seed on the simulation
 seed: 114
 
-# Algorithm to import from Stable Baselines: 'sac', 'ppo', 'ddpg'
-algorithm: 'sac'
+# Algorithm to import from Stable Baselines: 'sac', 'ppo', 'td3'
+algorithm: 'td3'
 
 # The path to the previously trained model. If running a training session, will train on top of this model, otherwise if running in inference mode will infer from this model.
-#pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_214\final_model.zip'
+#pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_238\final_model.zip'
 pre_trained_model_path: ~

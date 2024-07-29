@@ -9,7 +9,7 @@ UnderwaterEnv:
   batch_size: 256
   tau: 0.02
   gamma: 0.99
-  train_freq: [1, "episode"]
+  train_freq: [512, "step"]
   gradient_steps: 64
   action_noise: ~
   replay_buffer_class: ~
@@ -22,9 +22,10 @@ UnderwaterEnv:
   sde_sample_freq: 64
   use_sde_at_warmup: True
   stats_window_size: 10
-  policy_kwargs:
-    log_std_init: -2
-    net_arch: [ 64, 64 ]
+  policy_kwargs: "dict(
+                    log_std_init=-2,
+                    net_arch=[64, 64]
+                    )"
   verbose: 1
   device: 'cuda'
   _init_setup_model: True

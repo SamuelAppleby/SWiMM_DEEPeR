@@ -1,0 +1,32 @@
+# Hyperparameters inspired from https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml#L350
+UnderwaterEnv:
+  total_timesteps: !!float 1e6
+  log_interval: 1
+  policy: 'MlpPolicy'
+  learning_rate: lin_1e-4
+  n_steps: 512
+  batch_size: 128
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  clip_range_vf: ~
+  normalize_advantage : True
+  ent_coef: 0.0
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  use_sde: True
+  sde_sample_freq: 4
+  rollout_buffer_class: ~
+  rollout_buffer_kwargs: ~
+  target_kl: ~
+  stats_window_size: 10
+  policy_kwargs: "dict(
+                    log_std_init=-2,
+                    ortho_init=False,
+                    activation_fn=nn.GELU,
+                    net_arch=dict(pi=[256], vf=[256]),
+                    )"
+  verbose: 1
+  device: 'cuda'
+  _init_setup_model: True

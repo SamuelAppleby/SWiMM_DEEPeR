@@ -11,6 +11,7 @@ with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml
     cmvae_global_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
 import torch
+from torch import nn as nn
 import tensorflow as tf
 
 if cmvae_global_config['use_cpu_only']:
@@ -20,11 +21,15 @@ from stable_baselines3.common.utils import constant_fn, configure_logger
 
 from constants import IP_HOST, PORT_TRAIN, ENVIRONMENT_TO_LOAD
 from utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_environment_config, load_hyperparams, load_callbacks, \
-    load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae
+    load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae, preprocess_action_noise
 
 from stable_baselines3.common.vec_env import DummyVecEnv
 
+from gymnasium.wrappers import FrameStack
+
 env_config = load_environment_config(project_dir)
+assert env_config['obs'] == 'cmvae', 'For training, must provide a valid cmvae path'
+
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
 
 parse_command_args(env_config, cmvae_inference_config)
@@ -34,6 +39,10 @@ tensorflow_seeding(env_config['seed'])
 
 # Also adds ['seed'] to hyperparams
 hyperparams = load_hyperparams(project_dir, env_config['algorithm'], ENVIRONMENT_TO_LOAD, env_config['seed'])
+
+for kwargs_key in {"policy_kwargs", "replay_buffer_class", "replay_buffer_kwargs"}:
+    if kwargs_key in hyperparams.keys() and isinstance(hyperparams[kwargs_key], str):
+        hyperparams[kwargs_key] = eval(hyperparams[kwargs_key])
 
 match hyperparams['learning_rate']:
     case str():
@@ -51,10 +60,6 @@ match hyperparams['learning_rate']:
     case _:
         raise ValueError('Invalid value for learning rate: {}'.format(hyperparams['learning_rate']))
 
-assert env_config['obs'] == 'cmvae', 'For training, must provide a valid cmvae path'
-
-cmvae = load_cmvae(cmvae_global_config=cmvae_global_config, weights_path=cmvae_inference_config['weights_path'])
-
 kwargs = {'total_timesteps': hyperparams['total_timesteps'], 'log_interval': hyperparams['log_interval'], 'tb_log_name': env_config['algorithm'], 'reset_num_timesteps': True}
 del hyperparams['total_timesteps']
 del hyperparams['log_interval']
@@ -65,8 +70,12 @@ hyperparams.update({
     'tensorboard_log': logger.dir,
 })
 
+cmvae = load_cmvae(cmvae_global_config=cmvae_global_config, weights_path=cmvae_inference_config['weights_path'])
+
 # Also performs environment wrapping
 env = DummyVecEnv([make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_TRAIN+i), training_type=TrainingType.TRAINING, seed=(env_config['seed']+i)) for i in range(env_config['n_envs'])])
+
+hyperparams = preprocess_action_noise(hyperparams, env)
 
 # If pre_trained_model_path is None, will load a new agent
 if env_config['pre_trained_model_path'] is not None:

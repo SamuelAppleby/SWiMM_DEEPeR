@@ -17,7 +17,7 @@ max_size: ~
 epochs: 100
 
 # How many epochs to monitor sufficient validation loss has been met for early stopping, with respect to loss_threshold. Set to ~ for no early stopping.
-window_size: ~
+window_size: 5
 
 # The minimum fractional gain required over window_size episodes to avoid early stopping
 loss_threshold: 0.01

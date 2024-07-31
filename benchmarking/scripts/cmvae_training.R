@@ -33,7 +33,7 @@ for (seed_dir in folders) {
   data$seed <- factor(data$seed)
   names(data)[names(data) == "seed"] <- "ModelSeed"
   
-  training_data <- as.data.frame(t(yaml.load_file(file.path(seed_dir, "configs", "cmvae_training_config.yml"))))
+  training_data <- as.data.frame(t(yaml.load_file(file.path(seed_dir, "configs", "cmvae", "cmvae_training_config.yml"))))
   
   data$EarlyStopping <- ifelse(all(sapply(training_data$window_size, is.numeric)), "Early Stopping", "No Early Stopping")
   data$EarlyStopping <- factor(data$EarlyStopping, levels = c("No Early Stopping", "Early Stopping"))

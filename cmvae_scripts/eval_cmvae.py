@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 import cmvae_utils.dataset_utils
 import cmvae_utils.stats_utils
 import cmvae_utils.geom_utils
-from gym_underwater.utils.utils import load_environment_config, load_cmvae_inference_config, output_devices, count_directories_in_directory, parse_command_args, \
+from gym_underwater.utils import load_environment_config, load_cmvae_inference_config, output_devices, count_directories_in_directory, parse_command_args, \
     tensorflow_seeding, duplicate_directory, load_cmvae
 
 env_config = load_environment_config(project_dir)

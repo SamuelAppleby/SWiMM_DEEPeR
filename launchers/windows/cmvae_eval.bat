@@ -4,8 +4,8 @@ set "PYTHONPATH=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR;%PY
 call ..\..\.venv\Scripts\activate
 cd ..\..\cmvae_scripts
 
-set dir=0 1 2 3 4
-set seeds=29 31 37 41 43
+set dir=5 6 7 8 9
+set seeds=71 73 79 83 89
 
 for %%d in (%dir%) do (
     set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\cmvae\%%d\best_model\model.ckpt

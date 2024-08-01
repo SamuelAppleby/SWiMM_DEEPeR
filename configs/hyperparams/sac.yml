@@ -13,7 +13,7 @@ UnderwaterEnv:
   batch_size: 256
   tau: 0.02
   gamma: 0.99
-  train_freq: [512, "step"]
+  train_freq: [1, "episode"]
   gradient_steps: 64
   action_noise: ~
   replay_buffer_class: ~

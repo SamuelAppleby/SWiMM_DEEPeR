@@ -4,6 +4,7 @@ import json
 import os
 
 import shutil
+import sys
 from typing import Dict, Type, Any, Optional, Callable, List, Union
 
 import gymnasium
@@ -426,6 +427,11 @@ def output_devices(output_dir: str, tensorflow_device=False, torch_device=False)
             file.write('PYTORCH\n')
             for i in range(torch.cuda.device_count()):
                 file.write(torch.cuda.get_device_name(i) + "\n")
+
+
+def output_command_line_arguments(output_dir: str):
+    with open(os.path.join(output_dir, 'command_line_args.txt'), 'w') as file:
+        file.write(f"python {' '.join(sys.argv)}")
 
 
 def count_files_in_directory(directory: str):

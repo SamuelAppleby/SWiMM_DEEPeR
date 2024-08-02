@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 import cmvae_utils.dataset_utils
 from gym_underwater.utils import load_environment_config, load_cmvae_training_config, output_devices, count_directories_in_directory, parse_command_args, \
-    tensorflow_seeding, duplicate_directory, load_cmvae
+    tensorflow_seeding, duplicate_directory, load_cmvae, output_command_line_arguments
 
 cmvae = load_cmvae(cmvae_global_config=cmvae_global_config)
 
@@ -280,7 +280,6 @@ with metrics_writer.as_default():
     tf.summary.scalar('time', 0, step=1)
 
 config_dir = os.path.join(output_dir, 'configs')
-
 duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=['hyperparams'], files_to_exclude=['cmvae_inference_config.yml', 'callbacks.yml', 'env_wrapper.yml', 'server_config.json'])
-
 output_devices(config_dir, tensorflow_device=True)
+output_command_line_arguments(config_dir)

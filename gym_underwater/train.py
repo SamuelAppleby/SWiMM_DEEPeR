@@ -21,7 +21,8 @@ from stable_baselines3.common.utils import constant_fn, configure_logger
 
 from constants import IP_HOST, PORT_TRAIN, ENVIRONMENT_TO_LOAD
 from utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_environment_config, load_hyperparams, load_callbacks, \
-    load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae, preprocess_action_noise
+    load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae, preprocess_action_noise, \
+    output_command_line_arguments
 
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -106,5 +107,9 @@ model.learn(**kwargs)
 model.save(os.path.join(model.tensorboard_log, 'final_model'))
 
 config_dir = os.path.join(hyperparams['tensorboard_log'], 'configs')
-duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=None, files_to_exclude=['cmvae_training_config.yml'])
+
+hyperparams_to_exclude = [file for file in os.listdir(os.path.join(project_dir, 'configs', 'hyperparams')) if file != f'{env_config["algorithm"].lower()}.yml']
+
+duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=None, files_to_exclude=(hyperparams_to_exclude + ['cmvae_training_config.yml']))
 output_devices(config_dir, tensorflow_device=True, torch_device=True)
+output_command_line_arguments(config_dir)

@@ -87,7 +87,10 @@ eval_callback = model._init_callback(eval_callback, progress_bar=False)
 eval_callback.evaluate()
 
 config_dir = os.path.join(logger.dir, 'configs')
-duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=['hyperparams'], files_to_exclude=['cmvae_training_config.yml', 'cmvae_global_config.yml'])
+
+hyperparams_to_exclude = [file for file in os.listdir(os.path.join(project_dir, 'configs', 'hyperparams')) if file != f'{env_config["algorithm"].lower()}.yml']
+
+duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=['hyperparams'], files_to_exclude=(hyperparams_to_exclude + ['cmvae_training_config.yml', 'cmvae_global_config.yml']))
 output_devices(config_dir, tensorflow_device=True, torch_device=True)
 
 model.env.close()

@@ -25,8 +25,6 @@ from utils import make_env, middle_drop, accelerated_schedule, linear_schedule, 
 
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from gymnasium.wrappers import FrameStack
-
 env_config = load_environment_config(project_dir)
 assert env_config['obs'] == 'cmvae', 'For training, must provide a valid cmvae path'
 

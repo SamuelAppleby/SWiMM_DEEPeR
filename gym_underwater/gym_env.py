@@ -1,4 +1,5 @@
 import time
+from queue import Queue
 
 import numpy as np
 
@@ -12,7 +13,7 @@ from gym_underwater.sim_comms import UnitySimHandler
 
 class UnderwaterEnv(gymnasium.Env):
     """
-    OpenAI Gym Environment for controlling an underwater vehicle 
+    OpenAI Gym Environment for controlling an underwater vehicle
     """
 
     def __init__(self, obs, img_res=(64, 64, 3), cmvae=None, tensorboard_log=None, debug_logs=False, ip=IP_HOST, port=PORT_TRAIN, training_type=TrainingType.TRAINING, seed=None):
@@ -42,6 +43,8 @@ class UnderwaterEnv(gymnasium.Env):
             dtype=np.float32,
         )
 
+        self.previous_actions = Queue(maxsize=10)
+
         # observation space declaration
         print('Declaring observation space')
         if self.obs == 'image':
@@ -49,7 +52,7 @@ class UnderwaterEnv(gymnasium.Env):
         elif self.obs == 'vector':
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, 12), dtype=np.float32)
         elif self.obs == 'cmvae':
-            self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, self.z_size), dtype=np.float32)
+            self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, self.z_size + (self.previous_actions.maxsize * self.action_space.shape[0])), dtype=np.float32)
         else:
             raise ValueError(f'Invalid observation type: {obs}')
 
@@ -64,17 +67,37 @@ class UnderwaterEnv(gymnasium.Env):
             # set latent vector as observation
             observation, _, _ = self.cmvae.encode(observation)
 
-        return observation, reward, terminated, truncated, info
+        return observation.numpy(), reward, terminated, truncated, info
 
     def step(self, action):
         self.handler.send_action(action)
-        return self.observe_and_process_observation()
+        observation, reward, terminated, truncated, info = self.observe_and_process_observation()
+
+        assert self.previous_actions.full(), 'The action queue should never be less than full'
+        self.previous_actions.get()  # Remove the oldest action
+        self.previous_actions.put(action)  # Add the new action
+
+        observation = self.get_augmented_state(observation)
+        return observation, reward, terminated, truncated, info
 
     def reset(self, **kwargs):
         super().reset(seed=kwargs.get('seed'))  # Seed will be present in the first call (see setup_learn), otherwise None
         self.handler.reset()
+
+        zero_action = np.zeros(self.action_space.shape)
+
+        self.previous_actions.queue.clear()
+        for _ in range(self.previous_actions.maxsize):
+            self.previous_actions.put(zero_action.copy())
+
         observation, _, _, _, info = self.observe_and_process_observation()
+        observation = self.get_augmented_state(observation)
         return observation, info
+
+    def get_augmented_state(self, state):
+        # Flatten the list of previous actions
+        previous_actions_np = np.array(list(self.previous_actions.queue)).flatten()
+        return np.concatenate([state.flatten(), previous_actions_np]).reshape(1, -1)
 
     def render(self):
         pass

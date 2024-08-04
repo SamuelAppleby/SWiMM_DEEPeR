@@ -59,7 +59,8 @@ if isinstance(eval_callback, dict):
     kwargs = callback_dict[callback_name]
 
     for param in ['callback_after_eval', 'callback_on_new_best']:
-        del kwargs[param]
+        if param in kwargs:
+            del kwargs[param]
 else:
     kwargs = {}
 

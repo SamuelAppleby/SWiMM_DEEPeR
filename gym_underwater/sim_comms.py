@@ -102,8 +102,8 @@ class UnitySimHandler:
 
         self.training_type = training_type
 
-        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed), '-batchmode']
-        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
+        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed), '-batchmode']
+        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
 
         self.sock = None
         self.addr = None
@@ -215,8 +215,8 @@ class UnitySimHandler:
 
     def calc_reward(self, d_from_opt, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        distance_loss, d_out_of_bounds = normalized_exponential_impact(d_from_opt, self.max_d)
-        angle_loss, a_out_of_bounds = normalized_natural_log_impact(a, ALPHA)
+        distance_loss, d_out_of_bounds = normalized_exponential_impact(diff=d_from_opt, max_diff=self.max_d, k=1)
+        angle_loss, a_out_of_bounds = normalized_natural_log_impact(diff=a, max_diff=ALPHA, k=0.2)
         return (1 - (distance_loss + angle_loss)), d_out_of_bounds, a_out_of_bounds
 
     def determine_episode_over(self, d_out_of_bounds):

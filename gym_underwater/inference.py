@@ -66,7 +66,7 @@ else:
 
 callback_class = get_class_by_name(callback_name)
 
-env = DummyVecEnv([make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=logger.dir, debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_INFERENCE+i), training_type=TrainingType.INFERENCE, seed=(env_config['seed']+i)) for i in range(env_config['n_envs'])])
+env = DummyVecEnv([make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=logger.dir, debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_INFERENCE+i), training_type=TrainingType.INFERENCE, seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
 
 kwargs.update({
     'eval_env': env,

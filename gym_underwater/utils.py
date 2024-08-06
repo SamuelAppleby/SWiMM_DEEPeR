@@ -251,7 +251,7 @@ def get_callback_list(callback_list: List[Any], env: DummyVecEnv = None, tensorb
         if issubclass(callback_class, EvalCallback):
             eval_env = DummyVecEnv(
                 [make_env(cmvae=env.envs[0].unwrapped.cmvae, obs=env.envs[0].unwrapped.obs, img_res=env.envs[0].unwrapped.handler.img_res, tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
-                          debug_logs=env.envs[0].unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, training_type=TrainingType.INFERENCE, seed=(env.envs[-1].unwrapped.seed + 1))])
+                          debug_logs=env.envs[0].unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, training_type=TrainingType.INFERENCE, seed=((env.envs[-1].unwrapped.seed + 1) if env.envs[-1].unwrapped.seed is not None else None))])
 
             kwargs.update({
                 'eval_env': eval_env,

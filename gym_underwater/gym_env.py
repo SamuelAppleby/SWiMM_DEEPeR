@@ -8,6 +8,7 @@ from gymnasium import spaces
 
 from gym_underwater.constants import IP_HOST, PORT_TRAIN
 from gym_underwater.enums import TrainingType
+from gym_underwater.mathematics import normalized_absolute_difference
 from gym_underwater.sim_comms import UnitySimHandler
 
 
@@ -67,14 +68,23 @@ class UnderwaterEnv(gymnasium.Env):
             # set latent vector as observation
             observation, _, _ = self.cmvae.encode(observation)
 
+        smoothness_penalty = 0
+        if self.previous_actions.qsize() > 1:
+            action_list = list(self.previous_actions.queue)
+            action_diff = normalized_absolute_difference(action_list[-1], action_list[-2], self.action_space)
+
+            for diff in action_diff:
+                if diff > 0.25:
+                    smoothness_penalty += 1
+
         return observation.numpy(), reward, terminated, truncated, info
 
     def step(self, action):
         self.handler.send_action(action)
         observation, reward, terminated, truncated, info = self.observe_and_process_observation()
 
-        assert self.previous_actions.full(), 'The action queue should never be less than full'
-        self.previous_actions.get()  # Remove the oldest action
+        if self.previous_actions.full():
+            self.previous_actions.get()  # Remove the oldest action
         self.previous_actions.put(action)  # Add the new action
 
         observation = self.get_augmented_state(observation)
@@ -84,11 +94,7 @@ class UnderwaterEnv(gymnasium.Env):
         super().reset(seed=kwargs.get('seed'))  # Seed will be present in the first call (see setup_learn), otherwise None
         self.handler.reset()
 
-        zero_action = np.zeros(self.action_space.shape)
-
         self.previous_actions.queue.clear()
-        for _ in range(self.previous_actions.maxsize):
-            self.previous_actions.put(zero_action.copy())
 
         observation, _, _, _, info = self.observe_and_process_observation()
         observation = self.get_augmented_state(observation)
@@ -97,6 +103,11 @@ class UnderwaterEnv(gymnasium.Env):
     def get_augmented_state(self, state):
         # Flatten the list of previous actions
         previous_actions_np = np.array(list(self.previous_actions.queue)).flatten()
+
+        if len(previous_actions_np) < 20:
+            padding = np.zeros(20 - len(previous_actions_np))
+            previous_actions_np = np.concatenate([previous_actions_np, padding])
+
         return np.concatenate([state.flatten(), previous_actions_np]).reshape(1, -1)
 
     def render(self):

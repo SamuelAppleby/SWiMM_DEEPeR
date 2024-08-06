@@ -520,3 +520,13 @@ def preprocess_action_noise(
         del hyperparams['noise_std']
 
     return hyperparams
+
+
+def convert_observation_type(obs: str) -> ObservationType:
+    try:
+        obs = ObservationType(obs)
+    except ValueError:
+        raise ValueError(f"Unknown file type: {obs}")
+
+    assert obs == ObservationType.CMVAE, 'ObservationType must be cmvae'
+    return obs

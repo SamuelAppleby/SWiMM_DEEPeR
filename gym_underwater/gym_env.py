@@ -1,5 +1,4 @@
 import time
-from queue import Queue
 from typing import Tuple
 
 import numpy as np
@@ -9,7 +8,6 @@ from gymnasium import spaces
 
 from gym_underwater.constants import IP_HOST, PORT_TRAIN
 from gym_underwater.enums import TrainingType, ObservationType
-from gym_underwater.mathematics import normalized_absolute_difference
 from gym_underwater.sim_comms import UnitySimHandler
 
 

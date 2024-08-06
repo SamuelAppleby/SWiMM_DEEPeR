@@ -22,18 +22,13 @@ from stable_baselines3.common.utils import constant_fn, configure_logger
 from constants import IP_HOST, PORT_TRAIN, ENVIRONMENT_TO_LOAD
 from utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_environment_config, load_hyperparams, load_callbacks, \
     load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae, preprocess_action_noise, \
-    output_command_line_arguments
+    output_command_line_arguments, convert_observation_type
 
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 env_config = load_environment_config(project_dir)
 
-try:
-    obs = ObservationType(env_config['obs'])
-except ValueError:
-    raise ValueError(f"Unknown file type: {env_config['obs']}")
-
-assert obs == ObservationType.CMVAE, 'For training, must provide a valid cmvae path'
+obs = convert_observation_type(env_config['obs'])
 
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
 

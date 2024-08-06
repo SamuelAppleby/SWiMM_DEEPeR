@@ -5,7 +5,7 @@ import os
 import yaml
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from gym_underwater.enums import TrainingType, ObservationType
+from gym_underwater.enums import TrainingType
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
@@ -23,15 +23,11 @@ from stable_baselines3.common.utils import configure_logger
 from gym_underwater.constants import IP_HOST, PORT_INFERENCE, ENVIRONMENT_TO_LOAD
 
 from gym_underwater.utils import make_env, load_environment_config, load_cmvae_inference_config, output_devices, duplicate_directory, \
-    parse_command_args, tensorflow_seeding, load_pretrained_model, get_class_by_name, load_cmvae
+    parse_command_args, tensorflow_seeding, load_pretrained_model, get_class_by_name, load_cmvae, convert_observation_type
 
 env_config = load_environment_config(project_dir)
-try:
-    obs = ObservationType(env_config['obs'])
-except ValueError:
-    raise ValueError(f"Unknown file type: {env_config['obs']}")
+obs = convert_observation_type(env_config['obs'])
 
-assert obs == ObservationType.CMVAE, 'For training, must provide a valid cmvae path'
 assert env_config['n_envs'] == 1, 'When running in inference mode, can only run 1 environment'
 assert os.path.isfile(env_config['pre_trained_model_path']) and env_config['pre_trained_model_path'].endswith('.zip'), 'The argument pre_trained_model_path must be a valid path to a .zip file'
 

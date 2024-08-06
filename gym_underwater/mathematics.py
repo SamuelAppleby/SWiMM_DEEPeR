@@ -33,7 +33,7 @@ def normalized_exponential_impact(diff, max_diff, k=1):
     out_of_bounds = (diff >= max_diff)
 
     if out_of_bounds:
-        diff = np.clip(diff, 0, max_diff)       # If the rover is too far away, clip the difference
+        diff = np.clip(diff, 0, max_diff)  # If the rover is too far away, clip the difference
 
     error = (math.exp(k * diff) - 1) / (math.exp(k * max_diff) - 1)
     assert 1 >= error >= 0, f'The error {error} must be between 0 and 1'
@@ -42,8 +42,8 @@ def normalized_exponential_impact(diff, max_diff, k=1):
 
 # Function to be used where we want to penalise harshly immediately
 def normalized_natural_log_impact(diff, max_diff, k=1):
-    assert diff >= 0, f'The difference {diff} cannot be less than 0'        # We are allowing diff > max_diff as the dolphin can still be in view (we use the central position of the mesh)
-    out_of_bounds = (diff >= max_diff)      # We don't want to return this as the dolphin may still be in view
+    assert diff >= 0, f'The difference {diff} cannot be less than 0'  # We are allowing diff > max_diff as the dolphin can still be in view (we use the central position of the mesh)
+    out_of_bounds = (diff >= max_diff)  # We don't want to return this as the dolphin may still be in view
 
     if out_of_bounds:
         diff = np.clip(diff, 0, max_diff)
@@ -52,3 +52,9 @@ def normalized_natural_log_impact(diff, max_diff, k=1):
     assert 1 >= error >= 0, f'The error {error} must be between 0 and 1'
     return error, out_of_bounds
 
+
+def normalized_absolute_difference(action1, action2, action_space):
+    # Compute absolute difference
+    abs_diff = np.abs(np.array(action1) - np.array(action2))
+    # Normalize by the maximum possible difference (2 for each dimension in this case)
+    return abs_diff / (action_space.high - action_space.low)

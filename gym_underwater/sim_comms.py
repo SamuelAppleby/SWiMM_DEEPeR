@@ -9,16 +9,19 @@ import sys
 import time
 import socket
 import threading
+from typing import Tuple
 
 import numpy as np
 import math
+
+from gymnasium import Space
 from jsonschema.validators import validate
 from datetime import datetime
 
 import cmvae_utils.dataset_utils
-from gym_underwater.constants import ALPHA
-from gym_underwater.enums import EpisodeTerminationType, TrainingType
-from gym_underwater.mathematics import calc_metrics, normalized_exponential_impact, normalized_natural_log_impact
+from gym_underwater.constants import ALPHA, SMOOTHNESS_THRESHOLD, SMOOTHNESS_PENALTY, MAX_REWARD
+from gym_underwater.enums import EpisodeTerminationType, TrainingType, ObservationType
+from gym_underwater.mathematics import calc_metrics, normalized_exponential_impact, normalized_natural_log_impact, normalized_absolute_difference
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -69,7 +72,15 @@ class ClientDisconnectedException(Exception):
 
 
 class UnitySimHandler:
-    def __init__(self, img_res, tensorboard_log, ip, port, training_type, seed):
+    def __init__(self,
+                 img_res: Tuple[int, int, int],
+                 tensorboard_log: str,
+                 ip: str,
+                 port: int,
+                 training_type: TrainingType,
+                 cmvae,
+                 action_space: Space,
+                 seed: int):
         self.interval = 1 / PERIOD
         self.sim_ready = False
         self.last_obs = None
@@ -80,6 +91,8 @@ class UnitySimHandler:
         self.cancel_event = threading.Event()
         self.img_res = img_res
         self.debug_logs = tensorboard_log is not None
+        self.previous_actions = queue.Queue(maxsize=10)
+        self.action_space = action_space
 
         self.fns = {
             'clientReady': self.on_client_ready,
@@ -90,6 +103,7 @@ class UnitySimHandler:
         self.packet_received_num = 0
         self.packet_sent_num = 0
         self.image_num = 0
+        self.cmvae = cmvae
 
         conf_arr = process_and_validate_configs({
             os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'configs', 'server_config.json'): os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'schemas',
@@ -102,8 +116,8 @@ class UnitySimHandler:
 
         self.training_type = training_type
 
-        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed), '-batchmode']
-        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
+        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed), '-batchmode']
+        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
 
         self.sock = None
         self.addr = None
@@ -154,6 +168,7 @@ class UnitySimHandler:
         pass
 
     def reset(self):
+        self.previous_actions.queue.clear()
         self.last_obs = None
         self.rover_info = None
         self.target_info = None
@@ -162,7 +177,8 @@ class UnitySimHandler:
             'payload': {}
         })
 
-    def observe(self, obs):
+    def observe(self,
+                obs: ObservationType):
         while not self.img_queue.empty() and self.read_write_thread.is_alive():
             time.sleep(self.interval)
 
@@ -185,9 +201,18 @@ class UnitySimHandler:
 
         # for vector obs training run, overwrite image observation with vector obs
         # observation and self.last_obs left in because orchestrates above while loop which is making Python server wait for next message from client
-        if obs == 'vector':
-            img_array = np.array([info['rover']['pos'][0], info['rover']['pos'][1], info['rover']['pos'][2], info['rover']['fwd'][0], info['rover']['fwd'][1], info['rover']['fwd'][2],
-                                  info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
+        match obs:
+            case ObservationType.VECTOR:
+                img_array = np.array([info['rover']['pos'][0], info['rover']['pos'][1], info['rover']['pos'][2], info['rover']['fwd'][0], info['rover']['fwd'][1], info['rover']['fwd'][2],
+                                    info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
+            # if vae has been passed, raw image observation encoded to latent vector
+            case ObservationType.CMVAE:
+                # add a dimension on the front so that has the shape (N, vae_res, vae_res, 3) that network expects
+                img_array = np.expand_dims(img_array, axis=0)
+
+                # set latent vector as observation
+                img_array, _, _ = self.cmvae.encode(img_array)
+                img_array = img_array.numpy()
 
         raw_d, a = calc_metrics(np.array(info['rover']['pos']), np.array(info['rover']['fwd']), np.array(info['target']['pos']))
         d_from_opt = math.fabs(raw_d - self.opt_d)
@@ -209,15 +234,27 @@ class UnitySimHandler:
 
         # During training, guarantee that reward is between -1 and 1 if not over
         if (self.training_type == TrainingType.TRAINING) and over is None:
-            assert (-1 <= reward <= 1), 'We cannot allow a reward outside of the range [-1, 1]'
+            assert (-MAX_REWARD <= reward <= MAX_REWARD), f'We cannot allow a reward outside of the range [-{MAX_REWARD}, {MAX_REWARD}]'
 
+        img_array = self.get_augmented_state(img_array)
         return img_array, reward, over is not None, False, info
 
     def calc_reward(self, d_from_opt, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
-        distance_loss, d_out_of_bounds = normalized_exponential_impact(diff=d_from_opt, max_diff=self.max_d, k=1)
-        angle_loss, a_out_of_bounds = normalized_natural_log_impact(diff=a, max_diff=ALPHA, k=0.2)
-        return (1 - (distance_loss + angle_loss)), d_out_of_bounds, a_out_of_bounds
+        distance_penalty, d_out_of_bounds = normalized_exponential_impact(diff=d_from_opt, max_diff=self.max_d, k=1)
+        angle_penalty, a_out_of_bounds = normalized_natural_log_impact(diff=a, max_diff=ALPHA, k=1)
+
+        smoothness_penalty = 0
+        if self.previous_actions.qsize() > 1:
+            action_list = list(self.previous_actions.queue)
+            action_diff = normalized_absolute_difference(action_list[-1], action_list[-2], self.action_space)
+
+            smoothness_penalty_array = np.zeros_like(action_diff)
+            smoothness_penalty_array[action_diff > SMOOTHNESS_THRESHOLD] = SMOOTHNESS_PENALTY
+            smoothness_penalty = np.sum(smoothness_penalty_array)
+
+        # Reward can be between [-1.5, 1.5]
+        return (MAX_REWARD - (distance_penalty + angle_penalty + smoothness_penalty)), d_out_of_bounds, a_out_of_bounds
 
     def determine_episode_over(self, d_out_of_bounds):
         if self.target_info['colliding']:
@@ -360,6 +397,10 @@ class UnitySimHandler:
                 self.cancel_event.set()
 
     def send_action(self, action):
+        if self.previous_actions.full():
+            self.previous_actions.get()  # Remove the oldest action
+        self.previous_actions.put(action)  # Add the new action
+
         self.set_msg({
             'msgType': 'action',
             'payload': {
@@ -447,3 +488,13 @@ class UnitySimHandler:
         self.send_end_simulation()
         self.thread_exe.join()
         self.read_write_thread.join()
+
+    def get_augmented_state(self, state):
+        # Flatten the list of previous actions
+        previous_actions_np = np.array(list(self.previous_actions.queue)).flatten()
+
+        if len(previous_actions_np) < 20:
+            padding = np.zeros(20 - len(previous_actions_np))
+            previous_actions_np = np.concatenate([previous_actions_np, padding])
+
+        return np.concatenate([state.flatten(), previous_actions_np]).reshape(1, -1)

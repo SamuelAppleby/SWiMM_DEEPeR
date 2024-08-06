@@ -5,7 +5,7 @@ import os
 import yaml
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from gym_underwater.enums import TrainingType
+from gym_underwater.enums import TrainingType, ObservationType
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
@@ -26,6 +26,12 @@ from gym_underwater.utils import make_env, load_environment_config, load_cmvae_i
     parse_command_args, tensorflow_seeding, load_pretrained_model, get_class_by_name, load_cmvae
 
 env_config = load_environment_config(project_dir)
+try:
+    obs = ObservationType(env_config['obs'])
+except ValueError:
+    raise ValueError(f"Unknown file type: {env_config['obs']}")
+
+assert obs == ObservationType.CMVAE, 'For training, must provide a valid cmvae path'
 assert env_config['n_envs'] == 1, 'When running in inference mode, can only run 1 environment'
 assert os.path.isfile(env_config['pre_trained_model_path']) and env_config['pre_trained_model_path'].endswith('.zip'), 'The argument pre_trained_model_path must be a valid path to a .zip file'
 
@@ -66,7 +72,7 @@ else:
 
 callback_class = get_class_by_name(callback_name)
 
-env = DummyVecEnv([make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=logger.dir, debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_INFERENCE+i), training_type=TrainingType.INFERENCE, seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
+env = DummyVecEnv([make_env(cmvae=cmvae, obs=obs, img_res=env_config['img_res'], tensorboard_log=logger.dir, debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_INFERENCE+i), training_type=TrainingType.INFERENCE, seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
 
 kwargs.update({
     'eval_env': env,

@@ -4,7 +4,7 @@ Parent script for initiating a training run
 import os
 import yaml
 
-from gym_underwater.enums import TrainingType
+from gym_underwater.enums import TrainingType, ObservationType
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open(os.path.join(project_dir, 'configs', 'cmvae', 'cmvae_global_config.yml'), 'r') as f:
@@ -27,7 +27,13 @@ from utils import make_env, middle_drop, accelerated_schedule, linear_schedule, 
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 env_config = load_environment_config(project_dir)
-assert env_config['obs'] == 'cmvae', 'For training, must provide a valid cmvae path'
+
+try:
+    obs = ObservationType(env_config['obs'])
+except ValueError:
+    raise ValueError(f"Unknown file type: {env_config['obs']}")
+
+assert obs == ObservationType.CMVAE, 'For training, must provide a valid cmvae path'
 
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
 
@@ -85,7 +91,7 @@ hyperparams.update({
 cmvae = load_cmvae(cmvae_global_config=cmvae_global_config, weights_path=cmvae_inference_config['weights_path'])
 
 # Also performs environment wrapping
-env = DummyVecEnv([make_env(cmvae=cmvae, obs=env_config['obs'], img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_TRAIN+i), training_type=TrainingType.TRAINING, seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
+env = DummyVecEnv([make_env(cmvae=cmvae, obs=obs, img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_TRAIN+i), training_type=TrainingType.TRAINING, seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
 
 hyperparams = preprocess_action_noise(hyperparams, env)
 

@@ -5,7 +5,7 @@ import os
 
 import shutil
 import sys
-from typing import Dict, Type, Any, Optional, Callable, List, Union
+from typing import Dict, Type, Any, Optional, Callable, List, Union, Tuple
 
 import gymnasium
 import keras
@@ -24,11 +24,18 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
 from gym_underwater.callbacks import convert_train_freq
 from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE, ALGOS
-from gym_underwater.enums import TrainingType
+from gym_underwater.enums import TrainingType, ObservationType
 from gym_underwater.gym_env import UnderwaterEnv
 
 
-def make_env(cmvae: tf.keras.Model, obs: str, img_res, tensorboard_log: str, debug_logs: bool = False, ip: str = IP_HOST, port: int = PORT_TRAIN, training_type=TrainingType.TRAINING,
+def make_env(cmvae: tf.keras.Model,
+             obs: ObservationType,
+             img_res: Tuple[int, int, int],
+             tensorboard_log: str,
+             debug_logs: bool = False,
+             ip: str = IP_HOST,
+             port: int = PORT_TRAIN,
+             training_type=TrainingType.TRAINING,
              seed: int = None) -> ():
     """
     Makes instance of environment, seeds and wraps with Monitor
@@ -250,7 +257,7 @@ def get_callback_list(callback_list: List[Any], env: DummyVecEnv = None, tensorb
 
         if issubclass(callback_class, EvalCallback):
             eval_env = DummyVecEnv(
-                [make_env(cmvae=env.envs[0].unwrapped.cmvae, obs=env.envs[0].unwrapped.obs, img_res=env.envs[0].unwrapped.handler.img_res, tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
+                [make_env(cmvae=env.envs[0].unwrapped.handler.cmvae, obs=env.envs[0].unwrapped.obs, img_res=env.envs[0].unwrapped.handler.img_res, tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
                           debug_logs=env.envs[0].unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, training_type=TrainingType.INFERENCE, seed=((env.envs[-1].unwrapped.seed + 1) if env.envs[-1].unwrapped.seed is not None else None))])
 
             kwargs.update({

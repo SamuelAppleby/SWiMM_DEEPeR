@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 
 
 class EpisodeTerminationType(IntEnum):
@@ -18,3 +18,9 @@ class TrainingType(IntEnum):
         elif self == TrainingType.INFERENCE:
             return "inference"
         return super().__str__()
+
+
+class ObservationType(Enum):
+    IMAGE = 'image'
+    VECTOR = 'vector'
+    CMVAE = 'cmvae'

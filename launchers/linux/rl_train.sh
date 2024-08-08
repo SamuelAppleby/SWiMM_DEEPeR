@@ -2,7 +2,7 @@ export "PYTHONPATH=C:/Users/sambu/Documents/Repositories/CodeBases/SWiMM_DEEPeR;
 source ../../.venv/bin/activate
 cd ../../gym_underwater
 
-seeds=(97)
+seeds=(97 101 103 107 109)
 algorithm="sac"
 n_envs=1
 render="human"

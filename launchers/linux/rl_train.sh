@@ -5,10 +5,11 @@ cd ../../gym_underwater
 seeds=(97)
 algorithm="sac"
 n_envs=1
+render="human"
 
 for seed in "${seeds[@]}"
 do
-    python train.py --seed "$seed" --algorithm "$algorithm" --n_envs "$n_envs"
+    python train.py --seed "$seed" --algorithm "$algorithm" --n_envs "$n_envs" --render "$render"
 done
 
 exit

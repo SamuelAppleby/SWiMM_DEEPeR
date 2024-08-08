@@ -4,9 +4,10 @@ call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
 set seeds=97
+set render=human
 
 for %%s in (%seeds%) do (
-    python inference.py --seed %%s --render none
+    python inference.py --seed %%s --render %render%
 )
 
 exit

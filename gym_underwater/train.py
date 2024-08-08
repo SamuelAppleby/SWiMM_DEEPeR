@@ -22,7 +22,7 @@ from stable_baselines3.common.utils import constant_fn, configure_logger
 from constants import IP_HOST, PORT_TRAIN, ENVIRONMENT_TO_LOAD
 from utils import make_env, middle_drop, accelerated_schedule, linear_schedule, load_environment_config, load_hyperparams, load_callbacks, \
     load_cmvae_inference_config, output_devices, parse_command_args, tensorflow_seeding, duplicate_directory, load_pretrained_model, load_new_model, load_cmvae, preprocess_action_noise, \
-    output_command_line_arguments, convert_observation_type
+    output_command_line_arguments, convert_observation_type, convert_render_type
 
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -33,6 +33,8 @@ obs = convert_observation_type(env_config['obs'])
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
 
 parse_command_args(env_config, cmvae_inference_config)
+
+render = convert_render_type(env_config['render'])
 
 # NB Very important, _setup_model (for both on/off-policy algorithms) will call every seeding operation (see stable_baselines3.common.base_class.set_random_seed)
 tensorflow_seeding(env_config['seed'])
@@ -78,7 +80,10 @@ if 'progress_bar' in hyperparams:
     del hyperparams['progress_bar']
 
 # Define the logger first to avoid reduplicating code caused by the file search in learn()
-logger = configure_logger(verbose=1, tensorboard_log=str(os.path.join(project_dir, 'models', env_config['algorithm'])), tb_log_name=env_config['algorithm'], reset_num_timesteps=kwargs['reset_num_timesteps'])
+logger = configure_logger(verbose=1,
+                          tensorboard_log=str(os.path.join(project_dir, 'models', env_config['algorithm'])),
+                          tb_log_name=env_config['algorithm'],
+                          reset_num_timesteps=kwargs['reset_num_timesteps'])
 hyperparams.update({
     'tensorboard_log': logger.dir,
 })
@@ -86,15 +91,28 @@ hyperparams.update({
 cmvae = load_cmvae(cmvae_global_config=cmvae_global_config, weights_path=cmvae_inference_config['weights_path'])
 
 # Also performs environment wrapping
-env = DummyVecEnv([make_env(cmvae=cmvae, obs=obs, img_res=env_config['img_res'], tensorboard_log=hyperparams['tensorboard_log'], debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_TRAIN+i), training_type=TrainingType.TRAINING, seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
+env = DummyVecEnv([make_env(cmvae=cmvae,
+                            obs=obs,
+                            img_res=env_config['img_res'],
+                            tensorboard_log=hyperparams['tensorboard_log'],
+                            debug_logs=env_config['debug_logs'],
+                            ip=IP_HOST, port=(PORT_TRAIN+i),
+                            training_type=TrainingType.TRAINING,
+                            render=render,
+                            seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
 
 hyperparams = preprocess_action_noise(hyperparams, env)
 
 # If pre_trained_model_path is None, will load a new agent
 if env_config['pre_trained_model_path'] is not None:
-    model = load_pretrained_model(env=env, algorithm_name=env_config['algorithm'], model_path=env_config['pre_trained_model_path'], hyperparams=hyperparams)
+    model = load_pretrained_model(env=env,
+                                  algorithm_name=env_config['algorithm'],
+                                  model_path=env_config['pre_trained_model_path'],
+                                  hyperparams=hyperparams)
 else:
-    model = load_new_model(env=env, algorithm_name=env_config['algorithm'], hyperparams=hyperparams)
+    model = load_new_model(env=env,
+                           algorithm_name=env_config['algorithm'],
+                           hyperparams=hyperparams)
 
 model.set_logger(logger)
 

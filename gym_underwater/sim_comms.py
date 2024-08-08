@@ -20,7 +20,7 @@ from datetime import datetime
 
 import cmvae_utils.dataset_utils
 from gym_underwater.constants import ALPHA, SMOOTHNESS_THRESHOLD, SMOOTHNESS_PENALTY, MAX_REWARD
-from gym_underwater.enums import EpisodeTerminationType, TrainingType, ObservationType
+from gym_underwater.enums import EpisodeTerminationType, TrainingType, ObservationType, RenderType
 from gym_underwater.mathematics import calc_metrics, normalized_exponential_impact, normalized_natural_log_impact, normalized_absolute_difference
 
 
@@ -80,6 +80,7 @@ class UnitySimHandler:
                  training_type: TrainingType,
                  cmvae,
                  action_space: Space,
+                 render: RenderType,
                  seed: int):
         self.interval = 1 / PERIOD
         self.sim_ready = False
@@ -116,8 +117,15 @@ class UnitySimHandler:
 
         self.training_type = training_type
 
-        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed), '-batchmode']
-        # exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
+        exe_args = ['-ip', ip, '-port', str(port), '-modeServerControl', '-trainingType', str(training_type), '-seed', str(seed)]
+
+        match render:
+            case RenderType.HUMAN:
+                pass
+            case RenderType.NONE:
+                exe_args.append('-batchmode')
+            case _:
+                pass
 
         self.sock = None
         self.addr = None
@@ -163,9 +171,6 @@ class UnitySimHandler:
 
     def set_msg(self, msg):
         self.msg_queue.put(msg)
-
-    def render(self):
-        pass
 
     def reset(self):
         self.previous_actions.queue.clear()
@@ -244,17 +249,19 @@ class UnitySimHandler:
         distance_penalty, d_out_of_bounds = normalized_exponential_impact(diff=d_from_opt, max_diff=self.max_d, k=1)
         angle_penalty, a_out_of_bounds = normalized_natural_log_impact(diff=a, max_diff=ALPHA, k=1)
 
-        smoothness_penalty = 0
-        if self.previous_actions.qsize() > 1:
-            action_list = list(self.previous_actions.queue)
-            action_diff = normalized_absolute_difference(action_list[-1], action_list[-2], self.action_space)
+        # smoothness_penalty = 0
+        # if self.previous_actions.qsize() > 1:
+        #     action_list = list(self.previous_actions.queue)
+        #     action_diff = normalized_absolute_difference(action_list[-1], action_list[-2], self.action_space)
+        #
+        #     smoothness_penalty_array = np.zeros_like(action_diff)
+        #     smoothness_penalty_array[action_diff > SMOOTHNESS_THRESHOLD] = SMOOTHNESS_PENALTY
+        #     smoothness_penalty = np.sum(smoothness_penalty_array)
+        #
+        # # Reward can be between [-1.5, 1.5]
+        # return (MAX_REWARD - (distance_penalty + angle_penalty + smoothness_penalty)), d_out_of_bounds, a_out_of_bounds
 
-            smoothness_penalty_array = np.zeros_like(action_diff)
-            smoothness_penalty_array[action_diff > SMOOTHNESS_THRESHOLD] = SMOOTHNESS_PENALTY
-            smoothness_penalty = np.sum(smoothness_penalty_array)
-
-        # Reward can be between [-1.5, 1.5]
-        return (MAX_REWARD - (distance_penalty + angle_penalty + smoothness_penalty)), d_out_of_bounds, a_out_of_bounds
+        return (MAX_REWARD - (distance_penalty + angle_penalty)), d_out_of_bounds, a_out_of_bounds
 
     def determine_episode_over(self, d_out_of_bounds):
         if self.target_info['colliding']:

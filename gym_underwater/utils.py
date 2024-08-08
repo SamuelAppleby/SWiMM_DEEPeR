@@ -24,7 +24,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 from cmvae_models.cmvae import CmvaeDirect, Cmvae
 from gym_underwater.callbacks import convert_train_freq
 from gym_underwater.constants import ENVIRONMENT_TO_LOAD, IP_HOST, PORT_TRAIN, PORT_INFERENCE, ALGOS
-from gym_underwater.enums import TrainingType, ObservationType
+from gym_underwater.enums import TrainingType, ObservationType, RenderType
 from gym_underwater.gym_env import UnderwaterEnv
 
 
@@ -36,13 +36,22 @@ def make_env(cmvae: tf.keras.Model,
              ip: str = IP_HOST,
              port: int = PORT_TRAIN,
              training_type=TrainingType.TRAINING,
+             render=RenderType.HUMAN,
              seed: int = None) -> ():
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
 
     def _init():
-        uenv = UnderwaterEnv(obs=obs, img_res=img_res, cmvae=cmvae, tensorboard_log=tensorboard_log, debug_logs=debug_logs, ip=ip, port=port, training_type=training_type, seed=seed)
+        uenv = UnderwaterEnv(obs=obs,
+                             img_res=img_res,
+                             cmvae=cmvae,
+                             tensorboard_log=tensorboard_log,
+                             debug_logs=debug_logs,
+                             ip=ip, port=port,
+                             training_type=training_type,
+                             render=render,
+                             seed=seed)
         with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configs', 'env_wrapper.yml'), 'r') as f:
             env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
@@ -256,9 +265,16 @@ def get_callback_list(callback_list: List[Any], env: DummyVecEnv = None, tensorb
         callback_class = get_class_by_name(callback_name)
 
         if issubclass(callback_class, EvalCallback):
-            eval_env = DummyVecEnv(
-                [make_env(cmvae=env.envs[0].unwrapped.handler.cmvae, obs=env.envs[0].unwrapped.obs, img_res=env.envs[0].unwrapped.handler.img_res, tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
-                          debug_logs=env.envs[0].unwrapped.handler.debug_logs, ip=IP_HOST, port=PORT_INFERENCE, training_type=TrainingType.INFERENCE, seed=((env.envs[-1].unwrapped.seed + 1) if env.envs[-1].unwrapped.seed is not None else None))])
+            eval_env = DummyVecEnv([make_env(cmvae=env.envs[0].unwrapped.handler.cmvae,
+                                             obs=env.envs[0].unwrapped.obs,
+                                             img_res=env.envs[0].unwrapped.handler.img_res,
+                                             tensorboard_log=env.envs[0].unwrapped.tensorboard_log,
+                                             debug_logs=env.envs[0].unwrapped.handler.debug_logs,
+                                             ip=IP_HOST,
+                                             port=PORT_INFERENCE,
+                                             training_type=TrainingType.INFERENCE,
+                                             render=env.envs[0].unwrapped.render,
+                                             seed=((env.envs[-1].unwrapped.seed + 1) if env.envs[-1].unwrapped.seed is not None else None))])
 
             kwargs.update({
                 'eval_env': eval_env,
@@ -469,6 +485,7 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
     parser.add_argument('--algorithm', type=str, default=None, help='Reinforcement Learning Algorithm (choose from "sac", "ppo" or "ddpg")', required=False)
     parser.add_argument('--weights_path', type=str, default=None, help='Path to cmvae weights', required=False)
     parser.add_argument('--n_envs', type=int, default=None, help='The number of gymnasium environments to run in parallel', required=False)
+    parser.add_argument('--render', type=str, default=None, help='Render the gymnasium environments', required=False)
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -479,6 +496,9 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
 
     if args.n_envs is not None:
         env_config['n_envs'] = args.n_envs
+
+    if args.render:
+        env_config['render'] = args.render
 
     if args.weights_path is not None:
         cmvae_inference_config['weights_path'] = args.weights_path
@@ -526,7 +546,19 @@ def convert_observation_type(obs: str) -> ObservationType:
     try:
         obs = ObservationType(obs)
     except ValueError:
-        raise ValueError(f"Unknown file type: {obs}")
+        raise ValueError(f"Unknown observation type: {obs}")
 
     assert obs == ObservationType.CMVAE, 'ObservationType must be cmvae'
     return obs
+
+
+def convert_render_type(render: str) -> Union[RenderType, None]:
+    if render is None:
+        return RenderType.NONE
+
+    try:
+        render = RenderType(render)
+    except ValueError:
+        raise ValueError(f"Unknown render type: {render}")
+
+    return render

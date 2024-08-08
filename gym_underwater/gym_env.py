@@ -7,7 +7,7 @@ import gymnasium
 from gymnasium import spaces
 
 from gym_underwater.constants import IP_HOST, PORT_TRAIN
-from gym_underwater.enums import TrainingType, ObservationType
+from gym_underwater.enums import TrainingType, ObservationType, RenderType
 from gym_underwater.sim_comms import UnitySimHandler
 
 
@@ -25,6 +25,7 @@ class UnderwaterEnv(gymnasium.Env):
                  ip: str = IP_HOST,
                  port: int = PORT_TRAIN,
                  training_type: TrainingType = TrainingType.TRAINING,
+                 render=RenderType.HUMAN,
                  seed: int = None):
         super().__init__()
         print('Starting underwater environment ..')
@@ -33,6 +34,7 @@ class UnderwaterEnv(gymnasium.Env):
         self.obs = obs
         self.seed = seed
         self.tensorboard_log = tensorboard_log
+        self.render = render
 
         # action space declaration
         print('Declaring action space')
@@ -50,6 +52,7 @@ class UnderwaterEnv(gymnasium.Env):
                                        training_type=training_type,
                                        cmvae=cmvae,
                                        action_space=self.action_space,
+                                       render=self.render,
                                        seed=seed)
 
         self.handler.send_server_config()
@@ -58,13 +61,21 @@ class UnderwaterEnv(gymnasium.Env):
         print('Declaring observation space')
         match self.obs:
             case ObservationType.IMAGE:
-                self.observation_space = spaces.Box(low=0, high=255, shape=self.handler.img_res, dtype=np.uint8)
+                self.observation_space = spaces.Box(low=0,
+                                                    high=255,
+                                                    shape=self.handler.img_res,
+                                                    dtype=np.uint8)
             case ObservationType.VECTOR:
-                self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max, shape=(1, 12), dtype=np.float32)
+                self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
+                                                    high=np.finfo(np.float32).max,
+                                                    shape=(1, 12),
+                                                    dtype=np.float32)
             case ObservationType.CMVAE:
                 assert cmvae is not None, 'Must provide a cmvae if declaring cmvae observation space'
-                self.observation_space = spaces.Box(low=np.finfo(np.float32).min, high=np.finfo(np.float32).max,
-                                                    shape=(1, int(cmvae.q_img.dense2.units / 2) + (self.handler.previous_actions.maxsize * self.action_space.shape[0])), dtype=np.float32)
+                self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
+                                                    high=np.finfo(np.float32).max,
+                                                    shape=(1, int(cmvae.q_img.dense2.units / 2) + (self.handler.previous_actions.maxsize * self.action_space.shape[0])),
+                                                    dtype=np.float32)
             case _:
                 raise ValueError(f'Invalid observation type: {obs}')
 
@@ -77,9 +88,6 @@ class UnderwaterEnv(gymnasium.Env):
         self.handler.reset()
         observation, _, _, _, info = self.handler.observe(self.obs)
         return observation, info
-
-    def render(self):
-        pass
 
     def on_set_world_state(self, state):
         self.handler.send_world_state(state)

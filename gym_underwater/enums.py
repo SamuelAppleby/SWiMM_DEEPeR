@@ -24,3 +24,8 @@ class ObservationType(Enum):
     IMAGE = 'image'
     VECTOR = 'vector'
     CMVAE = 'cmvae'
+
+
+class RenderType(Enum):
+    NONE = 'none'
+    HUMAN = 'human'

@@ -23,7 +23,7 @@ from stable_baselines3.common.utils import configure_logger
 from gym_underwater.constants import IP_HOST, PORT_INFERENCE, ENVIRONMENT_TO_LOAD
 
 from gym_underwater.utils import make_env, load_environment_config, load_cmvae_inference_config, output_devices, duplicate_directory, \
-    parse_command_args, tensorflow_seeding, load_pretrained_model, get_class_by_name, load_cmvae, convert_observation_type
+    parse_command_args, tensorflow_seeding, load_pretrained_model, get_class_by_name, load_cmvae, convert_observation_type, convert_render_type
 
 env_config = load_environment_config(project_dir)
 obs = convert_observation_type(env_config['obs'])
@@ -34,6 +34,8 @@ assert os.path.isfile(env_config['pre_trained_model_path']) and env_config['pre_
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
 
 parse_command_args(env_config, cmvae_inference_config)
+
+render = convert_render_type(env_config['render'])
 
 # NB Very important, _setup_model (for both on/off-policy algorithms) will call every seeding operation (see stable_baselines3.common.base_class.set_random_seed)
 tensorflow_seeding(env_config['seed'])
@@ -68,7 +70,15 @@ else:
 
 callback_class = get_class_by_name(callback_name)
 
-env = DummyVecEnv([make_env(cmvae=cmvae, obs=obs, img_res=env_config['img_res'], tensorboard_log=logger.dir, debug_logs=env_config['debug_logs'], ip=IP_HOST, port=(PORT_INFERENCE+i), training_type=TrainingType.INFERENCE, seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
+env = DummyVecEnv([make_env(cmvae=cmvae,
+                            obs=obs,
+                            img_res=env_config['img_res'],
+                            tensorboard_log=logger.dir,
+                            debug_logs=env_config['debug_logs'],
+                            ip=IP_HOST, port=(PORT_INFERENCE+i),
+                            training_type=TrainingType.INFERENCE,
+                            render=render,
+                            seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
 
 kwargs.update({
     'eval_env': env,

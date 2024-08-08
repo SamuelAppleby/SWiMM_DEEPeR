@@ -6,7 +6,7 @@ cd ..\..\gym_underwater
 set seeds=97
 
 for %%s in (%seeds%) do (
-    python inference.py --seed %%s
+    python inference.py --seed %%s --render none
 )
 
 exit

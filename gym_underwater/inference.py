@@ -23,7 +23,7 @@ from stable_baselines3.common.utils import configure_logger
 from gym_underwater.constants import IP_HOST, PORT_INFERENCE, ENVIRONMENT_TO_LOAD
 
 from gym_underwater.utils import make_env, load_environment_config, load_cmvae_inference_config, output_devices, duplicate_directory, \
-    parse_command_args, tensorflow_seeding, load_pretrained_model, get_class_by_name, load_cmvae, convert_observation_type, convert_render_type
+    parse_command_args, tensorflow_seeding, load_pretrained_model, get_class_by_name, load_cmvae, convert_observation_type, convert_render_type, output_command_line_arguments
 
 env_config = load_environment_config(project_dir)
 obs = convert_observation_type(env_config['obs'])
@@ -105,5 +105,6 @@ hyperparams_to_exclude = [file for file in os.listdir(os.path.join(project_dir, 
 
 duplicate_directory(os.path.join(project_dir, 'configs'), config_dir, dirs_to_exclude=['hyperparams'], files_to_exclude=(hyperparams_to_exclude + ['cmvae_training_config.yml', 'cmvae_global_config.yml']))
 output_devices(config_dir, tensorflow_device=True, torch_device=True)
+output_command_line_arguments(config_dir)
 
 model.env.close()

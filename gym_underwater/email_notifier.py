@@ -24,4 +24,3 @@ smtpObj.login(EMAIL, PASSWORD)
 smtpObj.sendmail(SENDER, RECEIVER, body)
 
 smtpObj.quit()
-pass

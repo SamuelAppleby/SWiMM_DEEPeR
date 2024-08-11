@@ -10,6 +10,7 @@ set render=human
 
 for %%s in (%seeds%) do (
     python train.py --seed %%s --algorithm %algorithm% --n_envs %n_envs% --render %render%
+    python email_notifier.py --msg %%s
 )
 
 exit

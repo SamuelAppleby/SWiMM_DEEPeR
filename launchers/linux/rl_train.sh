@@ -10,6 +10,7 @@ render="human"
 for seed in "${seeds[@]}"
 do
     python train.py --seed "$seed" --algorithm "$algorithm" --n_envs "$n_envs" --render "$render"
+    python email_notifier.py --msg "$seed"
 done
 
 exit

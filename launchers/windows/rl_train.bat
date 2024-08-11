@@ -3,10 +3,10 @@ set "PYTHONPATH=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR;%PY
 call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
-set seeds=97 101 103 107 109
+set seeds=97
 set algorithm=sac
 set n_envs=1
-set render=human
+set render=none
 
 for %%s in (%seeds%) do (
     python train.py --seed %%s --algorithm %algorithm% --n_envs %n_envs% --render %render%

@@ -29,7 +29,6 @@ env_config = load_environment_config(project_dir)
 obs = convert_observation_type(env_config['obs'])
 
 assert env_config['n_envs'] == 1, 'When running in inference mode, can only run 1 environment'
-assert os.path.isfile(env_config['pre_trained_model_path']) and env_config['pre_trained_model_path'].endswith('.zip'), 'The argument pre_trained_model_path must be a valid path to a .zip file'
 
 cmvae_inference_config = load_cmvae_inference_config(project_dir)
 

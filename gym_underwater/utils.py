@@ -397,7 +397,7 @@ def load_pretrained_model(env: DummyVecEnv, algorithm_name: str, model_path: str
     print('Loading pretrained agent ...')
     assert algorithm_name in ALGOS, f'Algorithm {algorithm_name} is not supported, please choose from {ALGOS}'
 
-    assert os.path.isfile(model_path) and model_path.endswith('.zip'), 'The argument pre_trained_model_path must be a valid path to a .zip file'
+    assert os.path.isfile(model_path) and model_path.endswith('.zip'), f'The argument pre_trained_model_path must be a valid path to a .zip file: {model_path}'
     if hyperparams is not None:
         del hyperparams['policy']  # network architecture already set so don't need
         model = ALGOS[algorithm_name].load(path=model_path, env=env, **hyperparams)
@@ -486,6 +486,7 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
     parser.add_argument('--weights_path', type=str, default=None, help='Path to cmvae weights', required=False)
     parser.add_argument('--n_envs', type=int, default=None, help='The number of gymnasium environments to run in parallel', required=False)
     parser.add_argument('--render', type=str, default=None, help='Render the gymnasium environments', required=False)
+    parser.add_argument('--pre_trained_model_path', type=str, default=None, help='Path to the model either to train or evaluate', required=False)
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -499,6 +500,9 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
 
     if args.render:
         env_config['render'] = args.render
+
+    if args.pre_trained_model_path:
+        env_config['pre_trained_model_path'] = args.pre_trained_model_path
 
     if args.weights_path is not None:
         cmvae_inference_config['weights_path'] = args.weights_path

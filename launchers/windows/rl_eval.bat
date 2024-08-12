@@ -1,13 +1,21 @@
 @echo off
+setlocal enabledelayedexpansion
 set "PYTHONPATH=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR;%PYTHONPATH%"
 call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
 set seeds=97
-set render=human
+set render=human none
+set dir=3 4
 
-for %%s in (%seeds%) do (
-    python inference.py --seed %%s --render %render%
+for %%d in (%dir%) do (
+    set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_%%d\best_model.zip
+
+    for %%s in (%seeds%) do (
+        for %%r in (%render%) do (
+            python inference.py --seed %%s --render %%r --pre_trained_model_path !w!
+        )
+    )
 )
 
 exit

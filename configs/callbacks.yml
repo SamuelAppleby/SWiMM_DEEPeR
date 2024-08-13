@@ -9,7 +9,7 @@ UnderwaterEnv:
 #          stable_baselines3.common.callbacks.StopTrainingOnRewardThreshold:
 #            reward_threshold: 2500
 #            verbose: 1
-        eval_inference_freq: [2, 'episode']
+        eval_inference_freq: [100, 'episode']
         eval_freq: 10
         min_train_steps: 500000
         deterministic: True

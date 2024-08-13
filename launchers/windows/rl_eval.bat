@@ -5,8 +5,8 @@ call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
 set seeds=97
-set render=human none
-set dir=3 4
+set render=human
+set dir=1
 
 for %%d in (%dir%) do (
     set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_%%d\best_model.zip

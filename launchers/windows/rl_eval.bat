@@ -4,7 +4,7 @@ set "PYTHONPATH=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR;%PY
 call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
-set seeds=97
+set seeds=113 127 131 137 139
 set render=human
 set dir=1
 

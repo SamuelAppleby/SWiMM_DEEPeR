@@ -14,6 +14,7 @@ for %%d in (%dir%) do (
     for %%s in (%seeds%) do (
         for %%r in (%render%) do (
             python inference.py --seed %%s --render %%r --pre_trained_model_path !w!
+            python email_notifier.py --msg %%s
         )
     )
 )

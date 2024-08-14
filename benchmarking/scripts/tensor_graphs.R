@@ -12,46 +12,57 @@ scientific_10 <- function(x) {
   parse(text=gsub("e", "%*% 10^", scales::scientific_format()(x)))
 }
 
-format_annotation <- function(value) {
-  sprintf("%.2e", value) %>% 
-    gsub("e", "%*% 10^", .) %>% 
-    parse(text = .)
-}
+algos <- list("sac")
 
-algo <- "sac"
-base_path <- "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\%s\\"
-formatted_path <- sprintf(base_path, algo)
-
-folders <- list.dirs(formatted_path, full.names = TRUE, recursive = FALSE)
-
-combined_data_training <- data.frame()
-combined_data_test <- data.frame()
-
-for (seed_dir in folders) {
-  yaml_data <- as.data.frame(t(yaml.load_file(file.path(seed_dir, "configs", "env_config.yml"))))
-  yaml_data$seed <- factor(yaml_data$seed)
+for (algo in algos) {
+  base_path <- "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\%s\\"
+  formatted_path <- sprintf(base_path, algo)
   
-  data <- read.csv(file.path(seed_dir, "run-.-tag-rollout_ep_rew_mean.csv"))
-  names(data)[names(data) == "Value"] <- "TrainingMeanEpisodeReward"
-  data$Length <- c(data$Step[1], diff(data$Step))
+  folders <- list.dirs(formatted_path, full.names = TRUE, recursive = FALSE)
   
-  data_termination <- read.csv(file.path(seed_dir, "run-.-tag-rollout_episode_termination.csv"))
-  names(data_termination)[names(data_termination) == "Value"] <- "Termination"
+  combined_data_training <- data.frame()
+  combined_data_test <- data.frame()
   
-  data_termination$Termination <- factor(data_termination$Termination, 
-                     levels = c(0, 1, 2, 3),  # Specify all possible numeric values
-                     labels = c("Maximum Distance", "Target Out Of View", "Target Collision", "Threshold Reached"))
+  combined_data_training_time <- data.frame(
+    algo = character(),
+    seed = numeric(),
+    total_train_time = numeric()
+  )
   
-  data_termination$Termination <- as.character(data_termination$Termination)
-  
-  data$Termination <- data_termination$Termination
-  data <- cbind(data, seed=yaml_data$seed)
-  combined_data_training <- rbind(combined_data_training,data)
-  
-  data_test <- read.csv(file.path(seed_dir, "run-.-tag-eval_mean_ep_reward.csv"))
-  names(data_test)[names(data_test) == "Value"] <- "TestingMeanEpisodeReward"
-  data_test <- cbind(data_test, seed=yaml_data$seed)
-  combined_data_test <- rbind(combined_data_test,data_test)
+  for (seed_dir in folders) {
+    yaml_data <- as.data.frame(t(yaml.load_file(file.path(seed_dir, "configs", "env_config.yml"))))
+    
+    data_training <- read.csv(file.path(seed_dir, "run-.-tag-rollout_ep_rew_mean.csv"))
+    names(data_training)[names(data_training) == "Value"] <- "TrainingMeanEpisodeReward"
+    data_training$Length <- c(data_training$Step[1], diff(data_training$Step))
+    
+    data_termination <- read.csv(file.path(seed_dir, "run-.-tag-rollout_episode_termination.csv"))
+    names(data_termination)[names(data_termination) == "Value"] <- "Termination"
+    
+    data_termination$Termination <- factor(data_termination$Termination, 
+                                           levels = c(0, 1, 2, 3),
+                                           labels = c("Maximum Distance", "Target Out Of View", "Target Collision", "Threshold Reached"))
+    
+    data_termination$Termination <- as.character(data_termination$Termination)
+    
+    data_training$Termination <- data_termination$Termination
+    data_training$seed <- as.numeric(yaml_data$seed)
+    data_training$algo <- algo
+    combined_data_training <- rbind(combined_data_training,data_training)
+    
+    data_training_monitor <- read.csv(file.path(seed_dir, "training_monitor.csv"))
+    # time_training <- time_training + tail(data_training_monitor$t, 1)
+    combined_data_training_time <- rbind(combined_data_training_time,data.frame(algo=algo, seed=yaml_data$seed, total_train_time=tail(data_training_monitor$t, 1)))
+    
+    data_test <- read.csv(file.path(seed_dir, "run-.-tag-eval_mean_ep_reward.csv"))
+    names(data_test)[names(data_test) == "Value"] <- "TestingMeanEpisodeReward"
+    data_test <- cbind(data_test, seed=yaml_data$seed)
+    
+    data_test$file_path <- seed_dir
+    data_test$algo <- algo
+    
+    combined_data_test <- rbind(combined_data_test,data_test)
+  }
 }
 
 # I can't do this dynamically due to the eval Python objects
@@ -59,33 +70,85 @@ for (seed_dir in folders) {
 # formatted_path_algo <- sprintf(paste(formatted_path, extension, sep=""), algo, algo)
 # yaml_data_algo <- as.data.frame(t(yaml.load_file(file.path(formatted_path_algo))))
 
-ggplot(data=combined_data_training, aes(x=Step, y=TrainingMeanEpisodeReward, color=seed)) +
+algo_labels <- c("sac" = "SAC", "ppo" = "PPO", "td3" = "TD3")
+
+# TRAINING REWARD GRAPH
+# TODO When we get the other algorithm's results, we should facet on 'algo'
+ggplot(data=combined_data_training, aes(x=Step, y=TrainingMeanEpisodeReward, color=factor(seed))) +
   scale_x_continuous(name =expression("Step"), labels = scientific_10)+
   scale_y_continuous(name =expression("Mean Episodic Reward ( " * mu * " = 10)"), labels = scientific_10) +
+  facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_smooth(aes(y=TrainingMeanEpisodeReward), method = "auto") +
   geom_point(aes(shape=Termination)) +
   labs(shape=expression("Termination Criteria")) +
   scale_color_brewer(palette = "Set2", name = "Seed") +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
 
+# TRAINING TIME GRAPH
+ggplot(data=combined_data_training_time, aes(x=algo, y=total_train_time, group=factor(seed), fill=factor(seed))) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  scale_x_discrete(labels = algo_labels) +
+  scale_y_continuous(name =expression("Total Training Time (s)"), labels = scientific_10) +
+  scale_fill_brewer(palette = "Set2", name = "Seed") +
+  labs(x=expression("Algorithm")) +
+  theme(legend.position="bottom",text=element_text(family="Times New Roman"))
 
-sorted_df <- combined_data_test[order(-combined_data_test$TestingMeanEpisodeReward), ]
-best_model <- sorted_df[1, ]
+# TODO We need to sort on best reward but also per algo, and select the top 3
+sorted_df <- combined_data_test[order(combined_data_test$algo, -combined_data_test$TestingMeanEpisodeReward), ]
+sorted_df <- sorted_df[!duplicated(sorted_df$algo), ]
 
-ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=seed)) +
+format_annotation <- function(value) {
+  sprintf("%.2e", value) %>% 
+    gsub("e", "%*% 10^", .) %>% 
+    parse(text = .)
+}
+
+# EVALUATION GRAPH
+ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=factor(seed))) +
   scale_x_continuous(name =expression("Step"), labels = scientific_10)+
   scale_y_continuous(name =expression("Mean Episodic Reward"), labels = scientific_10) +
+  facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_line(aes(y=TestingMeanEpisodeReward)) +
-  geom_vline(xintercept = best_model$Step, linetype = "dashed", color = "#66c2a5") +
-  annotate("text", y = Inf, x = best_model$Step, 
-           label = format_annotation(best_model$Step), 
+  geom_vline(xintercept = sorted_df$Step, linetype = "dashed", color = "#66c2a5") +
+  annotate("text", y = Inf, x = sorted_df$Step,
+           label = format_annotation(sorted_df$Step),
            hjust = 1.1, vjust = 1.5, color = "#66c2a5", size = 4, fontface = "italic") +
-  geom_hline(yintercept = best_model$TestingMeanEpisodeReward, linetype = "dashed", color = "#66c2a5") +
-  annotate("text", x = Inf, y = best_model$TestingMeanEpisodeReward, 
-           label = format_annotation(best_model$TestingMeanEpisodeReward), 
+  geom_hline(yintercept = sorted_df$TestingMeanEpisodeReward, linetype = "dashed", color = "#66c2a5") +
+  annotate("text", x = Inf, y = sorted_df$TestingMeanEpisodeReward,
+           label = format_annotation(sorted_df$TestingMeanEpisodeReward),
            hjust = 1.1, vjust = 1.5, color = "#66c2a5", size = 4, fontface = "italic") +
   scale_color_brewer(palette = "Set2", name = "Seed") +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
+
+# INFERENCE METRICS
+# TODO I'll need to consider the best model from each algorithm
+combined_data_inference_summary <- data.frame(
+  algo = character(),
+  mean_inference_episodic_reward = numeric(),
+  total_inference_time = numeric()
+)
+
+for (i in 1:nrow(sorted_df)) {
+  best_model <- sorted_df[i, ]
+  inference_dirs <- list.dirs(file.path(best_model$file_path, "inference"), full.names = TRUE, recursive = FALSE)
+  combined_data_inference <- data.frame()
+  
+  time_inference <- 0
+  for (inference_dir in inference_dirs) {
+    inference_data <- read.csv(file.path(inference_dir, "testing_monitor.csv"))
+    time_inference <- time_inference + tail(inference_data$t, 1)
+    yaml_data <- as.data.frame(t(yaml.load_file(file.path(inference_dir, "configs", "env_config.yml"))))
+    inference_data$seed <- yaml_data$seed
+    inference_data$algo <- best_model$algo
+    combined_data_inference <- rbind(combined_data_inference,inference_data)
+  }
+  
+  mean_inference_episodic_reward <- mean(combined_data_inference$r, na.rm = TRUE)
+  
+  combined_data_inference_summary <- rbind(combined_data_inference_summary, data.frame(algo = best_model$algo,
+                                                                              mean_inference_episodic_reward = mean(combined_data_inference$r, na.rm = TRUE),
+                                                                              total_inference_time = time_inference))
+}
 
 # loadfonts(device="win")
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))

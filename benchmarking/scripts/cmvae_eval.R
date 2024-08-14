@@ -3,6 +3,7 @@ library(data.table)
 library(ggplot2)
 library(yaml)
 library(scales)
+library(extrafont)
 
 normalize_by_max <- function(df, group_cols, target_col) {
   max_values <- tapply(df[[target_col]], interaction(df[group_cols]), max)
@@ -69,9 +70,10 @@ ggplot(combined_data, aes(x = EarlyStopping, y = MAE)) +
   geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
   geom_jitter(position = position_dodge(1)) +
   facet_wrap(~ Feature, scales = "free_y") +
-  scale_y_continuous(name = expression("MAE"), labels = scientific_10) +
+  scale_y_continuous(name = "MAE", labels = scientific_10) +
   theme(legend.position = "bottom",
-        axis.title.x = element_blank()) + 
+        axis.title.x = element_blank(),
+        text=element_text(family="Times New Roman")) + 
   labs(fill = "Early Stopping") 
 
 early_stop_arr <- c("No Early Stopping", "Early Stopping")
@@ -82,9 +84,10 @@ for (element in early_stop_arr) {
   print(ggplot(section_data, aes(x = ModelSeed, y = MAE)) +
     geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
     geom_jitter(aes(color=Seed)) +
+    scale_color_brewer(palette = "Set2", name = "Seed") +
     facet_wrap(~ Feature, scales = "free_y") +
-    scale_y_continuous(name = expression("MAE"), labels = scientific_10) +
-    theme(legend.position = "bottom")  + 
+    scale_y_continuous(name = "MAE", labels = scientific_10) +
+    theme(legend.position = "bottom",text=element_text(family="Times New Roman"))  + 
     labs(x = "Model Seed", color = "Inference Seed"))
 }
 

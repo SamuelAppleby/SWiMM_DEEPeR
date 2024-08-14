@@ -3,6 +3,7 @@ library(data.table)
 library(ggplot2)
 library(yaml)
 library(scales)
+library(extrafont)
 
 scientific_10 <- function(x) {
   parse(text=gsub("e", "%*% 10^", scales::scientific_format()(x)))
@@ -49,10 +50,12 @@ timings <- aggregate(list(Wall.time = combined_data$Wall.time),
 ggplot(timings, aes(x = EarlyStopping, y = Wall.time)) +
   geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
   geom_jitter(aes(color=ModelSeed)) +
+  scale_color_brewer(palette = "Set2", name = "Seed") +
   theme(legend.position = "bottom",
         axis.title.x = element_blank(),
-        axis.ticks.x = element_blank())  + 
-  scale_y_continuous(name =expression("Training Time(s)"), labels = scientific_10)+
+        axis.ticks.x = element_blank(),
+        text=element_text(family="Times New Roman"))  + 
+  scale_y_continuous(name = "Training Time(s)", labels = scientific_10)+
   labs(x = "Early Stopping", y = "Training Time (s)")
 
 early_stop_arr <- c("No Early Stopping", "Early Stopping")
@@ -62,15 +65,19 @@ for (element in early_stop_arr) {
   
   print(ggplot(data = early_data, aes(x = Step, y = TrainingLoss, colour = ModelSeed)) +
     geom_line() +
-    scale_x_continuous(name =expression("Epoch"), labels = scientific_10)+
-    scale_y_continuous(name =expression("Training Loss"), labels = scientific_10)+
-    theme(legend.position = "bottom"))
+    scale_x_continuous(name = "Epoch", labels = scientific_10)+
+    scale_y_continuous(name = "Training Loss", labels = scientific_10)+
+    scale_color_brewer(palette = "Set2", name = "Seed") +
+    theme(legend.position = "bottom",
+          text=element_text(family="Times New Roman")))
   
   print(ggplot(data = early_data, aes(x = Step, y = ValidationLoss, colour = ModelSeed)) +
     geom_line() +
-    scale_x_continuous(name =expression("Epoch"), labels = scientific_10)+
-    scale_y_continuous(name =expression("Validation Loss"), labels = scientific_10)+
-    theme(legend.position = "bottom"))
+    scale_x_continuous(name = "Epoch", labels = scientific_10)+
+    scale_y_continuous(name = "Validation Loss", labels = scientific_10)+
+    scale_color_brewer(palette = "Set2", name = "Seed") +
+    theme(legend.position = "bottom",
+          text=element_text(family="Times New Roman")))
 }
 
 timings <- aggregate(list(Wall.time = timings$Wall.time), 

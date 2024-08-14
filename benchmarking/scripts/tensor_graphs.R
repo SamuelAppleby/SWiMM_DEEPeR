@@ -75,12 +75,12 @@ algo_labels <- c("sac" = "SAC", "ppo" = "PPO", "td3" = "TD3")
 # TRAINING REWARD GRAPH
 # TODO When we get the other algorithm's results, we should facet on 'algo'
 ggplot(data=combined_data_training, aes(x=Step, y=TrainingMeanEpisodeReward, color=factor(seed))) +
-  scale_x_continuous(name =expression("Step"), labels = scientific_10)+
+  scale_x_continuous(name = "Step", labels = scientific_10)+
   scale_y_continuous(name =expression("Mean Episodic Reward ( " * mu * " = 10)"), labels = scientific_10) +
   facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_smooth(aes(y=TrainingMeanEpisodeReward), method = "auto") +
   geom_point(aes(shape=Termination)) +
-  labs(shape=expression("Termination Criteria")) +
+  labs(shape= "Termination Criteria") +
   scale_color_brewer(palette = "Set2", name = "Seed") +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
 
@@ -88,9 +88,9 @@ ggplot(data=combined_data_training, aes(x=Step, y=TrainingMeanEpisodeReward, col
 ggplot(data=combined_data_training_time, aes(x=algo, y=total_train_time, group=factor(seed), fill=factor(seed))) +
   geom_bar(stat="identity", position=position_dodge()) +
   scale_x_discrete(labels = algo_labels) +
-  scale_y_continuous(name =expression("Total Training Time (s)"), labels = scientific_10) +
+  scale_y_continuous(name = "Total Training Time (s)", labels = scientific_10) +
   scale_fill_brewer(palette = "Set2", name = "Seed") +
-  labs(x=expression("Algorithm")) +
+  labs(x="Algorithm") +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
 
 # TODO We need to sort on best reward but also per algo, and select the top 3
@@ -105,8 +105,8 @@ format_annotation <- function(value) {
 
 # EVALUATION GRAPH
 ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=factor(seed))) +
-  scale_x_continuous(name =expression("Step"), labels = scientific_10)+
-  scale_y_continuous(name =expression("Mean Episodic Reward"), labels = scientific_10) +
+  scale_x_continuous(name = "Step", labels = scientific_10)+
+  scale_y_continuous(name = "Mean Episodic Reward", labels = scientific_10) +
   facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_line(aes(y=TestingMeanEpisodeReward)) +
   geom_vline(xintercept = sorted_df$Step, linetype = "dashed", color = "#66c2a5") +
@@ -138,7 +138,7 @@ for (i in 1:nrow(sorted_df)) {
     inference_data <- read.csv(file.path(inference_dir, "testing_monitor.csv"))
     time_inference <- time_inference + tail(inference_data$t, 1)
     yaml_data <- as.data.frame(t(yaml.load_file(file.path(inference_dir, "configs", "env_config.yml"))))
-    inference_data$seed <- yaml_data$seed
+    inference_data$seed <- as.numeric(yaml_data$seed)
     inference_data$algo <- best_model$algo
     combined_data_inference <- rbind(combined_data_inference,inference_data)
   }
@@ -150,55 +150,19 @@ for (i in 1:nrow(sorted_df)) {
                                                                               total_inference_time = time_inference))
 }
 
-# loadfonts(device="win")
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-# 
-# df_reward <- read.csv(file = 'C:/Users/sambu/Downloads/2/run-.-tag-episode_reward.csv')
-# df_termination <- read.csv(file = 'C:/Users/sambu/Downloads/2/run-.-tag-episode_termination.csv')
-# df_length <- read.csv(file = 'C:/Users/sambu/Downloads/2/run-.-tag-episode_length.csv')
-# 
-# names(df_termination)[names(df_termination) == 'Value'] <- 'Termination'
-# names(df_length)[names(df_length) == 'Value'] <- 'Length'
-# 
-# df_reward <- cbind(df_reward, df_termination[3])
-# df_reward <- cbind(df_reward, df_length[3])
-# 
-# df_reward$Termination <- as.character(cut(df_reward$Termination,
-#               breaks=c(-1, 0, 1),
-#               labels=c('Determine Over', 'Episode Max')))
-# 
-# df_reward$average_rew <- NA
-# window_size <- 100
-# 
-# for (i in seq(1, nrow(df_reward), by=1)) {
-#   if(i <= 100){
-#     df_reward[i, ]$average_rew <- mean(df_reward[1:i,]$Value)
-#   }
-#   else{
-#     df_reward[i, ]$average_rew <- mean(df_reward[(i-window_size+1):i,]$Value)
-#   }
-# }
-# 
-# window_max <- df_reward[which.max(df_reward$average_rew),]
-# window_min <- df_reward[which(df_reward$Step == window_max$Step) - window_size + 1,]
-# best_region <- df_reward[which(df_reward$Step == window_min$Step):which(df_reward$Step == window_max$Step),]
-# 
-# rects <- data.frame(start=window_min$Step, end=window_max$Step, sliding_window=100)
-# 
-# ggplot(data=df_reward, aes(x=Step, y=Value)) +
-#   scale_x_continuous(name =expression("Step"), labels = scientific_10)+
-#   scale_y_continuous(name =expression("Episodic Reward"), labels = scientific_10)+
-#   geom_smooth(aes(y=Value), method = "auto", color="black") +
-#   geom_point(aes(color=Length, shape=Termination)) +
-#   geom_rect(data=rects, inherit.aes=FALSE, aes(xmin=start, xmax=end, ymin=min(best_region$Value),
-#            ymax=max(best_region$Value), fill=factor(sliding_window)), color="transparent", alpha=0.3) +
-#   scale_fill_manual(expression(mu * " "),
-#                     labels = expression(1%*%10^2),
-#                     values = 'orange',
-#                     guide = guide_legend(override.aes = list(alpha = 1))) +
-#   labs(color=expression("Steps per Episode"), shape=expression("Termination Criteria")) +
-#   scale_color_gradient2(mid="#000AFF", high="#00DDFF", labels = scientific_10) +
-#   annotate("text", rects$start + (0.5 * (rects$end - rects$start)), y = max(best_region$Value) + 100,
-#            label=as.character(expression(psi * " = " * 2.19%*%10^3)), parse=T) +
-#   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
+# combined_data_inference <- aggregate(list(r = combined_data_inference$r),
+#                                      by = list(seed = combined_data_inference$seed,
+#                                                algo = combined_data_inference$algo),
+#                                      FUN = mean)
+
+ggplot(combined_data_inference, aes(x = algo, y = r)) +
+  geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
+  geom_jitter(aes(color=factor(seed))) +
+  # facet_wrap(~ Feature, scales = "free_y") +
+  scale_x_discrete(name = "Algorithm", labels = algo_labels)+
+  scale_y_continuous(name = "Mean Episodic Reward", labels = scientific_10) +
+  scale_color_brewer(palette = "Set2", name = "Seed") +
+  theme(legend.position="bottom",text=element_text(family="Times New Roman"))
+  # labs(fill = "Early Stopping") 
+
 

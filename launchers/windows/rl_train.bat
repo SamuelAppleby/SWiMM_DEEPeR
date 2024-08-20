@@ -9,7 +9,7 @@ set n_envs=1
 set render=human
 
 for %%s in (%seeds%) do (
-    python -O train.py --seed %%s --algorithm %algorithm% --n_envs %n_envs% --render %render%
+    python train.py --seed %%s --algorithm %algorithm% --n_envs %n_envs% --render %render%
     python email_notifier.py --msg %%s
 )
 

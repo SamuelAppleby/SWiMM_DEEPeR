@@ -40,16 +40,15 @@ def launch_simulation(args, linux=False) -> threading.Thread:
     thread.start()
     return thread
 
+
 def process_and_validate_configs(dir_map):
     arr = []
     for conf_dir, schema_dir in dir_map.items():
-        assert os.path.isfile(conf_dir)
-        assert os.path.isfile(schema_dir)
+        assert os.path.isfile(conf_dir) and os.path.isfile(schema_dir)
 
         with open(conf_dir) as file_conf:
             conf_json = json.load(file_conf)
 
-            assert os.path.isfile(schema_dir)
             with open(schema_dir) as file_schema:
                 schema_json = json.load(file_schema)
                 validate(instance=conf_json, schema=schema_json)
@@ -209,7 +208,7 @@ class UnitySimHandler:
         match obs:
             case ObservationType.VECTOR:
                 img_array = np.array([info['rover']['pos'][0], info['rover']['pos'][1], info['rover']['pos'][2], info['rover']['fwd'][0], info['rover']['fwd'][1], info['rover']['fwd'][2],
-                                    info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
+                                      info['target']['pos'][0], info['target']['pos'][1], info['target']['pos'][2], info['target']['fwd'][0], info['target']['fwd'][1], info['target']['fwd'][2]])
             # if vae has been passed, raw image observation encoded to latent vector
             case ObservationType.CMVAE:
                 # add a dimension on the front so that has the shape (N, vae_res, vae_res, 3) that network expects

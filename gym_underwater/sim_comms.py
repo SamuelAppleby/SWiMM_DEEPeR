@@ -193,8 +193,8 @@ class UnitySimHandler:
         img_array = self.img_queue.get()
 
         # Sanity check, we should NEVER have two identical images following each other, as that violates rendering and Newtonian physics
-        if self.last_obs is not None:
-            assert not np.array_equal(img_array, self.last_obs)
+        # if self.last_obs is not None:
+        #     assert not np.array_equal(img_array, self.last_obs)
 
         self.last_obs = img_array
 

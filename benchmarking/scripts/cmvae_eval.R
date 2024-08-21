@@ -56,8 +56,8 @@ for (seed_dir in directory_path) {
     names(data)[names(data) == "seed"] <- "Seed"
     
     yaml_data2 <- as.data.frame(t(yaml.load_file(file.path(dirname(dirname(seed_dir)), "configs", "cmvae", "cmvae_training_config.yml"))))
-    data$EarlyStopping <- ifelse(all(sapply(yaml_data2$window_size, is.numeric)), "Early Stopping", "No Early Stopping")
-    data$EarlyStopping <- factor(data$EarlyStopping, levels = c("No Early Stopping", "Early Stopping"))
+    data$EarlyTermination <- ifelse(all(sapply(yaml_data2$window_size, is.numeric)), "Early Termination", "No Early Termination")
+    data$EarlyTermination <- factor(data$EarlyTermination, levels = c("No Early Termination", "Early Termination"))
     
     combined_data <- rbind(combined_data,data)
   }
@@ -66,20 +66,22 @@ for (seed_dir in directory_path) {
 point_shape <- c(1:length(unique(factor(combined_data$Seed))))
 point_shape <- point_shape[factor(combined_data$Seed)]
 
-ggplot(combined_data, aes(x = EarlyStopping, y = MAE)) +
+ggplot(combined_data, aes(x = EarlyTermination, y = MAE)) +
   geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
   geom_jitter(position = position_dodge(1)) +
   facet_wrap(~ Feature, scales = "free_y") +
+  scale_x_discrete(labels = c("No Early Termination" = expression(w == infinity), 
+                              "Early Termination" = expression(w == 5))) +
   scale_y_continuous(name = "MAE", labels = scientific_10) +
   theme(legend.position = "bottom",
         axis.title.x = element_blank(),
         text=element_text(family="Times New Roman")) + 
   labs(fill = "Early Stopping") 
 
-early_stop_arr <- c("No Early Stopping", "Early Stopping")
+early_stop_arr <- c("No Early Termination", "Early Termination")
 
 for (element in early_stop_arr) {
-  section_data <- combined_data[combined_data$EarlyStopping == element, ]
+  section_data <- combined_data[combined_data$EarlyTermination == element, ]
   
   print(ggplot(section_data, aes(x = ModelSeed, y = MAE)) +
     geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
@@ -95,7 +97,7 @@ combined_data$MAE <- normalize_by_max(combined_data, c("Feature"), "MAE")
 
 combined_data <- aggregate(list(MAE = combined_data$MAE, Standard_Error = combined_data$Standard.Error),
                            by = list(ModelSeed = combined_data$ModelSeed,
-                                     EarlyStopping = combined_data$EarlyStopping,
+                                     EarlyTermination = combined_data$EarlyTermination,
                                      Seed = combined_data$Seed),
                            FUN = mean)
 

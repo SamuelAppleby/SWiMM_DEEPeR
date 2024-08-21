@@ -36,18 +36,18 @@ for (seed_dir in folders) {
   
   training_data <- as.data.frame(t(yaml.load_file(file.path(seed_dir, "configs", "cmvae", "cmvae_training_config.yml"))))
   
-  data$EarlyStopping <- ifelse(all(sapply(training_data$window_size, is.numeric)), "Early Stopping", "No Early Stopping")
-  data$EarlyStopping <- factor(data$EarlyStopping, levels = c("No Early Stopping", "Early Stopping"))
+  data$EarlyTermination <- ifelse(all(sapply(training_data$window_size, is.numeric)), "Early Termination", "No Early Termination")
+  data$EarlyTermination <- factor(data$EarlyTermination, levels = c("No Early Termination", "Early Termination"))
   
   combined_data <- rbind(combined_data,data)
 }
 
 timings <- aggregate(list(Wall.time = combined_data$Wall.time), 
                   by = list(ModelSeed = combined_data$ModelSeed,
-                            EarlyStopping = combined_data$EarlyStopping),
+                            EarlyTermination = combined_data$EarlyTermination),
                   FUN = function(i)max(i) - min(i))
 
-ggplot(timings, aes(x = EarlyStopping, y = Wall.time)) +
+ggplot(timings, aes(x = EarlyTermination, y = Wall.time)) +
   geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
   geom_jitter(aes(color=ModelSeed)) +
   scale_color_brewer(palette = "Set2", name = "Seed") +
@@ -55,13 +55,15 @@ ggplot(timings, aes(x = EarlyStopping, y = Wall.time)) +
         axis.title.x = element_blank(),
         axis.ticks.x = element_blank(),
         text=element_text(family="Times New Roman"))  + 
-  scale_y_continuous(name = "Training Time(s)", labels = scientific_10)+
-  labs(x = "Early Stopping", y = "Training Time (s)")
+  scale_y_continuous(name = "Training Time(s)", labels = scientific_10) +
+  scale_x_discrete(labels = c("No Early Termination" = expression(w == infinity), 
+                              "Early Termination" = expression(w == 5))) +
+  labs(x = "Early Termination", y = "Training Time (s)")
 
-early_stop_arr <- c("No Early Stopping", "Early Stopping")
+early_stop_arr <- c("No Early Termination", "Early Termination")
 
 for (element in early_stop_arr) {
-  early_data <- subset(combined_data, EarlyStopping == element)
+  early_data <- subset(combined_data, EarlyTermination == element)
   
   print(ggplot(data = early_data, aes(x = Step, y = TrainingLoss, colour = ModelSeed)) +
     geom_line() +
@@ -81,6 +83,6 @@ for (element in early_stop_arr) {
 }
 
 timings <- aggregate(list(Wall.time = timings$Wall.time), 
-                     by = list(EarlyStopping = timings$EarlyStopping),
+                     by = list(EarlyTermination = timings$EarlyTermination),
                      FUN = mean)
 

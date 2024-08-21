@@ -5,11 +5,12 @@ call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
 set seeds=113 127 131 137 139
+set algorithm=ppo
 set render=human
-set dir=1
+set dir=3
 
 for %%d in (%dir%) do (
-    set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_%%d\best_model.zip
+    set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\%algorithm%\%algorithm%_%%d\best_model.zip
 
     for %%s in (%seeds%) do (
         for %%r in (%render%) do (

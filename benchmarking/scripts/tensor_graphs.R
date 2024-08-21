@@ -71,7 +71,6 @@ for (algo in algos) {
 algo_labels <- c("sac" = "SAC", "ppo" = "PPO", "td3" = "TD3")
 
 # TRAINING REWARD GRAPH
-# TODO When we get the other algorithm's results, we should facet on 'algo'
 ggplot(data=combined_data_training, aes(x=Step, y=TrainingMeanEpisodeReward, color=factor(seed))) +
   scale_x_continuous(name = "Step", labels = scientific_10)+
   scale_y_continuous(name =expression("Mean Episodic Reward ( " * mu * " = 10)"), labels = scientific_10) +
@@ -91,7 +90,6 @@ ggplot(data=combined_data_training_time, aes(x=reorder(algo, total_train_time), 
   labs(x="Algorithm") +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
 
-# TODO We need to sort on best reward but also per algo, and select the top 3
 sorted_df <- combined_data_test[order(combined_data_test$algo, -combined_data_test$TestingMeanEpisodeReward), ]
 sorted_df <- sorted_df[!duplicated(sorted_df$algo), ]
 

@@ -3,8 +3,8 @@ set "PYTHONPATH=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR;%PY
 call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
-set seeds=109
-set algorithm=ppo
+set seeds=97 101 103 107 109
+set algorithm=td3
 set n_envs=1
 set render=human
 

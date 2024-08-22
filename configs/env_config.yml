@@ -16,11 +16,11 @@ debug_logs: False
 seed: ~
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'td3'
-algorithm: 'ppo'
+algorithm: 'td3'
 
 # Render mode: 'human' (for graphics), 'none' (or ~) (for no rendering)
 render: 'human'
 
 # The path to the previously trained model. If running a training session, will train on top of this model, otherwise if running in inference mode will infer from this model.
-pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\ppo\ppo_3\best_model.zip'
-#pre_trained_model_path: ~
+#pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\ppo\ppo_3\best_model.zip'
+pre_trained_model_path: ~

@@ -29,7 +29,7 @@ custom_aggregate <- function(df) {
   return(result)
 }
 
-algos <- list("sac", "ppo")
+algos <- list("sac", "ppo", "td3")
 combined_data_training <- data.frame()
 combined_data_test <- data.frame()
 combined_data_training_time <- data.frame(
@@ -93,61 +93,67 @@ for (algo in algos) {
 # yaml_data_algo <- as.data.frame(t(yaml.load_file(file.path(formatted_path_algo))))
 
 algo_labels <- c("sac" = "SAC", "ppo" = "PPO", "td3" = "TD3")
+combined_data_training$algo <- factor(combined_data_training$algo, levels = c("sac", "ppo", "td3"))
 
 # TRAINING REWARD GRAPH
 ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeReward, color = factor(seed))) +
-  scale_x_continuous(name = "Step", labels = scales::scientific_format()) +
-  scale_y_continuous(name = expression("Mean Episodic Reward (" * mu * " = 10)"), labels = scales::scientific_format()) +
+  scale_x_continuous(name = "Step", labels = scientific_10) +
+  scale_y_continuous(name = expression("Mean Episodic Reward (" * mu * " = 10)"), labels = scientific_10) +
   facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_smooth(aes(y = TrainingMeanEpisodeReward), method = "auto") +
   geom_point(aes(shape = Termination)) +
   labs(shape = "Termination Criteria") +
   scale_color_brewer(palette = "Set2", name = "Seed") +
   theme(legend.position = "bottom",
-        legend.direction = "vertical", # Stack legends vertically
-        legend.box = "vertical",       # Ensure legends are in a box
+        legend.direction = "vertical",
+        legend.box = "vertical",
         text = element_text(family = "Times New Roman")) +
-  guides(color = guide_legend(nrow = 1),  # Set number of rows for the color legend
-         shape = guide_legend(nrow = 1))   # Set number of rows for the shape legend
+  guides(color = guide_legend(nrow = 1),
+         shape = guide_legend(nrow = 1))
 
 sorted_df <- combined_data_test[order(combined_data_test$algo, -combined_data_test$TestingMeanEpisodeReward), ]
 sorted_df <- sorted_df[!duplicated(sorted_df[c("algo", "seed")]), ]
+sorted_df$algo <- factor(sorted_df$algo, levels = c("sac", "ppo", "td3"))
 
 combined_data_training_time <- merge(combined_data_training_time, sorted_df, by = c("algo", "seed"))
 
-long_data <- melt(combined_data_training_time, 
-                  id.vars = c("algo", "seed"), 
-                  measure.vars = c("total_train_time", "time_to_run"), 
-                  variable.name = "type", 
+long_data <- melt(combined_data_training_time,
+                  id.vars = c("algo", "seed"),
+                  measure.vars = c("total_train_time", "time_to_run"),
+                  variable.name = "type",
                   value.name = "value")
 
+long_data$algo <- factor(long_data$algo, levels = c("sac", "ppo", "td3"))
+
 # TRAINING TIME GRAPH
-ggplot(data = long_data, aes(x = reorder(algo, value), y = value, fill = factor(seed))) +
-  geom_col(data = filter(long_data, type == "total_train_time"), 
-           position = position_dodge(width = 0.9), 
+ggplot(data = long_data, aes(x = algo, y = value, fill = factor(seed))) +
+  geom_col(data = filter(long_data, type == "total_train_time"),
+           position = position_dodge(width = 0.9),
            alpha = 0.4) +
-  geom_col(data = filter(long_data, type == "time_to_run"), 
-           position = position_dodge(width = 0.9), 
+  geom_col(data = filter(long_data, type == "time_to_run"),
+           position = position_dodge(width = 0.9),
            alpha = 1) +
   scale_x_discrete(labels = algo_labels) +
-  scale_y_continuous(name = "Time (s)", labels = scales::scientific_format()) +
+  scale_y_continuous(name = "Time (s)", labels = scientific_10) +
   scale_fill_brewer(palette = "Set2", name = "Seed") +
   labs(x = "Algorithm") +
-  geom_tile(aes(y=NA_integer_, alpha = factor(type))) + 
+  geom_tile(aes(y=NA_integer_, alpha = factor(type))) +
   scale_alpha_manual(values = c(`total_train_time` = 0.4, `time_to_run` = 1),
                      labels = c("Total Train Time", "Best Model Found"),
                      name = "Time Type") +
   theme(legend.position = "bottom", text = element_text(family = "Times New Roman"))
 
 format_annotation <- function(value) {
-  sprintf("%.2e", value) %>% 
-    gsub("e", "%*% 10^", .) %>% 
+  sprintf("%.2e", value) %>%
+    gsub("e", "%*% 10^", .) %>%
     parse(text = .)
 }
 
 sorted_df <- sorted_df[!duplicated(sorted_df$algo), ]
 sorted_df$StepLabel <- format_annotation(sorted_df$Step)
 sorted_df$RewardLabel <- format_annotation(sorted_df$TestingMeanEpisodeReward)
+
+combined_data_test$algo <- factor(combined_data_test$algo, levels = c("sac", "ppo", "td3"))
 
 # EVALUATION GRAPH
 ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=factor(seed))) +
@@ -156,13 +162,13 @@ ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=fa
   facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_line(aes(y=TestingMeanEpisodeReward)) +
   geom_vline(data = sorted_df, aes(xintercept = Step), linetype = "dashed", color = "#66c2a5", inherit.aes = FALSE) +
-  geom_text(data = sorted_df, aes(x = Step, y = Inf), 
-            label = sorted_df$StepLabel, color = "#66c2a5", size = 4, fontface = "italic", 
-            vjust = 1.5, hjust = 1.1, inherit.aes = FALSE) +
-  geom_text(data = sorted_df, aes(x = Inf, y = TestingMeanEpisodeReward), 
-            label = sorted_df$RewardLabel, color = "#66c2a5", size = 4, fontface = "italic", 
+  geom_text(data = sorted_df, aes(x = Step, y = Inf),
+            label = sorted_df$StepLabel, color = "#66c2a5", size = 4, fontface = "italic",
             vjust = 1.5, hjust = 1.1, inherit.aes = FALSE) +
   geom_hline(data = sorted_df, aes(yintercept = TestingMeanEpisodeReward), linetype = "dashed", color = "#66c2a5", inherit.aes = FALSE) +
+  geom_text(data = sorted_df, aes(x = Inf, y = TestingMeanEpisodeReward),
+            label = sorted_df$RewardLabel, color = "#66c2a5", size = 4, fontface = "italic",
+            vjust = 1.5, hjust = 1.1, inherit.aes = FALSE) +
   scale_color_brewer(palette = "Set2", name = "Seed") +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
 
@@ -196,7 +202,9 @@ for (i in 1:nrow(sorted_df)) {
                                                                               total_inference_time = time_inference))
 }
 
-ggplot(combined_data_inference, aes(x=reorder(algo, r), y = r)) +
+combined_data_inference$algo <- factor(combined_data_inference$algo, levels = c("sac", "ppo", "td3"))
+
+ggplot(combined_data_inference, aes(x=algo, y = r)) +
   geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
   geom_jitter(aes(color=factor(seed))) +
   scale_x_discrete(name = "Algorithm", labels = algo_labels)+

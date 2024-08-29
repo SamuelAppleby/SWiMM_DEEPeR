@@ -81,7 +81,7 @@ for (algo in algos) {
     data_testing_monitor <- subset(data_testing_monitor, select = -l)
     data_testing_monitor <- custom_aggregate(data_testing_monitor)
     names(data_testing_monitor)[names(data_testing_monitor) == "r"] <- "TestingMeanEpisodeReward"
-    data_test$time_to_run <- data_testing_monitor$t
+    data_test$time_for_best_model <- data_testing_monitor$t
     
     combined_data_test <- rbind(combined_data_test,data_test)
   }
@@ -119,18 +119,20 @@ combined_data_training_time <- merge(combined_data_training_time, sorted_df, by 
 
 long_data <- melt(combined_data_training_time,
                   id.vars = c("algo", "seed"),
-                  measure.vars = c("total_train_time", "time_to_run"),
+                  measure.vars = c("total_train_time", "time_for_best_model"),
                   variable.name = "type",
                   value.name = "value")
 
 long_data$algo <- factor(long_data$algo, levels = c("sac", "ppo", "td3"))
+
+timings_for_paper <- aggregate(value ~ algo + type, data = long_data, FUN = mean, na.rm = TRUE)
 
 # TRAINING TIME GRAPH
 ggplot(data = long_data, aes(x = algo, y = value, fill = factor(seed))) +
   geom_col(data = filter(long_data, type == "total_train_time"),
            position = position_dodge(width = 0.9),
            alpha = 0.4) +
-  geom_col(data = filter(long_data, type == "time_to_run"),
+  geom_col(data = filter(long_data, type == "time_for_best_model"),
            position = position_dodge(width = 0.9),
            alpha = 1) +
   scale_x_discrete(labels = algo_labels) +
@@ -138,7 +140,7 @@ ggplot(data = long_data, aes(x = algo, y = value, fill = factor(seed))) +
   scale_fill_brewer(palette = "Set2", name = "Seed") +
   labs(x = "Algorithm") +
   geom_tile(aes(y=NA_integer_, alpha = factor(type))) +
-  scale_alpha_manual(values = c(`total_train_time` = 0.4, `time_to_run` = 1),
+  scale_alpha_manual(values = c(`total_train_time` = 0.4, `time_for_best_model` = 1),
                      labels = c("Total Train Time", "Best Model Found"),
                      name = "Time Type") +
   theme(legend.position = "bottom", text = element_text(family = "Times New Roman"))
@@ -195,10 +197,8 @@ for (i in 1:nrow(sorted_df)) {
     combined_data_inference <- rbind(combined_data_inference,inference_data)
   }
 
-  mean_inference_episodic_reward <- mean(combined_data_inference$r, na.rm = TRUE)
-
   combined_data_inference_summary <- rbind(combined_data_inference_summary, data.frame(algo = best_model$algo,
-                                                                              mean_inference_episodic_reward = mean(combined_data_inference$r, na.rm = TRUE),
+                                                                              mean_inference_episodic_reward = mean(combined_data_inference$r[combined_data_inference$algo == best_model$algo], na.rm = TRUE),
                                                                               total_inference_time = time_inference))
 }
 

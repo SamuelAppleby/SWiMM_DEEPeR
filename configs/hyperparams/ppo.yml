@@ -1,7 +1,7 @@
 # Hyperparameters inspired from https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml#L350
 UnderwaterEnv:
   # learn() args
-  total_timesteps: !!float 1e6
+  total_timesteps: !!float 5e5
   log_interval: 1
   reset_num_timesteps: True
   progress_bar: True
@@ -29,7 +29,7 @@ UnderwaterEnv:
                     log_std_init=-2,
                     ortho_init=False,
                     activation_fn=nn.GELU,
-                    net_arch=dict(pi=[256], vf=[256]),
+                    net_arch=dict(pi=[256, 256], vf=[256, 256]),
                     )"
   verbose: 1
   device: 'cuda'

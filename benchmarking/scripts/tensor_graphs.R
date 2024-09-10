@@ -166,12 +166,13 @@ ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=fa
   geom_vline(data = sorted_df, aes(xintercept = Step), linetype = "dashed", color = "#66c2a5", inherit.aes = FALSE) +
   geom_text(data = sorted_df, aes(x = Step, y = Inf),
             label = sorted_df$StepLabel, color = "#66c2a5", size = 4, fontface = "italic",
-            vjust = 1.5, hjust = 1.1, inherit.aes = FALSE) +
+            hjust = 1.2, vjust = 1.2, inherit.aes = FALSE) +
   geom_hline(data = sorted_df, aes(yintercept = TestingMeanEpisodeReward), linetype = "dashed", color = "#66c2a5", inherit.aes = FALSE) +
-  geom_text(data = sorted_df, aes(x = Inf, y = TestingMeanEpisodeReward),
+  geom_text(data = sorted_df, aes(x = -Inf, y = TestingMeanEpisodeReward),
             label = sorted_df$RewardLabel, color = "#66c2a5", size = 4, fontface = "italic",
-            vjust = 1.5, hjust = 1.1, inherit.aes = FALSE) +
+            hjust = 1.1, inherit.aes = FALSE) +
   scale_color_brewer(palette = "Set2", name = "Seed") +
+  coord_cartesian(clip = 'off', ylim = c(-3000, 3000)) +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
 
 # INFERENCE METRICS

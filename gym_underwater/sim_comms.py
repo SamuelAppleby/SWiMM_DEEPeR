@@ -267,7 +267,7 @@ class UnitySimHandler:
                     case EpisodeTerminationType.MAXIMUM_DISTANCE:
                         self.current_info['maximum_distance'] = 1 if (self.current_info['maximum_distance'] == 0) else 1
                     case EpisodeTerminationType.TARGET_COLLISION:
-                        self.current_info['target_collision'] = 1 if (self.current_info['out_of_view'] == 0) else 1
+                        self.current_info['target_collision'] = 1 if (self.current_info['target_collision'] == 0) else 1
                     case _:
                         pass
 

@@ -257,7 +257,7 @@ class UnitySimHandler:
             over = self.determine_episode_over(d_out_of_bounds)
 
             # If recording final model metrics, ignore the first observation's information as this has come from a reset, not a step
-            if not self.previous_actions.empty():
+            if self.compute_stats and not self.previous_actions.empty():
                 self.current_info['a_error'].append(a)
                 self.current_info['d_error'].append(d_from_opt)
 

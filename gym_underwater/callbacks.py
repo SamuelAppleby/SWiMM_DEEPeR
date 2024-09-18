@@ -1,3 +1,5 @@
+import csv
+
 from stable_baselines3.common import base_class
 import os
 from typing import Union, Optional, Tuple, Callable, Dict, Any, List
@@ -179,6 +181,15 @@ class SwimEvalCallback(EvalCallback):
         self.continue_training = True
         self.total_eval_steps = 0
 
+    def _init_callback(self) -> None:
+        super()._init_callback()
+        for env in self.eval_env.envs:
+            if env.unwrapped.handler.compute_stats:
+                with open(os.path.join(self.logger.dir, 'final_model_metrics.csv'), mode='w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['Algorithm', 'Seed', 'Episode', 'MeanAError', 'STDAError', 'MeanRError', 'STDRError', 'OutOfView', 'MaximumDistance', 'TargetCollision',
+                                     'MeanASmoothnessError', 'STDASmoothnessError', 'MeanDSmoothnessError', 'STDDSmoothnessError'])
+
     def _on_step(self) -> bool:
         """
         Return continue_training as we may/may not have determined this as over
@@ -242,11 +253,6 @@ class SwimEvalCallback(EvalCallback):
 
         observations = env.reset()
 
-        # for i in range(100000):
-        #     x = time.time()
-        #     observations = env.reset()
-        #     print(f'Reset {i}: {time.time() - x}')
-
         states = None
         episode_starts = np.ones((env.num_envs,), dtype=bool)
 
@@ -288,6 +294,24 @@ class SwimEvalCallback(EvalCallback):
                             self.logger.record('eval/ep_length', episode_lengths[-1])
                             self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
                             self.logger.dump(step=self.total_eval_steps)
+
+                            if self.eval_env.envs[i].unwrapped.handler.compute_stats:
+                                with open(os.path.join(self.logger.dir, 'final_model_metrics.csv'), mode='a', newline='') as file:
+                                    writer = csv.writer(file)
+                                    writer.writerow([self.model.__class__.__name__,
+                                                     self.eval_env.envs[i].unwrapped.seed,
+                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['episode_num'],
+                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_error']),
+                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_error']),
+                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_error']),
+                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_error']),
+                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['out_of_view'],
+                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['maximum_distance'],
+                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['target_collision'],
+                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_smoothness_error']),
+                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_smoothness_error']),
+                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_smoothness_error']),
+                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_smoothness_error'])])
 
                         current_rewards[i] = 0
                         current_lengths[i] = 0

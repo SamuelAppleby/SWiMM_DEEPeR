@@ -37,7 +37,8 @@ def make_env(cmvae: tf.keras.Model,
              port: int = PORT_TRAIN,
              training_type=TrainingType.TRAINING,
              render=RenderType.HUMAN,
-             seed: int = None) -> ():
+             seed: int = None,
+             compute_stats: bool = False) -> ():
     """
     Makes instance of environment, seeds and wraps with Monitor
     """
@@ -51,7 +52,8 @@ def make_env(cmvae: tf.keras.Model,
                              ip=ip, port=port,
                              training_type=training_type,
                              render=render,
-                             seed=seed)
+                             seed=seed,
+                             compute_stats=compute_stats)
         with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configs', 'env_wrapper.yml'), 'r') as f:
             env_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)
 
@@ -487,6 +489,7 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
     parser.add_argument('--n_envs', type=int, default=None, help='The number of gymnasium environments to run in parallel', required=False)
     parser.add_argument('--render', type=str, default=None, help='Render the gymnasium environments', required=False)
     parser.add_argument('--pre_trained_model_path', type=str, default=None, help='Path to the model either to train or evaluate', required=False)
+    parser.add_argument('--compute_stats', action='store_true', help='Enable computing statistics')
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -495,17 +498,20 @@ def parse_command_args(env_config: Dict[str, Any], cmvae_inference_config=None) 
     if args.algorithm is not None:
         env_config['algorithm'] = args.algorithm
 
+    if args.weights_path is not None:
+        cmvae_inference_config['weights_path'] = args.weights_path
+
     if args.n_envs is not None:
         env_config['n_envs'] = args.n_envs
 
-    if args.render:
+    if args.render is not None:
         env_config['render'] = args.render
 
-    if args.pre_trained_model_path:
+    if args.pre_trained_model_path is not None:
         env_config['pre_trained_model_path'] = args.pre_trained_model_path
 
-    if args.weights_path is not None:
-        cmvae_inference_config['weights_path'] = args.weights_path
+    if args.compute_stats:
+        env_config['compute_stats'] = args.compute_stats
 
 
 def preprocess_action_noise(

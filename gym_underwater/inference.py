@@ -42,7 +42,7 @@ tensorflow_seeding(env_config['seed'])
 cmvae = load_cmvae(cmvae_global_config=cmvae_global_config, weights_path=cmvae_inference_config['weights_path'])
 
 # Define the logger first to avoid reduplicating code caused by the file search in learn()
-logger = configure_logger(verbose=1, tensorboard_log=os.path.join(os.path.dirname(env_config['pre_trained_model_path']), 'inference'), tb_log_name=env_config['algorithm'], reset_num_timesteps=True)
+logger = configure_logger(verbose=1, tensorboard_log=os.path.join(os.path.dirname(env_config['pre_trained_model_path']), 'inference' if not env_config['compute_stats'] else 'final_model_metrics'), tb_log_name=env_config['algorithm'], reset_num_timesteps=True)
 
 with open(os.path.join(project_dir, 'configs', 'callbacks.yml'), 'r') as f:
     callback_wrapper_config = yaml.load(f, Loader=yaml.UnsafeLoader)[ENVIRONMENT_TO_LOAD]
@@ -77,7 +77,8 @@ env = DummyVecEnv([make_env(cmvae=cmvae,
                             ip=IP_HOST, port=(PORT_INFERENCE+i),
                             training_type=TrainingType.INFERENCE,
                             render=render,
-                            seed=((env_config['seed']+i) if env_config['seed'] is not None else None)) for i in range(env_config['n_envs'])])
+                            seed=((env_config['seed']+i) if env_config['seed'] is not None else None),
+                            compute_stats=env_config['compute_stats']) for i in range(env_config['n_envs'])])
 
 kwargs.update({
     'eval_env': env,

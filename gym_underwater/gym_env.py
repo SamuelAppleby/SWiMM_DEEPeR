@@ -26,7 +26,8 @@ class UnderwaterEnv(gymnasium.Env):
                  port: int = PORT_TRAIN,
                  training_type: TrainingType = TrainingType.TRAINING,
                  render=RenderType.HUMAN,
-                 seed: int = None):
+                 seed: int = None,
+                 compute_stats: bool = False):
         super().__init__()
         print('Starting underwater environment ..')
 
@@ -53,7 +54,8 @@ class UnderwaterEnv(gymnasium.Env):
                                        cmvae=cmvae,
                                        action_space=self.action_space,
                                        render=self.render,
-                                       seed=seed)
+                                       seed=seed,
+                                       compute_stats=compute_stats)
 
         self.handler.send_server_config()
 

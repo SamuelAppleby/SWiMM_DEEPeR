@@ -22,5 +22,8 @@ algorithm: 'ppo'
 render: 'human'
 
 # The path to the previously trained model. If running a training session, will train on top of this model, otherwise if running in inference mode will infer from this model.
-#pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\ppo\ppo_3\best_model.zip'
+#pre_trained_model_path: 'C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\sac\sac_1\best_model.zip'
 pre_trained_model_path: ~
+
+# Should we compute the final model metrics for evaluation episodes
+compute_stats: True

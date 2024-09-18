@@ -80,7 +80,21 @@ class UnitySimHandler:
                  cmvae,
                  action_space: Space,
                  render: RenderType,
-                 seed: int):
+                 seed: int,
+                 compute_stats: bool):
+        self.compute_stats = compute_stats
+        self.weights = np.array([0.03, 0.04, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20, 0.25])
+        self.final_model_info_prev = {}
+        self.current_info = {
+            'episode_num': -1,
+            'a_error': [],
+            'd_error': [],
+            'out_of_view': 0,
+            'maximum_distance': 0,
+            'target_collision': 0,
+            'a_smoothness_error': [],
+            'd_smoothness_error': []
+        }
         self.interval = 1 / PERIOD
         self.sim_ready = False
         self.last_obs = None
@@ -172,6 +186,18 @@ class UnitySimHandler:
         self.msg_queue.put(msg)
 
     def reset(self):
+        if self.current_info['episode_num'] != -1:
+            self.final_model_info_prev = self.current_info
+        self.current_info = {
+            'episode_num': self.current_info['episode_num'] + 1,
+            'a_error': [],
+            'd_error': [],
+            'out_of_view': 0,
+            'maximum_distance': 0,
+            'target_collision': 0,
+            'a_smoothness_error': [],
+            'd_smoothness_error': []
+        }
         self.previous_actions.queue.clear()
         self.last_obs = None
         self.rover_info = None
@@ -227,8 +253,26 @@ class UnitySimHandler:
         over = None
 
         # During inference, we still allow TimeLimit truncation but want to simulate the real-world inference, so no early reset
-        if self.training_type == TrainingType.TRAINING:
+        if self.training_type == TrainingType.TRAINING or self.compute_stats:
             over = self.determine_episode_over(d_out_of_bounds)
+
+            # If recording final model metrics, ignore the first observation's information as this has come from a reset, not a step
+            if not self.previous_actions.empty():
+                self.current_info['a_error'].append(a)
+                self.current_info['d_error'].append(d_from_opt)
+
+                match over:
+                    case EpisodeTerminationType.TARGET_OUT_OF_VIEW:
+                        self.current_info['out_of_view'] = 1 if (self.current_info['out_of_view'] == 0) else 1
+                    case EpisodeTerminationType.MAXIMUM_DISTANCE:
+                        self.current_info['maximum_distance'] = 1 if (self.current_info['maximum_distance'] == 0) else 1
+                    case EpisodeTerminationType.TARGET_COLLISION:
+                        self.current_info['target_collision'] = 1 if (self.current_info['out_of_view'] == 0) else 1
+                    case _:
+                        pass
+
+            if self.training_type == TrainingType.INFERENCE:
+                over = None
 
         info.update({
             'dist': raw_d,
@@ -403,6 +447,14 @@ class UnitySimHandler:
                 self.cancel_event.set()
 
     def send_action(self, action):
+        if not self.previous_actions.empty():
+            abs = np.abs(action - self.previous_actions.queue)
+            weighted_abs = np.multiply(abs, self.weights[self.weights.size - self.previous_actions.qsize():, np.newaxis])
+            sum = np.sum(weighted_abs, axis=0)
+            norm_sum = sum / (self.action_space.high - self.action_space.low)
+            self.current_info['a_smoothness_error'].append(norm_sum[1])
+            self.current_info['d_smoothness_error'].append(norm_sum[0])
+
         if self.previous_actions.full():
             self.previous_actions.get()  # Remove the oldest action
         self.previous_actions.put(action)  # Add the new action

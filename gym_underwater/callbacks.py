@@ -74,9 +74,9 @@ def should_collect_more_steps_vec(
 
 
 def validate_episode_termination(info):
-    if info['episode_termination_type'] is None:
+    if len(info['episode_termination_type']) == 0:
         assert info["TimeLimit.truncated"]
-        info['episode_termination_type'] = EpisodeTerminationType.THRESHOLD_REACHED
+        info['episode_termination_type'].append(EpisodeTerminationType.THRESHOLD_REACHED)
 
 
 class SwimCallback(BaseCallback):
@@ -129,7 +129,7 @@ class SwimCallback(BaseCallback):
                     print('[TRAINING] Episode finished. \nReward: {:.2f} \nSteps: {}'.format(self.training_env.envs[i].get_wrapper_attr('episode_returns')[-1],
                                                                                              self.training_env.envs[i].get_wrapper_attr('episode_lengths')[-1]))
                 validate_episode_termination(self.training_env.buf_infos[i])
-                self.logger.record('rollout/episode_termination', self.training_env.buf_infos[i]['episode_termination_type'])
+                self.logger.record('rollout/episode_termination', self.training_env.buf_infos[i]['episode_termination_type'][0])
                 self.logger.record('memory/memory_usage_mb', psutil.Process().memory_info().rss / (1024 ** 2))
 
         return True
@@ -289,7 +289,7 @@ class SwimEvalCallback(EvalCallback):
                             validate_episode_termination(info)
 
                             # As with training, only log when the episode is terminated or truncated, not when steps is reached
-                            self.logger.record('eval/episode_termination', info['episode_termination_type'])
+                            self.logger.record('eval/episode_termination', info['episode_termination_type'][0])
                             self.logger.record('eval/ep_reward', episode_rewards[-1])
                             self.logger.record('eval/ep_length', episode_lengths[-1])
                             self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')

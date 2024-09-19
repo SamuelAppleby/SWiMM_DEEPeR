@@ -250,34 +250,35 @@ class UnitySimHandler:
         # a_out_of_bounds only considers the center of the dolphin's mesh and should not be regarded as exact
         reward, d_out_of_bounds, a_out_of_bounds = self.calc_reward(d_from_opt, a)
 
-        over = None
+        overs = []
 
         # During inference, we still allow TimeLimit truncation but want to simulate the real-world inference, so no early reset
         if self.training_type == TrainingType.TRAINING or self.compute_stats:
-            over = self.determine_episode_over(d_out_of_bounds)
+            overs = self.determine_episode_over(d_out_of_bounds)
 
             # If recording final model metrics, ignore the first observation's information as this has come from a reset, not a step
             if self.compute_stats and not self.previous_actions.empty():
                 self.current_info['a_error'].append(a)
                 self.current_info['d_error'].append(d_from_opt)
 
-                match over:
-                    case EpisodeTerminationType.TARGET_OUT_OF_VIEW:
-                        self.current_info['out_of_view'] = 1 if (self.current_info['out_of_view'] == 0) else 1
-                    case EpisodeTerminationType.MAXIMUM_DISTANCE:
-                        self.current_info['maximum_distance'] = 1 if (self.current_info['maximum_distance'] == 0) else 1
-                    case EpisodeTerminationType.TARGET_COLLISION:
-                        self.current_info['target_collision'] = 1 if (self.current_info['target_collision'] == 0) else 1
-                    case _:
-                        pass
+                for over in overs:
+                    match over:
+                        case EpisodeTerminationType.TARGET_OUT_OF_VIEW:
+                            self.current_info['out_of_view'] = 1 if (self.current_info['out_of_view'] == 0) else 1
+                        case EpisodeTerminationType.MAXIMUM_DISTANCE:
+                            self.current_info['maximum_distance'] = 1 if (self.current_info['maximum_distance'] == 0) else 1
+                        case EpisodeTerminationType.TARGET_COLLISION:
+                            self.current_info['target_collision'] = 1 if (self.current_info['target_collision'] == 0) else 1
+                        case _:
+                            pass
 
             if self.training_type == TrainingType.INFERENCE:
-                over = None
+                overs = []
 
         info.update({
             'dist': raw_d,
             'ang_error': a,
-            'episode_termination_type': over
+            'episode_termination_type': overs
         })
 
         # During training, guarantee that reward is between -1 and 1 if not over
@@ -285,7 +286,7 @@ class UnitySimHandler:
             assert (-MAX_REWARD <= reward <= MAX_REWARD), f'We cannot allow a reward outside of the range [-{MAX_REWARD}, {MAX_REWARD}]'
 
         img_array = self.get_augmented_state(img_array)
-        return img_array, reward, over is not None, False, info
+        return img_array, reward, len(overs) > 0, False, info
 
     def calc_reward(self, d_from_opt, a):
         # scaling function producing value in the range [-1, 1] - distance and angle equal contribution
@@ -307,16 +308,17 @@ class UnitySimHandler:
         return (MAX_REWARD - (distance_penalty + angle_penalty)), d_out_of_bounds, a_out_of_bounds
 
     def determine_episode_over(self, d_out_of_bounds):
+        overs = []
         if self.target_info['colliding']:
             print('[EPISODE TERMINATED] Due to collision with target')
-            return EpisodeTerminationType.TARGET_COLLISION
+            overs.append(EpisodeTerminationType.TARGET_COLLISION)
         if self.target_info['outOfView']:
             print('[EPISODE TERMINATED] Due to target out of view')
-            return EpisodeTerminationType.TARGET_OUT_OF_VIEW
+            overs.append(EpisodeTerminationType.TARGET_OUT_OF_VIEW)
         if d_out_of_bounds:
             print(f'[EPISODE TERMINATED] Too far from the optimum distance')
-            return EpisodeTerminationType.MAXIMUM_DISTANCE
-        return None
+            overs.append(EpisodeTerminationType.MAXIMUM_DISTANCE)
+        return overs
 
     def continue_read_write(self):
         self.threads = [

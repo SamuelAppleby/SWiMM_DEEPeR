@@ -4,17 +4,21 @@ set "PYTHONPATH=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR;%PY
 call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
-set seeds=113 127 131 137 139
-set algorithm=td3
+set seeds=149 151 157 163 167
+set algorithms=sac_1 ppo_3 td3_4
 set render=human
-set dir=4
 
-for %%d in (%dir%) do (
-    set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\%algorithm%\%algorithm%_%%d\best_model.zip
+for %%x in (%algorithms%) do (
+    for /f "tokens=1,2 delims=_" %%a in ("%%x") do (
+        set n=%%a
+        set c=%%b
+    )
+
+    set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\!n!\!n!_!c!\best_model.zip
 
     for %%s in (%seeds%) do (
         for %%r in (%render%) do (
-            python inference.py --seed %%s --algorithm %algorithm% --render %%r --pre_trained_model_path !w!
+            python inference.py --seed %%s --algorithm !n! --render %%r --pre_trained_model_path !w! --compute_stats
             python email_notifier.py --msg %%s
         )
     )

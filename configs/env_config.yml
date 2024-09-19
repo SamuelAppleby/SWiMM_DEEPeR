@@ -26,4 +26,4 @@ render: 'human'
 pre_trained_model_path: ~
 
 # Should we compute the final model metrics for evaluation episodes
-compute_stats: True
+compute_stats: False

@@ -23,7 +23,6 @@ for (algo_dir in directory_path) {
   
   for (seed_dir in folders) {
     metric_data <- read.csv(file.path(seed_dir, "final_model_metrics.csv"))
-    
     combined_metric_data <- rbind(combined_metric_data,metric_data)
   }
 }

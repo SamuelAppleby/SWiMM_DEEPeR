@@ -187,8 +187,7 @@ class SwimEvalCallback(EvalCallback):
             if env.unwrapped.handler.compute_stats:
                 with open(os.path.join(self.logger.dir, 'final_model_metrics.csv'), mode='w', newline='') as file:
                     writer = csv.writer(file)
-                    writer.writerow(['Algorithm', 'Seed', 'Episode', 'MeanAError', 'STDAError', 'MeanRError', 'STDRError', 'OutOfView', 'MaximumDistance', 'TargetCollision',
-                                     'MeanASmoothnessError', 'STDASmoothnessError', 'MeanDSmoothnessError', 'STDDSmoothnessError'])
+                    writer.writerow(['Algorithm', 'Seed', 'Episode', 'Step', 'AError', 'RError', 'OutOfView', 'MaximumDistance', 'TargetCollision', 'ASmoothnessError', 'DSmoothnessError'])
 
     def _on_step(self) -> bool:
         """
@@ -265,12 +264,33 @@ class SwimEvalCallback(EvalCallback):
             )
 
             new_observations, rewards, dones, infos = env.step(actions)
+
             current_rewards += rewards
             current_lengths += 1
 
             step_counts += 1
             self.total_eval_steps += 1
             for i in range(n_envs):
+                # TODO For some reason, when TimeLimit causes a reset, we enter a new row of zeroes, I think that I need to increase the step count by 1,
+                #  e.g. 3001, because that is out of my control, but this still doesn't explain the empty row. Oh just found out, we only add information
+                #  after the first frame after the reset, we HAVE taken an observation, but haven't yet acted upon it (so don't enter the row?
+                #  but why does the old code work then? Oh because the reset is done AFTER (no callback), actually I just realised that all I probably
+                #  need to do (on both sides) is to not output a row on the first reset, and increase step count by 1?)
+                if self.eval_env.envs[i].unwrapped.handler.compute_stats:
+                    with open(os.path.join(self.logger.dir, 'final_model_metrics.csv'), mode='a', newline='') as file:
+                        writer = csv.writer(file)
+                        writer.writerow([self.model.__class__.__name__,
+                                         self.eval_env.envs[i].unwrapped.seed,
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['episode_num'],
+                                         current_lengths[i] - 1,
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['a_error'],
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['d_error'],
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['out_of_view'],
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['maximum_distance'],
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['target_collision'],
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['a_smoothness_error'],
+                                         self.eval_env.envs[i].unwrapped.handler.current_info['d_smoothness_error']])
+
                 if should_collect_more_steps(eval_inference_freq, step_counts[i] - 1, episode_counts[i]):
                     reward = rewards[i]
                     done = dones[i]
@@ -294,24 +314,6 @@ class SwimEvalCallback(EvalCallback):
                             self.logger.record('eval/ep_length', episode_lengths[-1])
                             self.logger.record('time/total_timesteps', self.num_timesteps, exclude='tensorboard')
                             self.logger.dump(step=self.total_eval_steps)
-
-                            if self.eval_env.envs[i].unwrapped.handler.compute_stats:
-                                with open(os.path.join(self.logger.dir, 'final_model_metrics.csv'), mode='a', newline='') as file:
-                                    writer = csv.writer(file)
-                                    writer.writerow([self.model.__class__.__name__,
-                                                     self.eval_env.envs[i].unwrapped.seed,
-                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['episode_num'],
-                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_error']),
-                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_error']),
-                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_error']),
-                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_error']),
-                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['out_of_view'],
-                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['maximum_distance'],
-                                                     self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['target_collision'],
-                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_smoothness_error']),
-                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['a_smoothness_error']),
-                                                     np.mean(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_smoothness_error']),
-                                                     np.std(self.eval_env.envs[i].unwrapped.handler.final_model_info_prev['d_smoothness_error'])])
 
                         current_rewards[i] = 0
                         current_lengths[i] = 0

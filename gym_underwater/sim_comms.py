@@ -84,16 +84,15 @@ class UnitySimHandler:
                  compute_stats: bool):
         self.compute_stats = compute_stats
         self.weights = np.array([0.03, 0.04, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20, 0.25])
-        self.final_model_info_prev = {}
         self.current_info = {
             'episode_num': -1,
-            'a_error': [],
-            'd_error': [],
+            'a_error': -1.0,
+            'd_error': -1.0,
             'out_of_view': 0,
             'maximum_distance': 0,
             'target_collision': 0,
-            'a_smoothness_error': [],
-            'd_smoothness_error': []
+            'a_smoothness_error': -1.0,
+            'd_smoothness_error': -1.0
         }
         self.interval = 1 / PERIOD
         self.sim_ready = False
@@ -186,18 +185,7 @@ class UnitySimHandler:
         self.msg_queue.put(msg)
 
     def reset(self):
-        if self.current_info['episode_num'] != -1:
-            self.final_model_info_prev = self.current_info
-        self.current_info = {
-            'episode_num': self.current_info['episode_num'] + 1,
-            'a_error': [],
-            'd_error': [],
-            'out_of_view': 0,
-            'maximum_distance': 0,
-            'target_collision': 0,
-            'a_smoothness_error': [],
-            'd_smoothness_error': []
-        }
+        self.current_info['episode_num'] += 1
         self.previous_actions.queue.clear()
         self.last_obs = None
         self.rover_info = None
@@ -258,8 +246,8 @@ class UnitySimHandler:
 
             # If recording final model metrics, ignore the first observation's information as this has come from a reset, not a step
             if self.compute_stats and not self.previous_actions.empty():
-                self.current_info['a_error'].append(a)
-                self.current_info['d_error'].append(d_from_opt)
+                self.current_info['a_error'] = a
+                self.current_info['d_error'] = d_from_opt
 
                 for over in overs:
                     match over:
@@ -450,12 +438,15 @@ class UnitySimHandler:
 
     def send_action(self, action):
         if not self.previous_actions.empty():
-            abs = np.abs(action - self.previous_actions.queue)
-            weighted_abs = np.multiply(abs, self.weights[self.weights.size - self.previous_actions.qsize():, np.newaxis])
-            sum = np.sum(weighted_abs, axis=0)
-            norm_sum = sum / (self.action_space.high - self.action_space.low)
-            self.current_info['a_smoothness_error'].append(norm_sum[1])
-            self.current_info['d_smoothness_error'].append(norm_sum[0])
+            absol = np.abs(self.previous_actions.queue - action)
+            weighted_abs = np.multiply(absol, self.weights[self.weights.size - self.previous_actions.qsize():, np.newaxis])
+            weight_sum = np.sum(weighted_abs, axis=0)
+            norm_sum = weight_sum / (self.action_space.high - self.action_space.low)
+        else:
+            norm_sum = np.array([0.0, 0.0])
+
+        self.current_info['a_smoothness_error'] = norm_sum[1]
+        self.current_info['d_smoothness_error'] = norm_sum[0]
 
         if self.previous_actions.full():
             self.previous_actions.get()  # Remove the oldest action

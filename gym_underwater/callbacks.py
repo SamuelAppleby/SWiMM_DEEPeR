@@ -187,7 +187,7 @@ class SwimEvalCallback(EvalCallback):
             if env.unwrapped.handler.compute_stats:
                 with open(os.path.join(self.logger.dir, 'final_model_metrics.csv'), mode='w', newline='') as file:
                     writer = csv.writer(file)
-                    writer.writerow(['Algorithm', 'Seed', 'Episode', 'Step', 'AError', 'RError', 'OutOfView', 'MaximumDistance', 'TargetCollision', 'ASmoothnessError', 'DSmoothnessError'])
+                    writer.writerow(['Algorithm', 'Seed', 'Episode', 'Step', 'AError', 'DError', 'OutOfView', 'MaximumDistance', 'TargetCollision', 'ASmoothnessError', 'DSmoothnessError'])
 
     def _on_step(self) -> bool:
         """
@@ -271,11 +271,6 @@ class SwimEvalCallback(EvalCallback):
             step_counts += 1
             self.total_eval_steps += 1
             for i in range(n_envs):
-                # TODO For some reason, when TimeLimit causes a reset, we enter a new row of zeroes, I think that I need to increase the step count by 1,
-                #  e.g. 3001, because that is out of my control, but this still doesn't explain the empty row. Oh just found out, we only add information
-                #  after the first frame after the reset, we HAVE taken an observation, but haven't yet acted upon it (so don't enter the row?
-                #  but why does the old code work then? Oh because the reset is done AFTER (no callback), actually I just realised that all I probably
-                #  need to do (on both sides) is to not output a row on the first reset, and increase step count by 1?)
                 if self.eval_env.envs[i].unwrapped.handler.compute_stats:
                     with open(os.path.join(self.logger.dir, 'final_model_metrics.csv'), mode='a', newline='') as file:
                         writer = csv.writer(file)

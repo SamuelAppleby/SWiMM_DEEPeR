@@ -185,7 +185,6 @@ class UnitySimHandler:
         self.msg_queue.put(msg)
 
     def reset(self):
-        self.current_info['episode_num'] += 1
         self.previous_actions.queue.clear()
         self.last_obs = None
         self.rover_info = None
@@ -442,11 +441,21 @@ class UnitySimHandler:
             weighted_abs = np.multiply(absol, self.weights[self.weights.size - self.previous_actions.qsize():, np.newaxis])
             weight_sum = np.sum(weighted_abs, axis=0)
             norm_sum = weight_sum / (self.action_space.high - self.action_space.low)
+            self.current_info['a_smoothness_error'] = norm_sum[1]
+            self.current_info['d_smoothness_error'] = norm_sum[0]
         else:
-            norm_sum = np.array([0.0, 0.0])
+            self.current_info['episode_num'] += 1
 
-        self.current_info['a_smoothness_error'] = norm_sum[1]
-        self.current_info['d_smoothness_error'] = norm_sum[0]
+            self.current_info = {
+                'episode_num': self.current_info['episode_num'],
+                'a_error': -1.0,
+                'd_error': -1.0,
+                'out_of_view': 0,
+                'maximum_distance': 0,
+                'target_collision': 0,
+                'a_smoothness_error': 0.0,
+                'd_smoothness_error': 0.0
+            }
 
         if self.previous_actions.full():
             self.previous_actions.get()  # Remove the oldest action

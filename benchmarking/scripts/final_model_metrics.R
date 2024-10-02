@@ -1,11 +1,9 @@
 library(utils)
 library(data.table)
 library(ggplot2)
-library(yaml)
 library(scales)
 library(extrafont)
 library(tidyr)
-library(latex2exp)
 
 windowsFonts(
   CAL=windowsFont("Parisienne")
@@ -34,22 +32,9 @@ for (algo_dir in directory_path) {
   
   for (seed_dir in folders) {
     metric_data <- read.csv(file.path(seed_dir, "final_model_metrics.csv"))
-    
-    if (algo_dir == "C:\\Users\\sambu\\Downloads\\SWiMM_DEEPeR_old\\data") {
-      metric_data$Algorithm <- "SAC_OLD"
-    }
-    #TODO Can remove this once new data is obtained
-    else {
-      names(metric_data)[names(metric_data) == 'RError'] <- 'DError'
-      metric_data$Episode[metric_data$Step == 2999] <- metric_data$Episode[metric_data$Step == 2999] - 1
-    }
-    
     combined_metric_data <- rbind(combined_metric_data,metric_data)
   }
 }
-
-# combined_metric_data$Episode <- NULL
-# combined_metric_data$Seed <- NULL
 
 agg_step <- aggregate(cbind(OutOfView, MaximumDistance, TargetCollision) ~ Algorithm + Seed + Episode, 
                       data = combined_metric_data, FUN = max, na.rm = TRUE)

@@ -4,6 +4,7 @@ library(ggplot2)
 library(scales)
 library(extrafont)
 library(tidyr)
+library(dplyr)
 
 windowsFonts(
   CAL=windowsFont("Parisienne")
@@ -111,9 +112,10 @@ algo_labels <- c(
   "SAC_OLD" = expression(SAC[paste(1.0)]),
   "SAC" = expression(SAC[paste(2.0)]))
 
-ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable)) +
+ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group = Variable)) +
   geom_point(size = 3) +
-  scale_x_continuous(name = "Mean Episodic Reward", labels = scientific_10_wrapper(y = increase))+
+  geom_line() +  # Line added here
+  scale_x_continuous(name = "Mean Episodic Reward", labels = scientific_10_wrapper(y = increase)) +
   scale_y_continuous(name = "Value (Normalised)", labels = scientific_10_wrapper(y = increase)) +
   scale_shape_manual(values = c(15, 16, 17, 18), labels = algo_labels) +
   scale_color_brewer(palette = "Set2", name = "Metric", labels = c("AError" = "A",
@@ -125,4 +127,6 @@ ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable)) +
                                                                    "DSmoothnessError" = expression(S[D]))) +
   theme(legend.position = "bottom",
         text = element_text(family = "Times New Roman"))
+
+
 

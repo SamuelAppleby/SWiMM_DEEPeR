@@ -104,12 +104,12 @@ ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeRewar
   geom_point(aes(shape = Termination)) +
   labs(shape = "Termination Criteria") +
   scale_color_brewer(palette = "Set2", name = "Seed") +
+  guides(color = guide_legend(nrow = 1),
+         shape = guide_legend(nrow = 1)) +
   theme(legend.position = "bottom",
         legend.direction = "vertical",
         legend.box = "vertical",
-        text = element_text(family = "Times New Roman")) +
-  guides(color = guide_legend(nrow = 1),
-         shape = guide_legend(nrow = 1))
+        text = element_text(family = "Times New Roman"))
 
 sorted_df <- combined_data_test[order(combined_data_test$algo, -combined_data_test$TestingMeanEpisodeReward), ]
 sorted_df <- sorted_df[!duplicated(sorted_df[c("algo", "seed")]), ]
@@ -174,43 +174,3 @@ ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=fa
   scale_color_brewer(palette = "Set2", name = "Seed") +
   coord_cartesian(clip = 'off', ylim = c(-3000, 3000)) +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
-
-# INFERENCE METRICS
-combined_data_inference_summary <- data.frame(
-  algo = character(),
-  mean_inference_episodic_reward = numeric(),
-  total_inference_time = numeric()
-)
-
-combined_data_inference <- data.frame()
-
-for (i in 1:nrow(sorted_df)) {
-  best_model <- sorted_df[i, ]
-  inference_dirs <- list.dirs(file.path(best_model$file_path, "inference"), full.names = TRUE, recursive = FALSE)
-
-  time_inference <- 0
-  for (inference_dir in inference_dirs) {
-    inference_data <- read.csv(file.path(inference_dir, "testing_monitor.csv"))
-    time_inference <- time_inference + tail(inference_data$t, 1)
-    yaml_data <- as.data.frame(t(yaml.load_file(file.path(inference_dir, "configs", "env_config.yml"))))
-    inference_data$seed <- as.numeric(yaml_data$seed)
-    inference_data$algo <- best_model$algo
-    combined_data_inference <- rbind(combined_data_inference,inference_data)
-  }
-
-  combined_data_inference_summary <- rbind(combined_data_inference_summary, data.frame(algo = best_model$algo,
-                                                                              mean_inference_episodic_reward = mean(combined_data_inference$r[combined_data_inference$algo == best_model$algo], na.rm = TRUE),
-                                                                              total_inference_time = time_inference))
-}
-
-combined_data_inference$algo <- factor(combined_data_inference$algo, levels = c("sac", "ppo", "td3"))
-
-ggplot(combined_data_inference, aes(x=algo, y = r)) +
-  geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
-  geom_jitter(aes(color=factor(seed))) +
-  scale_x_discrete(name = "Algorithm", labels = algo_labels)+
-  scale_y_continuous(name = "Episodic Reward", labels = scientific_10) +
-  scale_color_brewer(palette = "Set2", name = "Seed") +
-  theme(legend.position="bottom",text=element_text(family="Times New Roman"))
-
-

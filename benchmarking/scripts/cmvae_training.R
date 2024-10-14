@@ -42,24 +42,6 @@ for (seed_dir in folders) {
   combined_data <- rbind(combined_data,data)
 }
 
-timings <- aggregate(list(Wall.time = combined_data$Wall.time), 
-                  by = list(ModelSeed = combined_data$ModelSeed,
-                            EarlyTermination = combined_data$EarlyTermination),
-                  FUN = function(i)max(i) - min(i))
-
-ggplot(timings, aes(x = EarlyTermination, y = Wall.time)) +
-  geom_boxplot(position = position_dodge(1), outlier.shape = NA) +
-  geom_jitter(aes(color=ModelSeed)) +
-  scale_color_brewer(palette = "Set2", name = "Seed") +
-  theme(legend.position = "bottom",
-        axis.title.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        text=element_text(family="Times New Roman"))  + 
-  scale_y_continuous(name = "Training Time(s)", labels = scientific_10) +
-  scale_x_discrete(labels = c("No Early Termination" = expression(w == infinity), 
-                              "Early Termination" = expression(w == 5))) +
-  labs(x = "Early Termination", y = "Training Time (s)")
-
 early_stop_arr <- c("No Early Termination", "Early Termination")
 
 for (element in early_stop_arr) {
@@ -81,8 +63,3 @@ for (element in early_stop_arr) {
     theme(legend.position = "bottom",
           text=element_text(family="Times New Roman")))
 }
-
-timings <- aggregate(list(Wall.time = timings$Wall.time), 
-                     by = list(EarlyTermination = timings$EarlyTermination),
-                     FUN = mean)
-

@@ -125,7 +125,11 @@ ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group
                                                                    "TargetCollision" = "C'",
                                                                    "ASmoothnessError" = expression(S[A]),
                                                                    "DSmoothnessError" = expression(S[D]))) +
+  guides(color = guide_legend(nrow = 1),
+         shape = guide_legend(nrow = 1)) +
   theme(legend.position = "bottom",
+        legend.direction = "vertical",
+        legend.box = "vertical",
         text = element_text(family = "Times New Roman"))
 
 

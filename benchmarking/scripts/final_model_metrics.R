@@ -109,12 +109,12 @@ df_long$Variable <- factor(df_long$Variable, levels = c("AError",
 increase <- 0
 
 algo_labels <- c(
-  "SAC_OLD" = expression(SAC[paste(1.0)]),
-  "SAC" = expression(SAC[paste(2.0)]))
+  "SAC_OLD" = expression(SAC[paste("SWiMMv1.0")]),
+  "SAC" = expression(SAC[paste("SWiMMv2.0")]))
 
 ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group = Variable)) +
   geom_point(size = 3) +
-  geom_line() +  # Line added here
+  geom_line() +
   scale_x_continuous(name = "Mean Episodic Reward", labels = scientific_10_wrapper(y = increase)) +
   scale_y_continuous(name = "Value (Normalised)", labels = scientific_10_wrapper(y = increase)) +
   scale_shape_manual(values = c(15, 16, 17, 18), labels = algo_labels) +

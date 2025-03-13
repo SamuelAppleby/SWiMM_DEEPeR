@@ -16,7 +16,7 @@ debug_logs: False
 seed: ~
 
 # Algorithm to import from Stable Baselines: 'sac', 'ppo', 'td3'
-algorithm: 'ppo'
+algorithm: 'sac'
 
 # Render mode: 'human' (for graphics), 'none' (or ~) (for no rendering)
 render: 'human'

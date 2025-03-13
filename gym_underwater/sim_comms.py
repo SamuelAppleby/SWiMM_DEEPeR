@@ -269,7 +269,7 @@ class UnitySimHandler:
         })
 
         # During training, guarantee that reward is between -1 and 1 if not over
-        if (self.training_type == TrainingType.TRAINING) and over is None:
+        if (self.training_type == TrainingType.TRAINING) and (len(overs) == 0):
             assert (-MAX_REWARD <= reward <= MAX_REWARD), f'We cannot allow a reward outside of the range [-{MAX_REWARD}, {MAX_REWARD}]'
 
         img_array = self.get_augmented_state(img_array)

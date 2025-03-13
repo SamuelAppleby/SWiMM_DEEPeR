@@ -16,6 +16,9 @@
                 "tpCameraCollider": {
                   "type": "boolean"
                 },
+                "imageNoise": {
+                  "type": "boolean"
+                },
                 "camConfig": {
                   "type": "object",
                   "properties": {
@@ -87,6 +90,7 @@
               },
               "required": [
                 "tpCameraCollider",
+                "imageNoise",
                 "camConfig",
                 "structureConfig",
                 "motorConfig"

@@ -4,6 +4,7 @@
         "serverConfig": {
             "roverConfig": {
                 "tpCameraCollider": true,
+                "imageNoise": true,
                 "motorConfig": {
                     "stabilityForce": 0.2,
                     "linearThrustPower": [

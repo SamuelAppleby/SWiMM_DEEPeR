@@ -24,8 +24,8 @@ combined_metric_data <- data.frame()
 combined_testing_montior <- data.frame()
 
 for (algo in algos) {
-  base_path <- "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\%s\\sac_1\\final_model_metrics\\"
-  formatted_path <- sprintf(base_path, algo)
+  base_path <- "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\%s\\%s_1\\final_model_metrics\\"
+  formatted_path <- sprintf(base_path, algo, algo)
   
   folders <- list.dirs(formatted_path, full.names = TRUE, recursive = FALSE)
   

@@ -18,36 +18,25 @@ scientific_10_wrapper <- function(y) {
   function(x) scientific_10(x, y)
 }
 
-directory_path <- list(
-  "C:\\Users\\sambu\\Downloads\\SWiMM_DEEPeR_old\\data",
-  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\sac\\sac_1\\final_model_metrics",
-  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\ppo\\ppo_3\\final_model_metrics",
-  "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\td3\\td3_4\\final_model_metrics"
-)
+algos <- list("sac", "sac_noise")
 
 combined_metric_data <- data.frame()
 combined_testing_montior <- data.frame()
 
-for (algo_dir in directory_path) {
-  folders <- list.dirs(algo_dir, full.names = TRUE, recursive = FALSE)
+for (algo in algos) {
+  base_path <- "C:\\Users\\sambu\\Documents\\Repositories\\CodeBases\\SWiMM_DEEPeR\\models\\%s\\sac_1\\final_model_metrics\\"
+  formatted_path <- sprintf(base_path, algo)
+  
+  folders <- list.dirs(formatted_path, full.names = TRUE, recursive = FALSE)
   
   for (seed_dir in folders) {
     metric_data <- read.csv(file.path(seed_dir, "final_model_metrics.csv"))
+    metric_data$Algorithm <- algo
     combined_metric_data <- rbind(combined_metric_data,metric_data)
     
     data_testing_monitor <- data.frame()
-    
-    if (algo_dir == "C:\\Users\\sambu\\Downloads\\SWiMM_DEEPeR_old\\data") {
-      data_testing_monitor <- read.csv(file.path(seed_dir, "inference.csv"))
-      data_testing_monitor$Termination <- NULL
-      data_testing_monitor$Episode <- NULL
-      names(data_testing_monitor)[names(data_testing_monitor) == "Reward"] <- "r"
-      names(data_testing_monitor)[names(data_testing_monitor) == "Length"] <- "l"
-    }
-    else {
-      data_testing_monitor <- read.csv(file.path(seed_dir, "testing_monitor.csv"))
-      data_testing_monitor$t <- NULL
-    }
+    data_testing_monitor <- read.csv(file.path(seed_dir, "testing_monitor.csv"))
+    data_testing_monitor$t <- NULL
     
     data_testing_monitor$Algorithm <- metric_data$Algorithm[1:nrow(data_testing_monitor)]
     data_testing_monitor$Seed <- metric_data$Seed[1:nrow(data_testing_monitor)]
@@ -93,10 +82,8 @@ df_long <- combined_metric_data_summary %>%
   pivot_longer(cols = -c(Algorithm, r),
                names_to = "Variable", values_to = "Value")
 
-df_long$Algorithm <- factor(df_long$Algorithm, levels = c("SAC_OLD",
-                                                          "SAC",
-                                                          "PPO",
-                                                          "TD3"))
+df_long$Algorithm <- factor(df_long$Algorithm, levels = c("sac",
+                                                          "sac_noise"))
 
 df_long$Variable <- factor(df_long$Variable, levels = c("AError",
                                                         "DError",
@@ -109,8 +96,8 @@ df_long$Variable <- factor(df_long$Variable, levels = c("AError",
 increase <- 0
 
 algo_labels <- c(
-  "SAC_OLD" = expression(SAC[paste("SWiMMv1.0")]),
-  "SAC" = expression(SAC[paste("SWiMMv2.0")]))
+  "sac" = "Noiseless",
+  "sac_noise" = "Noisy")
 
 ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group = Variable)) +
   geom_point(size = 3) +
@@ -125,6 +112,7 @@ ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group
                                                                    "TargetCollision" = "C'",
                                                                    "ASmoothnessError" = expression(S[A]),
                                                                    "DSmoothnessError" = expression(S[D]))) +
+  labs(shape = "Enviornment") +
   guides(color = guide_legend(nrow = 1),
          shape = guide_legend(nrow = 1)) +
   theme(legend.position = "bottom",

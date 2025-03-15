@@ -29,7 +29,8 @@ custom_aggregate <- function(df) {
   return(result)
 }
 
-algos <- list("sac", "ppo", "td3")
+algos <- list("sac", "sac_noise")
+
 combined_data_training <- data.frame()
 combined_data_test <- data.frame()
 combined_data_training_time <- data.frame(
@@ -46,6 +47,10 @@ for (algo in algos) {
   
   for (seed_dir in folders) {
     yaml_data <- as.data.frame(t(yaml.load_file(file.path(seed_dir, "configs", "env_config.yml"))))
+    
+    if (as.numeric(yaml_data$seed) != 97) {
+      next
+    }
     
     data_training <- read.csv(file.path(seed_dir, "run-.-tag-rollout_ep_rew_mean.csv"))
     names(data_training)[names(data_training) == "Value"] <- "TrainingMeanEpisodeReward"
@@ -92,18 +97,17 @@ for (algo in algos) {
 # formatted_path_algo <- sprintf(paste(formatted_path, extension, sep=""), algo, algo)
 # yaml_data_algo <- as.data.frame(t(yaml.load_file(file.path(formatted_path_algo))))
 
-algo_labels <- c("sac" = "SAC", "ppo" = "PPO", "td3" = "TD3")
-combined_data_training$algo <- factor(combined_data_training$algo, levels = c("sac", "ppo", "td3"))
+algo_labels <- c("sac" = "Noiseless", "sac_noise" = "Noisy")
+combined_data_training$algo <- factor(combined_data_training$algo, levels = c("sac", "sac_noise"))
 
 # TRAINING REWARD GRAPH
-ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeReward, color = factor(seed))) +
+ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeReward, color = algo)) +
   scale_x_continuous(name = "Step", labels = scientific_10) +
   scale_y_continuous(name = expression("Mean Episodic Reward (" * mu * " = 10)"), labels = scientific_10) +
-  facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_smooth(aes(y = TrainingMeanEpisodeReward), method = "auto") +
   geom_point(aes(shape = Termination)) +
   labs(shape = "Termination Criteria") +
-  scale_color_brewer(palette = "Set2", name = "Seed") +
+  scale_color_brewer(palette = "Set2", name = "Environment", labels = c("sac" = "Noiseless", "sac_noise" = "Noisy")) +
   guides(color = guide_legend(nrow = 1),
          shape = guide_legend(nrow = 1)) +
   theme(legend.position = "bottom",
@@ -113,7 +117,7 @@ ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeRewar
 
 sorted_df <- combined_data_test[order(combined_data_test$algo, -combined_data_test$TestingMeanEpisodeReward), ]
 sorted_df <- sorted_df[!duplicated(sorted_df[c("algo", "seed")]), ]
-sorted_df$algo <- factor(sorted_df$algo, levels = c("sac", "ppo", "td3"))
+sorted_df$algo <- factor(sorted_df$algo, levels = c("sac", "sac_noise"))
 
 combined_data_training_time <- merge(combined_data_training_time, sorted_df, by = c("algo", "seed"))
 
@@ -123,12 +127,12 @@ long_data <- melt(combined_data_training_time,
                   variable.name = "type",
                   value.name = "value")
 
-long_data$algo <- factor(long_data$algo, levels = c("sac", "ppo", "td3"))
+long_data$algo <- factor(long_data$algo, levels = c("sac", "sac_noise"))
 
 timings_for_paper <- aggregate(value ~ algo + type, data = long_data, FUN = mean, na.rm = TRUE)
 
 # TRAINING TIME GRAPH
-ggplot(data = long_data, aes(x = algo, y = value, fill = factor(seed))) +
+ggplot(data = long_data, aes(x = algo, y = value)) +
   geom_col(data = filter(long_data, type == "total_train_time"),
            position = position_dodge(width = 0.9),
            alpha = 0.4) +
@@ -138,7 +142,7 @@ ggplot(data = long_data, aes(x = algo, y = value, fill = factor(seed))) +
   scale_x_discrete(labels = algo_labels) +
   scale_y_continuous(name = "Time (s)", labels = scientific_10) +
   scale_fill_brewer(palette = "Set2", name = "Seed") +
-  labs(x = "Algorithm") +
+  labs(x = "Environment") +
   geom_tile(aes(y=NA_integer_, alpha = factor(type))) +
   scale_alpha_manual(values = c(`total_train_time` = 0.4, `time_for_best_model` = 1),
                      labels = c("Total Train Time", "Best Model Found"),
@@ -155,22 +159,21 @@ sorted_df <- sorted_df[!duplicated(sorted_df$algo), ]
 sorted_df$StepLabel <- format_annotation(sorted_df$Step)
 sorted_df$RewardLabel <- format_annotation(sorted_df$TestingMeanEpisodeReward)
 
-combined_data_test$algo <- factor(combined_data_test$algo, levels = c("sac", "ppo", "td3"))
+combined_data_test$algo <- factor(combined_data_test$algo, levels = c("sac", "sac_noise"))
 
 # EVALUATION GRAPH
-ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=factor(seed))) +
+ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=algo)) +
   scale_x_continuous(name = "Step", labels = scientific_10)+
   scale_y_continuous(name = "Mean Episodic Reward", labels = scientific_10) +
-  facet_wrap(~ algo, labeller = labeller(algo = algo_labels)) +
   geom_line(aes(y=TestingMeanEpisodeReward)) +
-  geom_vline(data = sorted_df, aes(xintercept = Step), linetype = "dashed", color = "#66c2a5", inherit.aes = FALSE) +
-  geom_text(data = sorted_df, aes(x = Step, y = Inf),
-            label = sorted_df$StepLabel, color = "#66c2a5", size = 4, fontface = "italic",
-            hjust = 1.2, vjust = 1.2, inherit.aes = FALSE) +
-  geom_hline(data = sorted_df, aes(yintercept = TestingMeanEpisodeReward), linetype = "dashed", color = "#66c2a5", inherit.aes = FALSE) +
-  geom_text(data = sorted_df, aes(x = -Inf, y = TestingMeanEpisodeReward),
-            label = sorted_df$RewardLabel, color = "#66c2a5", size = 4, fontface = "italic",
-            hjust = 1.1, inherit.aes = FALSE) +
-  scale_color_brewer(palette = "Set2", name = "Seed") +
+  geom_vline(data = sorted_df, aes(xintercept = Step, color = algo), linetype = "dashed", inherit.aes = FALSE, show.legend=FALSE) +
+  geom_text(data = sorted_df, aes(x = Step, y = Inf, color = algo),
+            label = sorted_df$StepLabel, size = 4, fontface = "italic",
+            hjust = 1.2, vjust = 1.2, inherit.aes = FALSE, show.legend=FALSE) +
+  geom_hline(data = sorted_df, aes(yintercept = TestingMeanEpisodeReward, color = algo), linetype = "dashed", inherit.aes = FALSE, show.legend=FALSE) +
+  geom_text(data = sorted_df, aes(x = -Inf, y = TestingMeanEpisodeReward, color = algo),
+            label = sorted_df$RewardLabel, size = 4, fontface = "italic",
+            hjust = 1.1, inherit.aes = FALSE, show.legend=FALSE) +
+  scale_color_brewer(palette = "Set2", name = "Environment", labels = c("sac" = "Noiseless", "sac_noise" = "Noisy")) +
   coord_cartesian(clip = 'off', ylim = c(-3000, 3000)) +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))

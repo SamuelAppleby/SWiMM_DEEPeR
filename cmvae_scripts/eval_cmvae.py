@@ -81,11 +81,13 @@ images_np = cmvae_utils.dataset_utils.denormalize_image(images_np)
 img_recon = cmvae_utils.dataset_utils.denormalize_image(img_recon)
 gate_recon = cmvae_utils.dataset_utils.de_normalize_gate(gate_recon)
 
-with open(os.path.join(output_dir, 'prediction_img.csv'), 'w', newline='', encoding='UTF8') as f:
+filename_prediction = 'prediction_img.csv'
+
+with open(os.path.join(output_dir, filename_prediction), 'w', newline='', encoding='UTF8') as f:
     writer = csv.writer(f)
     writer.writerow(['MAE', 'Standard Error', 'Max Error'])
 
-cmvae_utils.stats_utils.calculate_img_stats(img_recon.astype(np.int32), images_np.astype(np.int32), os.path.join(output_dir, 'prediction_img.csv'))
+cmvae_utils.stats_utils.calculate_img_stats(img_recon.astype(np.int32), images_np.astype(np.int32), os.path.join(output_dir, filename_prediction))
 
 # get stats for gate reconstruction
 cmvae_utils.stats_utils.calculate_gate_stats(gate_recon, raw_table, output_dir)

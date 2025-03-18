@@ -14,7 +14,7 @@ parser.add_argument('--dir_output', help='Output Directory', default=None, type=
 args = parser.parse_args()
 
 dirs = args.dirs.split(',')
-
+file_output_name = 'results.csv'
 res_scaled = (64, 64, 3)
 
 assert isinstance(dirs, list), 'Invalid directory'
@@ -34,7 +34,7 @@ for directory in dirs:
 
 combinations = list(combinations(list(dirs_names_images.keys()), 2))
 
-with open(os.path.join(args.dir_output, 'cross_resolution.csv'), 'w', newline='', encoding='UTF8') as f:
+with open(os.path.join(args.dir_output, file_output_name), 'w', newline='', encoding='UTF8') as f:
     writer = csv.writer(f)
     writer.writerow(['Directory 1', 'Directory 2', 'MAE', 'Standard Error', 'Max Error'])
 
@@ -42,5 +42,5 @@ with open(os.path.join(args.dir_output, 'cross_resolution.csv'), 'w', newline=''
         writer.writerow([combination[0], combination[1]])
 
 for combination in combinations:
-    calculate_img_stats(dirs_names_images[combination[0]], dirs_names_images[combination[1]], os.path.join(args.dir_output, 'cross_resolution.csv'))
+    calculate_img_stats(dirs_names_images[combination[0]], dirs_names_images[combination[1]], os.path.join(args.dir_output, file_output_name))
 

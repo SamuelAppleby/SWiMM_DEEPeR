@@ -72,6 +72,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 # 3 = INFO, WARNING, and ERROR messages are not printed
 imgs_np = []
 imgs_recon = []
+gates_np = []
+gates_pred = []
+zs = []
 
 # Load test dataset
 for dir in dirs:
@@ -104,11 +107,20 @@ for dir in dirs:
     imgs_np.append(images_np)
     imgs_recon.append(img_recon)
 
-with open(os.path.join(output_dir, 'prediction_img.csv'), 'w', newline='', encoding='UTF8') as f:
+    gates_np.append(raw_table)
+    gates_pred.append(gate_recon)
+
+    zs.append(z)
+
+filename_img_output = os.path.join(output_dir, 'prediction_img.csv')
+
+with open(filename_img_output, 'w', newline='', encoding='UTF8') as f:
     writer = csv.writer(f)
     writer.writerow(['MAE', 'Standard Error', 'Max Error'])
 
-cmvae_utils.stats_utils.calculate_img_stats(imgs_recon[0].astype(np.int32), imgs_recon[1].astype(np.int32), os.path.join(output_dir, 'prediction_img.csv'))
+cmvae_utils.stats_utils.calculate_img_stats(imgs_recon[0].astype(np.int32), imgs_recon[1].astype(np.int32), filename_img_output)
+cmvae_utils.stats_utils.calculate_gate_stats(gates_pred[0], gates_pred[1], output_dir)
+cmvae_utils.stats_utils.calculate_z_stats(zs[0], zs[1], output_dir)
 
 # show some reconstruction figures
 fig = plt.figure(figsize=(20, 20))

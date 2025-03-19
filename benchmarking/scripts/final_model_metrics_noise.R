@@ -96,8 +96,9 @@ df_long$Variable <- factor(df_long$Variable, levels = c("AError",
 increase <- 0
 
 algo_labels <- c(
-  "sac" = "Noiseless",
-  "sac_noise" = "Noisy")
+  "sac" = expression(SAC[paste("SWiMMv2.0")]^{"noiseless"}),
+  "sac_noise" = expression(SAC[paste("SWiMMv2.0")]^{"noisy"})
+)
 
 ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group = Variable)) +
   geom_point(size = 3) +

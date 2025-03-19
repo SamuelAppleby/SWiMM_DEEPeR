@@ -97,7 +97,11 @@ for (algo in algos) {
 # formatted_path_algo <- sprintf(paste(formatted_path, extension, sep=""), algo, algo)
 # yaml_data_algo <- as.data.frame(t(yaml.load_file(file.path(formatted_path_algo))))
 
-algo_labels <- c("sac" = "Noiseless", "sac_noise" = "Noisy")
+algo_labels <- c(
+  "sac" = expression(SAC[paste("SWiMMv2.0")]^{"noiseless"}),
+  "sac_noise" = expression(SAC[paste("SWiMMv2.0")]^{"noisy"})
+  )
+
 combined_data_training$algo <- factor(combined_data_training$algo, levels = c("sac", "sac_noise"))
 
 # TRAINING REWARD GRAPH
@@ -107,7 +111,7 @@ ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeRewar
   geom_smooth(aes(y = TrainingMeanEpisodeReward), method = "auto") +
   geom_point(aes(shape = Termination)) +
   labs(shape = "Termination Criteria") +
-  scale_color_brewer(palette = "Set2", name = "Environment", labels = c("sac" = "Noiseless", "sac_noise" = "Noisy")) +
+  scale_color_brewer(palette = "Set2", name = "Environment", labels = algo_labels) +
   guides(color = guide_legend(nrow = 1),
          shape = guide_legend(nrow = 1)) +
   theme(legend.position = "bottom",
@@ -174,6 +178,6 @@ ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=al
   geom_text(data = sorted_df, aes(x = -Inf, y = TestingMeanEpisodeReward, color = algo),
             label = sorted_df$RewardLabel, size = 4, fontface = "italic",
             hjust = 1.1, inherit.aes = FALSE, show.legend=FALSE) +
-  scale_color_brewer(palette = "Set2", name = "Environment", labels = c("sac" = "Noiseless", "sac_noise" = "Noisy")) +
+  scale_color_brewer(palette = "Set2", name = "Environment", labels = algo_labels) +
   coord_cartesian(clip = 'off', ylim = c(-3000, 3000)) +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))

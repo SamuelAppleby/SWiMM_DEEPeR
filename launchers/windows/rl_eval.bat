@@ -5,17 +5,16 @@ call ..\..\.venv\Scripts\activate
 cd ..\..\gym_underwater
 
 set seeds=113 127 131 137 139
-set algorithms=sac_noise_1
+set algorithms=sac_1 ppo_3 td3_4
 set render=human
 
 for %%x in (%algorithms%) do (
-    for /f "tokens=1,2,3 delims=_" %%a in ("%%x") do (
+    for /f "tokens=1,2 delims=_" %%a in ("%%x") do (
         set n=%%a
-        set s=%%b
-        set l=%%c
+        set c=%%b
     )
 
-    set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\!n!_!s!\!n!_!s!_!l!\best_model.zip
+    set w=C:\Users\sambu\Documents\Repositories\CodeBases\SWiMM_DEEPeR\models\!n!\!n!_!c!\best_model.zip
 
     for %%s in (%seeds%) do (
         for %%r in (%render%) do (

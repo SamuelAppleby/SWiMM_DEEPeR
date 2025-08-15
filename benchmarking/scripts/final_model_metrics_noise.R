@@ -95,10 +95,23 @@ df_long$Variable <- factor(df_long$Variable, levels = c("AError",
 
 increase <- 0
 
+## Normal Version ##
+
+# algo_labels <- c(
+#   "sac" = expression(SAC[paste("SWiMMv2.0")]^{"noiseless"}),
+#   "sac_noise" = expression(SAC[paste("SWiMMv2.0")]^{"noisy"})
+# )
+
+## ##
+
+## Thesis Version ##
+
 algo_labels <- c(
-  "sac" = expression(SAC[paste("SWiMMv2.0")]^{"noiseless"}),
-  "sac_noise" = expression(SAC[paste("SWiMMv2.0")]^{"noisy"})
+  "sac" = expression(SAC["noiseless"]),
+  "sac_noise" = expression(SAC["noisy"])
 )
+
+## ##
 
 ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group = Variable)) +
   geom_point(size = 3) +
@@ -114,12 +127,13 @@ ggplot(df_long, aes(x = r, y = Value, shape = Algorithm, color = Variable, group
                                                                    "ASmoothnessError" = expression(S[A]),
                                                                    "DSmoothnessError" = expression(S[D]))) +
   labs(shape = "Enviornment") +
-  guides(color = guide_legend(nrow = 1),
-         shape = guide_legend(nrow = 1)) +
+  guides(
+    shape = guide_legend(nrow = 1, order = 1),
+    color = guide_legend(nrow = 1, order = 2)
+    ) +
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
-        legend.box = "vertical",
+        legend.box = "horizontal",
         text = element_text(family = "Times New Roman"))
-
 
 

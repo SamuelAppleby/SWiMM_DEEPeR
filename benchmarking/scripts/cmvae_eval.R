@@ -80,16 +80,16 @@ combined_data$Feature <- factor(combined_data$Feature, levels = c("Image",
                                                         "Psi"))
 
 shape_labels <- c(
-  "11" = expression(paste("M"[CMVAE]^11, " / 5")),
-  "13" = expression(paste("M"[CMVAE]^13, " / 5")),
-  "17" = expression(paste("M"[CMVAE]^17, " / 5")),
-  "19" = expression(paste("M"[CMVAE]^19, " / 5")),
-  "23" = expression(paste("M"[CMVAE]^23, " / 5")),
-  "47" = expression(paste("M"[CMVAE]^47, " / ", infinity)),
-  "53" = expression(paste("M"[CMVAE]^53, " / ", infinity)),
-  "59" = expression(paste("M"[CMVAE]^59, " / ", infinity)),
-  "61" = expression(paste("M"[CMVAE]^61, " / ", infinity)),
-  "67" = expression(paste("M"[CMVAE]^67, " / ", infinity))
+  "11" = expression(paste("M"[CMVAE]^11, " / ", infinity)),
+  "13" = expression(paste("M"[CMVAE]^13, " / ", infinity)),
+  "17" = expression(paste("M"[CMVAE]^17, " / ", infinity)),
+  "19" = expression(paste("M"[CMVAE]^19, " / ", infinity)),
+  "23" = expression(paste("M"[CMVAE]^23, " / ", infinity)),
+  "47" = expression(paste("M"[CMVAE]^47, " / 5")),
+  "53" = expression(paste("M"[CMVAE]^53, " / 5")),
+  "59" = expression(paste("M"[CMVAE]^59, " / 5")),
+  "61" = expression(paste("M"[CMVAE]^61, " / 5")),
+  "67" = expression(paste("M"[CMVAE]^67, " / 5"))
 )
 
 ggplot(combined_data, aes(x = Wall.time, y = MAE, shape = ModelSeed, color = Feature, group = Feature)) +
@@ -105,6 +105,6 @@ ggplot(combined_data, aes(x = Wall.time, y = MAE, shape = ModelSeed, color = Fea
   guides(color = guide_legend(nrow = 1, order = 1),
          shape = guide_legend(nrow = 2, order = 2)) +
   theme(legend.position = "bottom",
-        legend.direction = "vertical",
+        legend.direction = "horizontal",
         legend.box = "vertical",
         text = element_text(family = "Times New Roman"))

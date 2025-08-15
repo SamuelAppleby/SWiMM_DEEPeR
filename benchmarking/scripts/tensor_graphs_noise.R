@@ -97,10 +97,23 @@ for (algo in algos) {
 # formatted_path_algo <- sprintf(paste(formatted_path, extension, sep=""), algo, algo)
 # yaml_data_algo <- as.data.frame(t(yaml.load_file(file.path(formatted_path_algo))))
 
+## Normal Version ##
+
+# algo_labels <- c(
+#   "sac" = expression(SAC[paste("SWiMMv2.0")]^{"noiseless"}),
+#   "sac_noise" = expression(SAC[paste("SWiMMv2.0")]^{"noisy"})
+# )
+
+## ##
+
+## Thesis Version ##
+
 algo_labels <- c(
-  "sac" = expression(SAC[paste("SWiMMv2.0")]^{"noiseless"}),
-  "sac_noise" = expression(SAC[paste("SWiMMv2.0")]^{"noisy"})
-  )
+  "sac" = expression(SAC[paste("noiseless")]),
+  "sac_noise" = expression(SAC[paste("noisy")])
+)
+
+## ##
 
 combined_data_training$algo <- factor(combined_data_training$algo, levels = c("sac", "sac_noise"))
 
@@ -112,11 +125,13 @@ ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeRewar
   geom_point(aes(shape = Termination)) +
   labs(shape = "Termination Criteria") +
   scale_color_brewer(palette = "Set2", name = "Environment", labels = algo_labels) +
-  guides(color = guide_legend(nrow = 1),
-         shape = guide_legend(nrow = 1)) +
+  guides(
+    shape = guide_legend(nrow = 1, order = 1),
+    color = guide_legend(nrow = 1, order = 2)
+    ) +
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
-        legend.box = "vertical",
+        legend.box = "horizontal",
         text = element_text(family = "Times New Roman"))
 
 sorted_df <- combined_data_test[order(combined_data_test$algo, -combined_data_test$TestingMeanEpisodeReward), ]

@@ -104,11 +104,13 @@ ggplot(data = combined_data_training, aes(x = Step, y = TrainingMeanEpisodeRewar
   geom_point(aes(shape = Termination)) +
   labs(shape = "Termination Criteria") +
   scale_color_brewer(palette = "Set2", name = "Seed") +
-  guides(color = guide_legend(nrow = 1),
-         shape = guide_legend(nrow = 1)) +
+  guides(
+    shape = guide_legend(nrow = 1, order = 1),
+    color = guide_legend(nrow = 1, order = 2)
+    ) +
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
-        legend.box = "vertical",
+        legend.box = "horizontal",
         text = element_text(family = "Times New Roman"))
 
 sorted_df <- combined_data_test[order(combined_data_test$algo, -combined_data_test$TestingMeanEpisodeReward), ]
@@ -139,6 +141,10 @@ ggplot(data = long_data, aes(x = algo, y = value, fill = factor(seed))) +
   scale_y_continuous(name = "Time (s)", labels = scientific_10) +
   scale_fill_brewer(palette = "Set2", name = "Seed") +
   labs(x = "Algorithm") +
+  guides(
+    alpha = guide_legend(nrow = 1, order = 1),
+    fill = guide_legend(nrow = 1, order = 2)
+  ) +
   geom_tile(aes(y=NA_integer_, alpha = factor(type))) +
   scale_alpha_manual(values = c(`total_train_time` = 0.4, `time_for_best_model` = 1),
                      labels = c("Total Train Time", "Best Model Found"),

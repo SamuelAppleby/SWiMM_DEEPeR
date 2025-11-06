@@ -194,5 +194,4 @@ ggplot(data=combined_data_test, aes(x=Step, y=TestingMeanEpisodeReward, color=al
             label = sorted_df$RewardLabel, size = 4, fontface = "italic",
             hjust = 1.1, inherit.aes = FALSE, show.legend=FALSE) +
   scale_color_brewer(palette = "Set2", name = "Environment", labels = algo_labels) +
-  coord_cartesian(clip = 'off', ylim = c(-3000, 3000)) +
   theme(legend.position="bottom",text=element_text(family="Times New Roman"))
